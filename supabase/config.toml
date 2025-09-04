@@ -1,0 +1,4 @@
+project_id = "cwkzviympmjcdqmgyhik"
+
+[functions.fetch-pl-standings]
+verify_jwt = true
