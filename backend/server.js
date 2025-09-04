@@ -3,6 +3,10 @@ const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
+// Import routes
+const fixturesRoutes = require('./routes/fixtures');
+const predictionsRoutes = require('./routes/predictions_simple');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -11,8 +15,8 @@ app.use(cors());
 app.use(express.json());
 
 // Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || "https://nopucomnlyvogmfdldaw.supabase.co";
-const supabaseKey = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ";
+const supabaseUrl = "https://nopucomnlyvogmfdldaw.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Map football-data TLAs to our local team ids
@@ -40,6 +44,9 @@ const TLA_TO_ID = {
 };
 
 // Routes
+app.use('/api/fixtures', fixturesRoutes);
+app.use('/api/predictions', predictionsRoutes);
+
 app.get('/api/standings', async (req, res) => {
   try {
     const API_KEY = process.env.LEAGUE_STANDINGS_API_KEY;

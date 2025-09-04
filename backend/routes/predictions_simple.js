@@ -1,0 +1,360 @@
+const express = require('express');
+const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
+
+const router = express.Router();
+
+// Supabase client
+const supabaseUrl = "https://nopucomnlyvogmfdldaw.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ";
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Middleware to verify user authentication
+const authenticateUser = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: 'No authorization token provided' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      return res.status(401).json({ success: false, error: 'Invalid token' });
+    }
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ success: false, error: 'Invalid token' });
+  }
+};
+
+// Apply authentication to all routes
+router.use(authenticateUser);
+
+// POST /api/predictions/table - Create or update table prediction
+router.post('/table', async (req, res) => {
+  try {
+    const { table_order } = req.body;
+    const user_id = req.user.id;
+
+    if (!table_order || !Array.isArray(table_order) || table_order.length !== 20) {
+      return res.status(400).json({
+        success: false,
+        error: 'table_order must be an array of 20 team IDs'
+      });
+    }
+
+    // Upsert user profile with table prediction
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id,
+        table_prediction: table_order
+      }, {
+        onConflict: 'user_id'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
+
+    res.json({
+      success: true,
+      profile
+    });
+  } catch (error) {
+    console.error('Error creating table prediction:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// GET /api/predictions/table - Get user's table prediction
+router.get('/table', async (req, res) => {
+  try {
+    const user_id = req.user.id;
+
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('table_prediction')
+      .eq('user_id', user_id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      throw new Error(`Database error: ${error.message}`);
+    }
+
+    res.json({
+      success: true,
+      prediction: profile?.table_prediction || null
+    });
+  } catch (error) {
+    console.error('Error fetching table prediction:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// POST /api/predictions/fixture - Create or update fixture prediction
+router.post('/fixture', async (req, res) => {
+  try {
+    const { fixture_id, home_score, away_score } = req.body;
+    const user_id = req.user.id;
+
+    if (!fixture_id || home_score === undefined || away_score === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'fixture_id, home_score, and away_score are required'
+      });
+    }
+
+    // Check if fixture exists and hasn't started yet
+    const { data: fixture, error: fixtureError } = await supabase
+      .from('fixtures')
+      .select('*')
+      .eq('id', fixture_id)
+      .single();
+
+    if (fixtureError || !fixture) {
+      return res.status(404).json({
+        success: false,
+        error: 'Fixture not found'
+      });
+    }
+
+    // Check if fixture has already started
+    const now = new Date();
+    const fixtureDate = new Date(fixture.scheduled_date);
+    if (fixtureDate <= now) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot predict on fixtures that have already started'
+      });
+    }
+
+    // Get current user profile
+    const { data: currentProfile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('fixture_predictions')
+      .eq('user_id', user_id)
+      .single();
+
+    let fixturePredictions = {};
+    if (currentProfile?.fixture_predictions) {
+      fixturePredictions = currentProfile.fixture_predictions;
+    }
+
+    // Calculate points if fixture is finished
+    let points_earned = 0;
+    if (fixture.status === 'FINISHED' && fixture.home_score !== null && fixture.away_score !== null) {
+      const { data: pointsData, error: pointsError } = await supabase
+        .rpc('calculate_fixture_points', {
+          predicted_home: home_score,
+          predicted_away: away_score,
+          actual_home: fixture.home_score,
+          actual_away: fixture.away_score
+        });
+
+      if (!pointsError && pointsData) {
+        points_earned = pointsData;
+      }
+    }
+
+    // Update fixture prediction
+    fixturePredictions[fixture_id] = {
+      home_score: parseInt(home_score) || 0,
+      away_score: parseInt(away_score) || 0,
+      points_earned
+    };
+
+    // Update user profile
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id,
+        fixture_predictions: fixturePredictions
+      }, {
+        onConflict: 'user_id'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
+
+    res.json({
+      success: true,
+      points_earned
+    });
+  } catch (error) {
+    console.error('Error creating fixture prediction:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// GET /api/predictions/fixture/:fixture_id - Get user's prediction for a fixture
+router.get('/fixture/:fixture_id', async (req, res) => {
+  try {
+    const { fixture_id } = req.params;
+    const user_id = req.user.id;
+
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('fixture_predictions')
+      .eq('user_id', user_id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      throw new Error(`Database error: ${error.message}`);
+    }
+
+    const prediction = profile?.fixture_predictions?.[fixture_id] || null;
+
+    res.json({
+      success: true,
+      prediction
+    });
+  } catch (error) {
+    console.error('Error fetching fixture prediction:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// GET /api/predictions/fixtures - Get all user's fixture predictions for a matchday
+router.get('/fixtures', async (req, res) => {
+  try {
+    const { matchday } = req.query;
+    const user_id = req.user.id;
+
+    // Get user's fixture predictions
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('fixture_predictions')
+      .eq('user_id', user_id)
+      .single();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      throw new Error(`Database error: ${profileError.message}`);
+    }
+
+    // Get fixtures for the matchday
+    let query = supabase
+      .from('fixtures')
+      .select('*')
+      .order('scheduled_date', { ascending: true });
+
+    if (matchday) {
+      query = query.eq('matchday', parseInt(matchday));
+    }
+
+    const { data: fixtures, error: fixturesError } = await query;
+
+    if (fixturesError) {
+      throw new Error(`Database error: ${fixturesError.message}`);
+    }
+
+    // Combine fixtures with user predictions
+    const predictions = fixtures.map(fixture => ({
+      ...fixture,
+      prediction: profile?.fixture_predictions?.[fixture.id] || null
+    }));
+
+    res.json({
+      success: true,
+      predictions,
+      count: predictions.length,
+      matchday: matchday ? parseInt(matchday) : null
+    });
+  } catch (error) {
+    console.error('Error fetching fixture predictions:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// GET /api/predictions/scores - Get user's scores
+router.get('/scores', async (req, res) => {
+  try {
+    const user_id = req.user.id;
+
+    const { data: profile, error } = await supabase
+      .from('user_profiles')
+      .select('fixture_points, table_points, total_points, champion_bonus, relegation_bonus')
+      .eq('user_id', user_id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      throw new Error(`Database error: ${error.message}`);
+    }
+
+    res.json({
+      success: true,
+      scores: profile || {
+        fixture_points: 0,
+        table_points: 0,
+        total_points: 0,
+        champion_bonus: false,
+        relegation_bonus: false
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching user scores:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// GET /api/predictions/leaderboard - Get leaderboard
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const { limit = 50 } = req.query;
+
+    const { data: leaderboard, error } = await supabase
+      .from('user_profiles')
+      .select(`
+        *,
+        user:user_id (
+          email,
+          raw_user_meta_data
+        )
+      `)
+      .order('total_points', { ascending: false })
+      .limit(parseInt(limit));
+
+    if (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
+
+    res.json({
+      success: true,
+      leaderboard
+    });
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+module.exports = router;
