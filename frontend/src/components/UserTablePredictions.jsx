@@ -1,0 +1,170 @@
+import { useEffect, useState } from "react";
+import { TEAMS } from "../data/teams";
+import { toast } from "sonner";
+import { supabase } from "../integrations/supabase/client";
+import { useAuth } from "../contexts/AuthContext";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+} from "@hello-pangea/dnd";
+
+function reorder(list, startIndex, endIndex) {
+  const result = Array.from(list);
+  const [removed] = result.splice(startIndex, 1);
+  result.splice(endIndex, 0, removed);
+  return result;
+}
+
+export const UserTablePredictions = () => {
+  const { user } = useAuth();
+  const defaultOrder = TEAMS.map((t) => t.id);
+  const [userOrder, setUserOrder] = useState(defaultOrder);
+  const [loading, setLoading] = useState(false);
+
+  // Load user's predictions
+  useEffect(() => {
+    const loadUserPredictions = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('user_table_predictions')
+          .select('table_order')
+          .eq('user_id', user.id)
+          .eq('season', '2024-25')
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data?.table_order) {
+          const savedOrder = data.table_order;
+          // Filter to only include teams that exist in current TEAMS array
+          const validOrder = savedOrder.filter(id => TEAMS.some(t => t.id === id));
+          if (validOrder.length === 20) {
+            setUserOrder(validOrder);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user predictions:', error);
+      }
+    };
+
+    loadUserPredictions();
+  }, [user]);
+
+  const savePredictions = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('user_table_predictions')
+        .upsert(
+          {
+            user_id: user.id,
+            season: '2024-25',
+            table_order: userOrder,
+          },
+          { onConflict: 'user_id,season' }
+        );
+
+      if (error) throw error;
+      toast.success("Your predictions have been saved!");
+    } catch (error) {
+      console.error('Error saving predictions:', error);
+      toast.error("Failed to save predictions. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onDragEnd = (result) => {
+    const { destination, source } = result;
+    if (!destination) return;
+    if (destination.index === source.index) return;
+
+    setUserOrder((prev) => reorder(prev, source.index, destination.index));
+  };
+
+  const renderItem = (teamId, index) => {
+    const team = TEAMS.find((t) => t.id === teamId);
+    if (!team) return null;
+
+    return (
+      <Draggable key={teamId} draggableId={teamId} index={index}>
+        {(provided, snapshot) => (
+          <tr
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            {...provided.dragHandleProps}
+            className={`draggable-row ${snapshot.isDragging ? "dragging" : ""}`}
+          >
+            <td className="prediction-position">{index + 1}</td>
+            <td>
+              <div className="prediction-team">
+                <img
+                  src={team.logo}
+                  alt={`${team.name} official badge`}
+                  loading="lazy"
+                  className="prediction-team-logo"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+                <span className="prediction-team-name">{team.name}</span>
+              </div>
+            </td>
+            <td>
+              <div className="drag-handle">
+                ⋮⋮
+              </div>
+            </td>
+          </tr>
+        )}
+      </Draggable>
+    );
+  };
+
+  return (
+    <div className="prediction-section">
+      <div className="prediction-header">
+        <h2 className="prediction-title">Your Premier League Predictions</h2>
+        <p className="prediction-description">
+          Drag and drop teams to predict the final league table
+        </p>
+      </div>
+
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="prediction-card">
+          <table className="prediction-table">
+            <thead>
+              <tr>
+                <th style={{ width: '80px' }}>Position</th>
+                <th>Team</th>
+                <th style={{ width: '80px' }}>Drag</th>
+              </tr>
+            </thead>
+            <Droppable droppableId="user-predictions">
+              {(provided, snapshot) => (
+                <tbody ref={provided.innerRef} {...provided.droppableProps}>
+                  {userOrder.map((id, idx) => renderItem(id, idx))}
+                  {provided.placeholder}
+                </tbody>
+              )}
+            </Droppable>
+          </table>
+          <div className="prediction-actions">
+            <button
+              onClick={savePredictions}
+              disabled={loading}
+              className="prediction-save-btn"
+            >
+              {loading ? 'Saving...' : 'Save Predictions'}
+            </button>
+          </div>
+        </div>
+      </DragDropContext>
+    </div>
+  );
+};
