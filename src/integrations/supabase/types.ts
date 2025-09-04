@@ -18,76 +18,76 @@ export type Database = {
         Row: {
           away_score: number | null
           away_team: string
-          betting_closes_at: string
-          betting_opens_at: string
-          created_at: string
+          betting_closes_at: string | null
+          betting_opens_at: string | null
+          created_at: string | null
           home_score: number | null
           home_team: string
           id: string
           match_date: string
-          status: string
-          updated_at: string
+          status: string | null
+          updated_at: string | null
         }
         Insert: {
           away_score?: number | null
           away_team: string
-          betting_closes_at: string
-          betting_opens_at: string
-          created_at?: string
+          betting_closes_at?: string | null
+          betting_opens_at?: string | null
+          created_at?: string | null
           home_score?: number | null
           home_team: string
           id?: string
           match_date: string
-          status?: string
-          updated_at?: string
+          status?: string | null
+          updated_at?: string | null
         }
         Update: {
           away_score?: number | null
           away_team?: string
-          betting_closes_at?: string
-          betting_opens_at?: string
-          created_at?: string
+          betting_closes_at?: string | null
+          betting_opens_at?: string | null
+          created_at?: string | null
           home_score?: number | null
           home_team?: string
           id?: string
           match_date?: string
-          status?: string
-          updated_at?: string
+          status?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
       match_predictions: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
-          match_id: string
+          match_id: string | null
           penalty_applied: number | null
-          predicted_away_score: number
-          predicted_home_score: number
-          updated_at: string
-          user_id: string
+          predicted_away_score: number | null
+          predicted_home_score: number | null
+          updated_at: string | null
+          user_id: string | null
           username: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          match_id: string
+          match_id?: string | null
           penalty_applied?: number | null
-          predicted_away_score: number
-          predicted_home_score: number
-          updated_at?: string
-          user_id: string
+          predicted_away_score?: number | null
+          predicted_home_score?: number | null
+          updated_at?: string | null
+          user_id?: string | null
           username: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          match_id?: string
+          match_id?: string | null
           penalty_applied?: number | null
-          predicted_away_score?: number
-          predicted_home_score?: number
-          updated_at?: string
-          user_id?: string
+          predicted_away_score?: number | null
+          predicted_home_score?: number | null
+          updated_at?: string | null
+          user_id?: string | null
           username?: string
         }
         Relationships: [
@@ -98,120 +98,88 @@ export type Database = {
             referencedRelation: "match_events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "match_predictions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       prediction_sets: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
           label: string
-          p1_order: string[]
-          p2_order: string[]
-          updated_at: string
+          p1_order: string | null
+          p2_order: string | null
+          updated_at: string | null
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           label: string
-          p1_order: string[]
-          p2_order: string[]
-          updated_at?: string
+          p1_order?: string | null
+          p2_order?: string | null
+          updated_at?: string | null
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           label?: string
-          p1_order?: string[]
-          p2_order?: string[]
-          updated_at?: string
+          p1_order?: string | null
+          p2_order?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
       real_standings: {
         Row: {
-          created_at: string
-          id: string
-          label: string
-          positions: Json
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          label: string
-          positions: Json
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          label?: string
-          positions?: Json
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      reservations: {
-        Row: {
           created_at: string | null
-          customer_name: string
           id: string
-          meal_type: string
-          party_size: number
-          phone_number: string
-          reservation_date: string
-          seat_number: number
-          seating_type: string
+          label: string
+          positions: Json | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          customer_name: string
           id?: string
-          meal_type: string
-          party_size: number
-          phone_number: string
-          reservation_date: string
-          seat_number: number
-          seating_type: string
+          label: string
+          positions?: Json | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          customer_name?: string
           id?: string
-          meal_type?: string
-          party_size?: number
-          phone_number?: string
-          reservation_date?: string
-          seat_number?: number
-          seating_type?: string
+          label?: string
+          positions?: Json | null
           updated_at?: string | null
         }
         Relationships: []
       }
       user_profiles: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
-          total_penalties: number
-          updated_at: string
+          total_penalties: number | null
+          updated_at: string | null
           user_id: string
           username: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          total_penalties?: number
-          updated_at?: string
+          total_penalties?: number | null
+          updated_at?: string | null
           user_id: string
           username: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
-          total_penalties?: number
-          updated_at?: string
+          total_penalties?: number | null
+          updated_at?: string | null
           user_id?: string
           username?: string
         }
