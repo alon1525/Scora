@@ -104,10 +104,13 @@ const Index = () => {
         if (predsError) {
           console.warn("Supabase predictions fetch error:", predsError.message);
         }
-        if (preds?.p1_order?.length === 20 && preds?.p2_order?.length === 20) {
+        const p1Array = preds?.p1_order ? JSON.parse(preds.p1_order) : [];
+        const p2Array = preds?.p2_order ? JSON.parse(preds.p2_order) : [];
+        
+        if (p1Array?.length === 20 && p2Array?.length === 20) {
           // Filter to only include teams that exist in current TEAMS array
-          const validP1 = preds.p1_order.filter(id => TEAMS.some(t => t.id === id));
-          const validP2 = preds.p2_order.filter(id => TEAMS.some(t => t.id === id));
+          const validP1 = p1Array.filter(id => TEAMS.some(t => t.id === id));
+          const validP2 = p2Array.filter(id => TEAMS.some(t => t.id === id));
           
           if (validP1.length === 20 && validP2.length === 20) {
             setP1Order(validP1 as string[]);
@@ -212,7 +215,11 @@ const Index = () => {
       const { error } = await supabase
         .from("prediction_sets")
         .upsert(
-          { label: "default", p1_order: p1Order, p2_order: p2Order },
+          { 
+            label: "default", 
+            p1_order: JSON.stringify(p1Order), 
+            p2_order: JSON.stringify(p2Order) 
+          },
           { onConflict: "label" }
         );
       if (error) throw error;

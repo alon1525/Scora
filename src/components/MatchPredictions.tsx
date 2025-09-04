@@ -256,8 +256,8 @@ export const MatchPredictions = () => {
       };
 
       const scores = {
-        alon: calculateScore(predictionData.p1_order),
-        nadav: calculateScore(predictionData.p2_order)
+        alon: calculateScore(predictionData.p1_order ? JSON.parse(predictionData.p1_order) : []),
+        nadav: calculateScore(predictionData.p2_order ? JSON.parse(predictionData.p2_order) : [])
       };
 
       setTableScores(scores);
