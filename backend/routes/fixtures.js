@@ -324,4 +324,134 @@ router.get('/matchday/:matchday', async (req, res) => {
   }
 });
 
+// Refresh fixtures and recalculate all scores (when games end)
+router.post('/refresh-and-recalculate', async (req, res) => {
+  try {
+    console.log('🔄 Refreshing fixtures and recalculating scores...');
+    
+    // First, refresh fixtures from API
+    const API_KEY = process.env.LEAGUE_STANDINGS_API_KEY;
+    if (!API_KEY) {
+      return res.status(500).json({
+        success: false,
+        error: 'API key not configured'
+      });
+    }
+
+    // Get current season fixtures
+    const response = await fetch('https://api.football-data.org/v4/competitions/PL/matches?season=2025', {
+      headers: {
+        'X-Auth-Token': API_KEY
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const matches = data.matches || [];
+
+    // Update fixtures in database
+    let updatedCount = 0;
+    for (const match of matches) {
+      const homeTeam = match.homeTeam?.shortName?.toLowerCase().replace(/\s+/g, '-');
+      const awayTeam = match.awayTeam?.shortName?.toLowerCase().replace(/\s+/g, '-');
+      
+      if (homeTeam && awayTeam) {
+        const { error: upsertError } = await supabase
+          .from('fixtures')
+          .upsert({
+            external_id: match.id,
+            home_team_id: homeTeam,
+            away_team_id: awayTeam,
+            home_team_name: match.homeTeam.name,
+            away_team_name: match.awayTeam.name,
+            home_team_logo: match.homeTeam.crest,
+            away_team_logo: match.awayTeam.crest,
+            matchday: match.matchday,
+            season: '2025',
+            status: match.status,
+            scheduled_date: match.utcDate,
+            home_score: match.score?.fullTime?.home || 0,
+            away_score: match.score?.fullTime?.away || 0,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'external_id'
+          });
+
+        if (!upsertError) {
+          updatedCount++;
+        }
+      }
+    }
+
+    // Recalculate all user scores
+    console.log('🔄 Recalculating all user scores...');
+    const { data: profiles, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select('*');
+
+    if (!profilesError && profiles) {
+      // Get current standings
+      const { data: standings, error: standingsError } = await supabase
+        .from('standings')
+        .select('team_id, position')
+        .eq('season', '2025')
+        .order('position');
+
+      if (!standingsError && standings) {
+        const standingsLookup = {};
+        standings.forEach(team => {
+          standingsLookup[team.team_id] = team.position;
+        });
+
+        // Update each user's scores
+        for (const profile of profiles) {
+          // Calculate table points
+          let tablePoints = 0;
+          const prediction = profile.table_prediction || [];
+          
+          for (let i = 0; i < prediction.length; i++) {
+            const predictedTeam = prediction[i];
+            const actualPosition = standingsLookup[predictedTeam];
+            
+            if (actualPosition !== undefined) {
+              const positionDiff = Math.abs((i + 1) - actualPosition);
+              const teamPoints = Math.max(0, 20 - positionDiff);
+              tablePoints += teamPoints;
+            }
+          }
+
+          const totalPoints = profile.fixture_points + tablePoints;
+
+          // Update user profile
+          await supabase
+            .from('user_profiles')
+            .update({
+              table_points: tablePoints,
+              total_points: totalPoints,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', profile.id);
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Fixtures refreshed and scores recalculated',
+      fixtures_updated: updatedCount,
+      users_updated: profiles?.length || 0
+    });
+
+  } catch (error) {
+    console.error('Error refreshing fixtures and recalculating scores:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

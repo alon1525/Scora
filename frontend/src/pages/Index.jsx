@@ -58,26 +58,6 @@ const Index = () => {
         if (standings && standings.length > 0) {
           setStandingsData(standings);
           console.log(`✅ Loaded ${standings.length} teams`);
-          
-          // Automatically recalculate scores after loading standings
-          console.log('🔄 Recalculating scores on page load...');
-          try {
-            const scoreResponse = await fetch('http://localhost:3001/api/scores/recalculate-all', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            if (scoreResponse.ok) {
-              const scoreResult = await scoreResponse.json();
-              console.log('✅ Scores recalculated on page load:', scoreResult.message);
-            } else {
-              console.error('❌ Score recalculation failed on page load');
-            }
-          } catch (scoreError) {
-            console.error('❌ Error recalculating scores on page load:', scoreError);
-          }
         } else {
           console.warn('No standings data received');
         }
@@ -107,35 +87,20 @@ const Index = () => {
     }
   };
 
-  const handleRefreshScores = async () => {
-    try {
-      console.log('🔄 Manually refreshing scores...');
-      const response = await fetch('http://localhost:3001/api/scores/recalculate-all', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        console.log('✅ Scores refreshed:', result.message);
-        toast.success('Scores refreshed successfully!');
-        
-        // Trigger score refresh in UserScore component
-        setScoreRefreshTrigger(prev => prev + 1);
-      } else {
-        throw new Error('Failed to refresh scores');
-      }
-    } catch (error) {
-      console.error('❌ Error refreshing scores:', error);
-      toast.error('Failed to refresh scores');
-    }
-  };
 
   const triggerScoreRefresh = () => {
     setScoreRefreshTrigger(prev => prev + 1);
   };
+
+
+
+  // Auto-refresh when standings change (games end)
+  useEffect(() => {
+    if (standingsData.length > 0) {
+      console.log('🔄 Standings updated, refreshing scores...');
+      triggerScoreRefresh();
+    }
+  }, [standingsData]);
 
   // Show loading while checking auth
   if (authLoading) {
@@ -169,9 +134,6 @@ const Index = () => {
               <span className="user-email">
                 {user.email}
               </span>
-              <Button variant="outline" size="sm" onClick={handleRefreshScores}>
-                Refresh Scores
-              </Button>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 Sign Out
               </Button>

@@ -109,25 +109,6 @@ router.post('/table', authenticateUser, async (req, res) => {
       throw new Error(`Database error: ${error.message}`);
     }
 
-    // Automatically recalculate scores after saving prediction
-    console.log('🔄 Recalculating scores after prediction update...');
-    try {
-      const scoreResponse = await fetch('http://localhost:3001/api/scores/recalculate-user/' + user_id, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (scoreResponse.ok) {
-        const scoreResult = await scoreResponse.json();
-        console.log('✅ Scores recalculated:', scoreResult.message);
-      } else {
-        console.error('❌ Score recalculation failed');
-      }
-    } catch (scoreError) {
-      console.error('❌ Error recalculating scores:', scoreError);
-    }
 
     res.json({
       success: true,
@@ -417,6 +398,95 @@ router.get('/leaderboard', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Simple score recalculation endpoint
+router.post('/recalculate-user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log(`🔄 Recalculating scores for user: ${userId}`);
+
+    // Get current standings
+    const { data: standings, error: standingsError } = await supabase
+      .from('standings')
+      .select('team_id, position')
+      .eq('season', '2025')
+      .order('position');
+
+    if (standingsError) {
+      throw new Error(`Standings error: ${standingsError.message}`);
+    }
+
+    // Create standings lookup
+    const standingsLookup = {};
+    standings.forEach(team => {
+      standingsLookup[team.team_id] = team.position;
+    });
+
+    // Get user profile
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (profileError || !profile) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Calculate table points
+    let tablePoints = 0;
+    const prediction = profile.table_prediction || [];
+    
+    for (let i = 0; i < prediction.length; i++) {
+      const predictedTeam = prediction[i];
+      const actualPosition = standingsLookup[predictedTeam];
+      
+      if (actualPosition !== undefined) {
+        const positionDiff = Math.abs((i + 1) - actualPosition);
+        const teamPoints = Math.max(0, 20 - positionDiff);
+        tablePoints += teamPoints;
+      }
+    }
+
+    const totalPoints = profile.fixture_points + tablePoints;
+
+    console.log(`📊 Calculated - Table: ${tablePoints}, Fixture: ${profile.fixture_points}, Total: ${totalPoints}`);
+
+    // Update user profile
+    const { error: updateError } = await supabase
+      .from('user_profiles')
+      .update({
+        table_points: tablePoints,
+        total_points: totalPoints,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', profile.id);
+
+    if (updateError) {
+      throw new Error(`Update error: ${updateError.message}`);
+    }
+
+    res.json({
+      success: true,
+      message: 'User scores recalculated successfully',
+      user: profile.display_name || profile.email,
+      table_points: tablePoints,
+      fixture_points: profile.fixture_points,
+      total_points: totalPoints
+    });
+
+  } catch (error) {
+    console.error('❌ User recalculation failed:', error);
     res.status(500).json({
       success: false,
       error: error.message

@@ -75,6 +75,25 @@ export const UserTablePredictions = ({ onPredictionSaved }) => {
       
       if (data.success) {
         toast.success("Your predictions have been saved!");
+        
+        // Recalculate scores after saving prediction
+        try {
+          const scoreResponse = await fetch('http://localhost:3001/api/predictions/recalculate-user/' + user.id, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (scoreResponse.ok) {
+            console.log('✅ Scores recalculated after prediction save');
+          } else {
+            console.error('❌ Score recalculation failed:', scoreResponse.status);
+          }
+        } catch (scoreError) {
+          console.error('❌ Error recalculating scores:', scoreError);
+        }
+        
         // Trigger score refresh in parent component
         if (onPredictionSaved) {
           onPredictionSaved();

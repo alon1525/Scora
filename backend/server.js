@@ -7,7 +7,6 @@ require('dotenv').config();
 const fixturesRoutes = require('./routes/fixtures');
 const predictionsRoutes = require('./routes/predictions_simple');
 const standingsRoutes = require('./routes/standings');
-const scoreRecalculationRoutes = require('./routes/score-recalculation');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -91,7 +90,6 @@ function getMockStandings() {
 // Routes
 app.use('/api/fixtures', fixturesRoutes);
 app.use('/api/predictions', predictionsRoutes);
-app.use('/api/scores', scoreRecalculationRoutes);
 // app.use('/api/standings', standingsRoutes); // Commented out to use direct endpoint below
 
 app.get('/api/standings', async (req, res) => {
@@ -273,30 +271,11 @@ app.post('/api/standings/refresh', async (req, res) => {
       }
     }
 
-    // Automatically recalculate all user scores after standings update
-    console.log('🔄 Standings updated, recalculating all user scores...');
-    try {
-      const scoreResponse = await fetch('http://localhost:3001/api/scores/recalculate-all', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (scoreResponse.ok) {
-        const scoreResult = await scoreResponse.json();
-        console.log('✅ Scores recalculated:', scoreResult.message);
-      } else {
-        console.error('❌ Score recalculation failed');
-      }
-    } catch (scoreError) {
-      console.error('❌ Error recalculating scores:', scoreError);
-    }
 
     res.json({
       success: true,
       count: standingsToInsert.length,
-      message: 'Standings refreshed and scores recalculated successfully'
+      message: 'Standings refreshed successfully'
     });
   } catch (error) {
     console.error('Error refreshing standings:', error);
