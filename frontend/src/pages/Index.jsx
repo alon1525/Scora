@@ -8,6 +8,7 @@ import { LeaguesSection } from "../components/LeaguesSection";
 import { MatchPredictions } from "../components/MatchPredictions";
 import { Leaderboard } from "../components/Leaderboard";
 import { AdminMatchControls } from "../components/AdminMatchControls";
+import { UserScore } from "../components/UserScore";
 import { Button } from "../components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
@@ -30,7 +31,7 @@ const Index = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Load live standings
+  // Load live standings and recalculate scores
   useEffect(() => {
     const loadStandings = async () => {
       if (standingsLoaded.current) return; // Prevent multiple calls
@@ -38,6 +39,24 @@ const Index = () => {
       try {
         standingsLoaded.current = true;
         console.log('Loading live standings...');
+        
+        // First, refresh standings to get latest data
+        const refreshResponse = await fetch('http://localhost:3001/api/standings/refresh', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!refreshResponse.ok) {
+          console.error('Standings refresh error:', refreshResponse.status, refreshResponse.statusText);
+          throw new Error(`Failed to refresh standings: ${refreshResponse.status}`);
+        }
+        
+        const refreshData = await refreshResponse.json();
+        console.log('Standings refreshed:', refreshData);
+        
+        // Then get the standings data
         const response = await fetch('http://localhost:3001/api/standings');
         
         if (!response.ok) {
@@ -83,6 +102,32 @@ const Index = () => {
     }
   };
 
+  const handleRefreshScores = async () => {
+    try {
+      console.log('🔄 Manually refreshing scores...');
+      const response = await fetch('http://localhost:3001/api/scores/recalculate-all', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Scores refreshed:', result.message);
+        toast.success('Scores refreshed successfully!');
+        
+        // Reload the page to show updated scores
+        window.location.reload();
+      } else {
+        throw new Error('Failed to refresh scores');
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing scores:', error);
+      toast.error('Failed to refresh scores');
+    }
+  };
+
   // Show loading while checking auth
   if (authLoading) {
     return (
@@ -115,12 +160,18 @@ const Index = () => {
               <span className="user-email">
                 {user.email}
               </span>
+              <Button variant="outline" size="sm" onClick={handleRefreshScores}>
+                Refresh Scores
+              </Button>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 Sign Out
               </Button>
             </div>
           </div>
         </header>
+
+        {/* User Score Section - Always Visible */}
+        <UserScore />
 
         <Tabs defaultValue="predictions" className="dashboard-tabs">
           <TabsList className="dashboard-tabs-list">

@@ -7,6 +7,7 @@ require('dotenv').config();
 const fixturesRoutes = require('./routes/fixtures');
 const predictionsRoutes = require('./routes/predictions_simple');
 const standingsRoutes = require('./routes/standings');
+const scoreRecalculationRoutes = require('./routes/score-recalculation');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,7 +18,9 @@ app.use(express.json());
 
 // Supabase client
 const supabaseUrl = process.env.SUPABASE_API_URL || "https://nopucomnlyvogmfdldaw.supabase.co";
-const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ";
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ";
+
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Map football-data TLAs to our local team ids
@@ -88,6 +91,7 @@ function getMockStandings() {
 // Routes
 app.use('/api/fixtures', fixturesRoutes);
 app.use('/api/predictions', predictionsRoutes);
+app.use('/api/scores', scoreRecalculationRoutes);
 // app.use('/api/standings', standingsRoutes); // Commented out to use direct endpoint below
 
 app.get('/api/standings', async (req, res) => {
@@ -269,14 +273,169 @@ app.post('/api/standings/refresh', async (req, res) => {
       }
     }
 
+    // Automatically recalculate all user scores after standings update
+    console.log('🔄 Standings updated, recalculating all user scores...');
+    try {
+      const scoreResponse = await fetch('http://localhost:3001/api/scores/recalculate-all', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (scoreResponse.ok) {
+        const scoreResult = await scoreResponse.json();
+        console.log('✅ Scores recalculated:', scoreResult.message);
+      } else {
+        console.error('❌ Score recalculation failed');
+      }
+    } catch (scoreError) {
+      console.error('❌ Error recalculating scores:', scoreError);
+    }
+
     res.json({
       success: true,
       count: standingsToInsert.length,
-      message: 'Standings refreshed successfully'
+      message: 'Standings refreshed and scores recalculated successfully'
     });
   } catch (error) {
     console.error('Error refreshing standings:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/users/create-profile - Create user profile with default prediction
+app.post('/api/users/create-profile', async (req, res) => {
+  try {
+    const { user_id, email, display_name } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'user_id is required' 
+      });
+    }
+
+    // Create user profile with default prediction
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .insert({
+        user_id: user_id,
+        email: email || null,
+        display_name: display_name || email || 'User',
+        table_prediction: [
+          'arsenal', 'aston-villa', 'bournemouth', 'brentford', 'brighton',
+          'burnley', 'chelsea', 'crystal-palace', 'everton', 'fulham',
+          'leeds-united', 'liverpool', 'man-city', 'man-united', 'newcastle',
+          'nottingham', 'sunderland', 'tottenham', 'west-ham', 'wolves'
+        ],
+        fixture_points: 0,
+        table_points: 20, // Default 20 points for table prediction
+        total_points: 20,
+        fixture_predictions: {}
+      })
+      .select();
+
+    if (error) {
+      console.error('Error creating user profile:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to create user profile' 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'User profile created with default prediction',
+      profile: data[0]
+    });
+  } catch (error) {
+    console.error('Error in create profile endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// GET /api/users/prediction-lock-status - Check if predictions are locked for user
+app.get('/api/users/prediction-lock-status/:user_id', async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    // Check if predictions are locked
+    const { data: lockData, error: lockError } = await supabase
+      .rpc('are_predictions_locked', { user_id_param: user_id });
+
+    if (lockError) {
+      console.error('Error checking prediction lock:', lockError);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to check prediction lock status' 
+      });
+    }
+
+    // Get lock date
+    const { data: lockDate, error: dateError } = await supabase
+      .rpc('get_user_prediction_lock_date', { user_id_param: user_id });
+
+    if (dateError) {
+      console.error('Error getting lock date:', dateError);
+    }
+
+    res.json({ 
+      success: true, 
+      locked: lockData,
+      lock_date: lockDate,
+      current_time: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error in lock status endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// POST /api/users/recalculate-scores - Recalculate all user scores
+app.post('/api/users/recalculate-scores', async (req, res) => {
+  try {
+    // Get all user profiles
+    const { data: profiles, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select('user_id, table_prediction');
+
+    if (profilesError) {
+      throw new Error(`Database error: ${profilesError.message}`);
+    }
+
+    let updatedCount = 0;
+    
+    // Recalculate scores for each user
+    for (const profile of profiles) {
+      const { error: updateError } = await supabase
+        .rpc('update_user_scores', { user_id_param: profile.user_id });
+
+      if (!updateError) {
+        updatedCount++;
+      } else {
+        console.error(`Error updating scores for user ${profile.user_id}:`, updateError);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Recalculated scores for ${updatedCount} users`,
+      updated_count: updatedCount,
+      total_users: profiles.length
+    });
+  } catch (error) {
+    console.error('Error recalculating scores:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 

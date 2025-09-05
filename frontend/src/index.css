@@ -46,6 +46,29 @@ body {
   --shadow-medium: rgba(0, 0, 0, 0.15);
   --shadow-dark: rgba(0, 0, 0, 0.25);
   
+  /* Radix UI Variables */
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #3b82f6;
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --radius: 0.5rem;
+  --ring-offset-background: #ffffff;
+  
   /* Spacing */
   --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
@@ -956,17 +979,18 @@ a:hover {
 /* Dashboard Styles */
 .dashboard-page {
   min-height: 100vh;
-  background: var(--bg-secondary);
+  background: #f8fafc;
   padding: var(--spacing-lg);
+  position: relative;
 }
 
 .dashboard-header {
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
+  background: #ffffff;
+  border-radius: 12px;
   padding: var(--spacing-xl);
   margin-bottom: var(--spacing-xl);
-  box-shadow: 0 4px 12px var(--shadow-light);
-  border: 1px solid var(--border-light);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
 }
 
 .dashboard-header-content {
@@ -975,24 +999,40 @@ a:hover {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--spacing-md);
+  position: relative;
+  z-index: 1;
 }
 
 .dashboard-title {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--text-primary);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1e293b;
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .dashboard-subtitle {
   color: var(--text-secondary);
   margin: var(--spacing-sm) 0 0 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  opacity: 0.9;
 }
 
 .dashboard-actions {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
+}
+
+.user-email {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: #f1f5f9;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
 }
 
 .user-email {
@@ -1006,27 +1046,26 @@ a:hover {
 
 /* Sign out button styling */
 .dashboard-actions button {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: #ef4444;
   color: white;
   border: none;
   padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--radius-md);
+  border-radius: 8px;
   font-weight: 500;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: all var(--transition-fast);
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-actions button:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+  background: #dc2626;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .dashboard-actions button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+  background: #b91c1c;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-tabs {
@@ -1034,42 +1073,69 @@ a:hover {
 }
 
 .dashboard-tabs-list {
+  display: flex !important;
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  padding: 6px !important;
+  margin-bottom: var(--spacing-xl) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #e2e8f0 !important;
+  gap: 6px !important;
+  height: auto !important;
+}
+
+/* Dashboard Tabs Styles */
+.dashboard-tabs-list {
   display: flex;
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-xs);
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 6px;
   margin-bottom: var(--spacing-xl);
-  border: 1px solid var(--border-light);
-  box-shadow: 0 2px 8px var(--shadow-light);
-  gap: var(--spacing-xs);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  gap: 6px;
+  align-items: center;
 }
 
 .dashboard-tabs-trigger {
   flex: 1;
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  border-radius: 8px;
   font-weight: 500;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
+  font-size: 0.875rem;
+  color: #64748b;
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.3s ease;
   text-align: center;
   position: relative;
   white-space: nowrap;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .dashboard-tabs-trigger:hover {
-  color: var(--text-primary);
-  background: var(--bg-muted);
+  color: #1e293b;
+  background: #f1f5f9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-tabs-trigger[data-state="active"] {
-  background: var(--primary-green);
-  color: var(--text-white);
-  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
   font-weight: 600;
+  transform: translateY(-2px);
+}
+
+.dashboard-tabs-trigger:active {
+  transform: translateY(0);
+  transition: all 0.1s ease;
 }
 
 .dashboard-tabs-content {
@@ -1616,5 +1682,84 @@ a:hover {
   .dashboard-tabs-trigger {
     padding: var(--spacing-md) var(--spacing-lg);
     font-size: 0.85rem;
+  }
+}
+
+/* ==============================================
+   USER SCORE SECTION STYLES
+   ============================================== */
+
+.user-score-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.user-score-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.user-score-card .card-header {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: var(--spacing-lg);
+}
+
+.user-score-card .card-title {
+  color: #1e293b;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.user-score-card .card-content {
+  padding: var(--spacing-xl);
+}
+
+.user-score-card .grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-lg);
+  text-align: center;
+}
+
+.user-score-card .text-2xl {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-xs);
+}
+
+.user-score-card .text-blue-500 {
+  color: #3b82f6;
+}
+
+.user-score-card .text-green-500 {
+  color: #16a34a;
+}
+
+.user-score-card .text-purple-500 {
+  color: #7c3aed;
+}
+
+.user-score-card .text-sm {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Responsive design for user score */
+@media (max-width: 768px) {
+  .user-score-card .grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .user-score-card .text-2xl {
+    font-size: 2rem;
+  }
+  
+  .user-score-card .card-content {
+    padding: var(--spacing-lg);
   }
 }

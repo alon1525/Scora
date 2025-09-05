@@ -93,30 +93,6 @@ const Leaderboard = () => {
         </p>
       </div>
 
-      {/* User's Score Summary */}
-      {userScores && (
-        <div className="prediction-card mb-6">
-          <CardHeader>
-            <CardTitle className="text-center">Your Score</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-blue-500">{userScores.fixture_points}</div>
-                <div className="text-sm text-gray-600">Fixture Points</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-500">{userScores.table_points}</div>
-                <div className="text-sm text-gray-600">Table Points</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-purple-500">{userScores.total_points}</div>
-                <div className="text-sm text-gray-600">Total Points</div>
-              </div>
-            </div>
-          </CardContent>
-        </div>
-      )}
 
       {/* Leaderboard */}
       <div className="prediction-card">

@@ -45,16 +45,46 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signUp = async (email, password, username) => {
-    const redirectUrl = `${window.location.origin}/`;
+    console.log('Starting signup with:', { email, username });
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
         data: username ? { username } : undefined,
       }
     });
+
+    console.log('Supabase auth signup response:', { data, error });
+
+    // If signup was successful, create the user profile via backend
+    if (!error && data.user) {
+      console.log('Signup successful, creating user profile via backend...');
+      try {
+        const response = await fetch('http://localhost:3001/api/users/create-profile', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: data.user.id,
+            email: email,
+            display_name: username || email
+          })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          console.log('User profile created successfully via backend');
+        } else {
+          console.error('Error creating user profile via backend:', result.error);
+        }
+      } catch (profileError) {
+        console.error('Error creating user profile via backend:', profileError);
+      }
+    }
+
     return { error };
   };
 

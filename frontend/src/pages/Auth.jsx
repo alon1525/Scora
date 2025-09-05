@@ -91,24 +91,38 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await signUp(
+      console.log('Starting signup process...');
+      const { data, error } = await signUp(
         signUpData.email, 
         signUpData.password, 
         signUpData.username
       );
       
+      console.log('Signup response:', { data, error });
+      
       if (error) {
+        console.error('Signup error details:', {
+          message: error.message,
+          status: error.status,
+          statusText: error.statusText,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        
         if (error.message.includes('User already registered')) {
           toast.error('An account with this email already exists. Please sign in instead.');
         } else if (error.message.includes('Invalid email')) {
           toast.error('Please enter a valid email address.');
         } else {
-          toast.error(error.message || 'Sign up failed');
+          toast.error(`Sign up failed: ${error.message || 'Unknown error'}`);
         }
       } else {
+        console.log('Signup successful!');
         toast.success('Account created! Please check your email for verification.');
       }
     } catch (error) {
+      console.error('Unexpected signup error:', error);
       toast.error('An unexpected error occurred');
     } finally {
       setLoading(false);

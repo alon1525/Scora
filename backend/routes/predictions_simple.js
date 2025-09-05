@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Supabase client
 const supabaseUrl = process.env.SUPABASE_API_URL || "https://nopucomnlyvogmfdldaw.supabase.co";
-const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ";
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Middleware to verify user authentication
@@ -19,7 +19,13 @@ const authenticateUser = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
   
   try {
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    // Use a separate client with publishable key for user authentication
+    const userSupabase = createClient(
+      process.env.SUPABASE_API_URL || "https://nopucomnlyvogmfdldaw.supabase.co",
+      process.env.SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ"
+    );
+    
+    const { data: { user }, error } = await userSupabase.auth.getUser(token);
     if (error || !user) {
       return res.status(401).json({ success: false, error: 'Invalid token' });
     }
@@ -34,7 +40,7 @@ const authenticateUser = async (req, res, next) => {
 router.use(authenticateUser);
 
 // POST /api/predictions/table - Create or update table prediction
-router.post('/table', async (req, res) => {
+router.post('/table', authenticateUser, async (req, res) => {
   try {
     const { table_order } = req.body;
     const user_id = req.user.id;
@@ -46,12 +52,54 @@ router.post('/table', async (req, res) => {
       });
     }
 
+    // Check if predictions are locked for this user
+    const { data: lockData, error: lockError } = await supabase
+      .rpc('are_predictions_locked', { user_id_param: user_id });
+
+    if (lockError) {
+      console.error('Error checking prediction lock:', lockError);
+      throw new Error(`Database error: ${lockError.message}`);
+    }
+
+    if (lockData) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Table predictions are locked. You can no longer change your prediction.' 
+      });
+    }
+
+    // Validate team IDs
+    const validTeamIds = [
+      'arsenal', 'aston-villa', 'bournemouth', 'brentford', 'brighton',
+      'burnley', 'chelsea', 'crystal-palace', 'everton', 'fulham',
+      'leeds-united', 'liverpool', 'man-city', 'man-united', 'newcastle',
+      'nottingham', 'sunderland', 'tottenham', 'west-ham', 'wolves'
+    ];
+
+    const invalidTeams = table_order.filter(teamId => !validTeamIds.includes(teamId));
+    if (invalidTeams.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Invalid team IDs: ${invalidTeams.join(', ')}` 
+      });
+    }
+
+    // Check for duplicates
+    const uniqueTeams = [...new Set(table_order)];
+    if (uniqueTeams.length !== 20) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Table order contains duplicate teams' 
+      });
+    }
+
     // Upsert user profile with table prediction
     const { data: profile, error } = await supabase
       .from('user_profiles')
       .upsert({
         user_id,
-        table_prediction: table_order
+        table_prediction: table_order,
+        updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id'
       })
@@ -154,7 +202,7 @@ router.post('/fixture', async (req, res) => {
 
     // Calculate points if fixture is finished
     let points_earned = 0;
-    if (fixture.status === 'FINISHED' && fixture.home_score !== null && fixture.away_score !== null) {
+    if (fixture.status === 'FINISHED') {
       const { data: pointsData, error: pointsError } = await supabase
         .rpc('calculate_fixture_points', {
           predicted_home: home_score,
@@ -296,7 +344,7 @@ router.get('/scores', async (req, res) => {
 
     const { data: profile, error } = await supabase
       .from('user_profiles')
-      .select('fixture_points, table_points, total_points, champion_bonus, relegation_bonus')
+      .select('fixture_points, table_points, total_points')
       .eq('user_id', user_id)
       .single();
 

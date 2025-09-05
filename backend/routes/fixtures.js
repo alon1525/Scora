@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Supabase client
 const supabaseUrl = process.env.SUPABASE_API_URL || "https://nopucomnlyvogmfdldaw.supabase.co";
-const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ";
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Map football-data team names to our internal IDs
@@ -92,8 +92,8 @@ async function storeFixtures(fixturesData) {
       season: season,
       status: match.status,
       scheduled_date: match.utcDate,
-      home_score: match.score?.fullTime?.home || null,
-      away_score: match.score?.fullTime?.away || null,
+      home_score: match.score?.fullTime?.home || 0,
+      away_score: match.score?.fullTime?.away || 0,
     };
 
     fixtures.push(fixture);
