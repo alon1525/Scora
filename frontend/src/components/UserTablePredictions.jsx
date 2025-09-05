@@ -16,7 +16,7 @@ function reorder(list, startIndex, endIndex) {
   return result;
 }
 
-export const UserTablePredictions = () => {
+export const UserTablePredictions = ({ onPredictionSaved }) => {
   const { user } = useAuth();
   const defaultOrder = TEAMS.map((t) => t.id);
   const [userOrder, setUserOrder] = useState(defaultOrder);
@@ -75,6 +75,10 @@ export const UserTablePredictions = () => {
       
       if (data.success) {
         toast.success("Your predictions have been saved!");
+        // Trigger score refresh in parent component
+        if (onPredictionSaved) {
+          onPredictionSaved();
+        }
       } else {
         toast.error(data.error || "Failed to save predictions. Please try again.");
       }

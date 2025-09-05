@@ -8,7 +8,7 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 
-const MatchPredictions = () => {
+const MatchPredictions = ({ onPredictionSaved }) => {
   const { user } = useAuth();
   const [fixtures, setFixtures] = useState([]);
   const [currentMatchday, setCurrentMatchday] = useState(1);
@@ -113,6 +113,10 @@ const MatchPredictions = () => {
           }
         }));
         toast.success('Prediction saved!');
+        // Trigger score refresh in parent component
+        if (onPredictionSaved) {
+          onPredictionSaved();
+        }
       } else {
         toast.error(data.error || 'Failed to save prediction');
       }

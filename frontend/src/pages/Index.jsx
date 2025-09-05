@@ -18,6 +18,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [standingsData, setStandingsData] = useState([]);
   const [lastUpdated, setLastUpdated] = useState("");
+  const [scoreRefreshTrigger, setScoreRefreshTrigger] = useState(0);
   const standingsLoaded = useRef(false);
 
   useEffect(() => {
@@ -40,23 +41,7 @@ const Index = () => {
         standingsLoaded.current = true;
         console.log('Loading live standings...');
         
-        // First, refresh standings to get latest data
-        const refreshResponse = await fetch('http://localhost:3001/api/standings/refresh', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!refreshResponse.ok) {
-          console.error('Standings refresh error:', refreshResponse.status, refreshResponse.statusText);
-          throw new Error(`Failed to refresh standings: ${refreshResponse.status}`);
-        }
-        
-        const refreshData = await refreshResponse.json();
-        console.log('Standings refreshed:', refreshData);
-        
-        // Then get the standings data
+        // Get the standings data first
         const response = await fetch('http://localhost:3001/api/standings');
         
         if (!response.ok) {
@@ -73,6 +58,26 @@ const Index = () => {
         if (standings && standings.length > 0) {
           setStandingsData(standings);
           console.log(`✅ Loaded ${standings.length} teams`);
+          
+          // Automatically recalculate scores after loading standings
+          console.log('🔄 Recalculating scores on page load...');
+          try {
+            const scoreResponse = await fetch('http://localhost:3001/api/scores/recalculate-all', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (scoreResponse.ok) {
+              const scoreResult = await scoreResponse.json();
+              console.log('✅ Scores recalculated on page load:', scoreResult.message);
+            } else {
+              console.error('❌ Score recalculation failed on page load');
+            }
+          } catch (scoreError) {
+            console.error('❌ Error recalculating scores on page load:', scoreError);
+          }
         } else {
           console.warn('No standings data received');
         }
@@ -117,8 +122,8 @@ const Index = () => {
         console.log('✅ Scores refreshed:', result.message);
         toast.success('Scores refreshed successfully!');
         
-        // Reload the page to show updated scores
-        window.location.reload();
+        // Trigger score refresh in UserScore component
+        setScoreRefreshTrigger(prev => prev + 1);
       } else {
         throw new Error('Failed to refresh scores');
       }
@@ -126,6 +131,10 @@ const Index = () => {
       console.error('❌ Error refreshing scores:', error);
       toast.error('Failed to refresh scores');
     }
+  };
+
+  const triggerScoreRefresh = () => {
+    setScoreRefreshTrigger(prev => prev + 1);
   };
 
   // Show loading while checking auth
@@ -171,7 +180,7 @@ const Index = () => {
         </header>
 
         {/* User Score Section - Always Visible */}
-        <UserScore />
+        <UserScore refreshTrigger={scoreRefreshTrigger} />
 
         <Tabs defaultValue="predictions" className="dashboard-tabs">
           <TabsList className="dashboard-tabs-list">
@@ -183,7 +192,7 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="predictions" className="dashboard-tabs-content">
-            <UserTablePredictions />
+            <UserTablePredictions onPredictionSaved={triggerScoreRefresh} />
           </TabsContent>
 
           <TabsContent value="leagues" className="dashboard-tabs-content">
@@ -193,7 +202,7 @@ const Index = () => {
           <TabsContent value="matches" className="dashboard-tabs-content">
             <div className="dashboard-tabs-content">
               <AdminMatchControls />
-              <MatchPredictions />
+              <MatchPredictions onPredictionSaved={triggerScoreRefresh} />
             </div>
           </TabsContent>
 

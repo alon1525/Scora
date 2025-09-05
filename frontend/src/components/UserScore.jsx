@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
-const UserScore = () => {
+const UserScore = ({ refreshTrigger }) => {
   const { user } = useAuth();
   const [userScores, setUserScores] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -12,7 +12,7 @@ const UserScore = () => {
     if (user) {
       fetchUserScores();
     }
-  }, [user]);
+  }, [user, refreshTrigger]);
 
   const fetchUserScores = async () => {
     if (!user) return;

@@ -58,10 +58,9 @@ router.post('/table', authenticateUser, async (req, res) => {
 
     if (lockError) {
       console.error('Error checking prediction lock:', lockError);
-      throw new Error(`Database error: ${lockError.message}`);
-    }
-
-    if (lockData) {
+      // Don't throw error, just log it and continue
+      console.log('Continuing without lock check...');
+    } else if (lockData) {
       return res.status(400).json({ 
         success: false, 
         error: 'Table predictions are locked. You can no longer change your prediction.' 
@@ -108,6 +107,26 @@ router.post('/table', authenticateUser, async (req, res) => {
 
     if (error) {
       throw new Error(`Database error: ${error.message}`);
+    }
+
+    // Automatically recalculate scores after saving prediction
+    console.log('🔄 Recalculating scores after prediction update...');
+    try {
+      const scoreResponse = await fetch('http://localhost:3001/api/scores/recalculate-user/' + user_id, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (scoreResponse.ok) {
+        const scoreResult = await scoreResponse.json();
+        console.log('✅ Scores recalculated:', scoreResult.message);
+      } else {
+        console.error('❌ Score recalculation failed');
+      }
+    } catch (scoreError) {
+      console.error('❌ Error recalculating scores:', scoreError);
     }
 
     res.json({
