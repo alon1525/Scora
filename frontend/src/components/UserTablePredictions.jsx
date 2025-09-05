@@ -28,17 +28,18 @@ export const UserTablePredictions = () => {
       if (!user) return;
 
       try {
-        const { data, error } = await supabase
-          .from('user_table_predictions')
-          .select('table_order')
-          .eq('user_id', user.id)
-          .eq('season', '2024-25')
-          .maybeSingle();
+        const token = (await supabase.auth.getSession()).data.session?.access_token;
+        const response = await fetch('http://localhost:3001/api/predictions/table', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-        if (error) throw error;
-
-        if (data?.table_order) {
-          const savedOrder = data.table_order;
+        const data = await response.json();
+        
+        if (data.success && data.prediction) {
+          const savedOrder = data.prediction;
           // Filter to only include teams that exist in current TEAMS array
           const validOrder = savedOrder.filter(id => TEAMS.some(t => t.id === id));
           if (validOrder.length === 20) {
@@ -58,19 +59,25 @@ export const UserTablePredictions = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('user_table_predictions')
-        .upsert(
-          {
-            user_id: user.id,
-            season: '2024-25',
-            table_order: userOrder,
-          },
-          { onConflict: 'user_id,season' }
-        );
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await fetch('http://localhost:3001/api/predictions/table', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          table_order: userOrder
+        })
+      });
 
-      if (error) throw error;
-      toast.success("Your predictions have been saved!");
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success("Your predictions have been saved!");
+      } else {
+        toast.error(data.error || "Failed to save predictions. Please try again.");
+      }
     } catch (error) {
       console.error('Error saving predictions:', error);
       toast.error("Failed to save predictions. Please try again.");

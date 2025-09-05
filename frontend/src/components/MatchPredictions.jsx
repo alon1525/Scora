@@ -1,698 +1,405 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../integrations/supabase/client";
-import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Badge } from "./ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { useToast } from "../hooks/use-toast";
-import { TEAMS } from "../data/teams";
+import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../integrations/supabase/client';
+import { toast } from 'sonner';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
 
-export const MatchPredictions = () => {
-  const [currentMatch, setCurrentMatch] = useState(null);
-  const [completedMatches, setCompletedMatches] = useState([]);
-  const [predictions, setPredictions] = useState([]);
-  const [completedPredictions, setCompletedPredictions] = useState({});
-  const [userProfiles, setUserProfiles] = useState([]);
-  const [homeScore, setHomeScore] = useState("");
-  const [awayScore, setAwayScore] = useState("");
-  const [username, setUsername] = useState("");
-  const [selectedWinner, setSelectedWinner] = useState("");
+const MatchPredictions = () => {
+  const { user } = useAuth();
+  const [fixtures, setFixtures] = useState([]);
+  const [currentMatchday, setCurrentMatchday] = useState(1);
+  const [maxMatchday, setMaxMatchday] = useState(1);
+  const [predictions, setPredictions] = useState({});
   const [loading, setLoading] = useState(false);
-  const [tableScores, setTableScores] = useState({});
-  const { toast } = useToast();
+  // Hardcoded season - no need for state
 
+  // Fetch fixtures for current matchday
   useEffect(() => {
-    fetchCurrentMatch();
-    fetchCompletedMatches();
-    fetchUserProfiles();
-    calculateTableScores();
-  }, []);
-
-  useEffect(() => {
-    if (currentMatch) {
-      fetchMatchPredictions(currentMatch.id);
+    if (user) {
+      fetchFixtures();
     }
-  }, [currentMatch]);
+  }, [user, currentMatchday]);
 
+  // Fetch user predictions for current matchday
   useEffect(() => {
-    if (completedMatches.length > 0) {
-      fetchCompletedPredictions();
+    if (user && fixtures.length > 0) {
+      fetchPredictions();
     }
-  }, [completedMatches]);
+  }, [user, fixtures, currentMatchday]);
 
-  const fetchCurrentMatch = async () => {
+  const fetchFixtures = async () => {
     try {
-      const now = new Date().toISOString();
+      setLoading(true);
+      const response = await fetch(`http://localhost:3001/api/fixtures/matchday/${currentMatchday}`);
+      const data = await response.json();
       
-      // First, check for matches with betting still open
-      const { data, error } = await supabase
-        .from('match_events')
-        .select('*')
-        .lte('betting_opens_at', now)
-        .gte('betting_closes_at', now)
-        .eq('status', 'betting_open')
-        .order('match_date', { ascending: true })
-        .limit(1);
-
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        setCurrentMatch(data[0]);
-        return;
-      }
-
-      // Check for matches that have closed betting but not completed yet
-      const { data: closedData, error: closedError } = await supabase
-        .from('match_events')
-        .select('*')
-        .eq('status', 'betting_closed')
-        .order('match_date', { ascending: true })
-        .limit(1);
-
-      if (closedError) throw closedError;
-
-      if (closedData && closedData.length > 0) {
-        setCurrentMatch(closedData[0]);
-        return;
-      }
-
-      // Check for matches that should be automatically closed (time passed but still open)
-      const { data: shouldCloseData, error: shouldCloseError } = await supabase
-        .from('match_events')
-        .select('*')
-        .eq('status', 'betting_open')
-        .lt('betting_closes_at', now)
-        .order('match_date', { ascending: true })
-        .limit(1);
-
-      if (shouldCloseError) throw shouldCloseError;
-
-      if (shouldCloseData && shouldCloseData.length > 0) {
-        // Auto-close betting but keep match visible for winner selection
-        const { error: updateError } = await supabase
-          .from('match_events')
-          .update({ status: 'betting_closed' })
-          .eq('id', shouldCloseData[0].id);
-
-        if (updateError) throw updateError;
-        setCurrentMatch({ ...shouldCloseData[0], status: 'betting_closed' });
-        return;
-      }
-
-      // Finally, check for upcoming matches that should be opened
-      const { data: upcomingData, error: upcomingError } = await supabase
-        .from('match_events')
-        .select('*')
-        .eq('status', 'upcoming')
-        .lte('betting_opens_at', now)
-        .order('match_date', { ascending: true })
-        .limit(1);
-
-      if (upcomingError) throw upcomingError;
-
-      if (upcomingData && upcomingData.length > 0) {
-        // Update status to betting_open
-        const { error: updateError } = await supabase
-          .from('match_events')
-          .update({ status: 'betting_open' })
-          .eq('id', upcomingData[0].id);
-
-        if (updateError) throw updateError;
-        setCurrentMatch({ ...upcomingData[0], status: 'betting_open' });
+      if (data.success) {
+        setFixtures(data.fixtures);
+        setMaxMatchday(Math.max(maxMatchday, currentMatchday));
+      } else {
+        toast.error('Failed to fetch fixtures');
       }
     } catch (error) {
-      console.error('Error fetching current match:', error);
+      console.error('Error fetching fixtures:', error);
+      toast.error('Error fetching fixtures');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchCompletedMatches = async () => {
+  const fetchPredictions = async () => {
     try {
-      const { data, error } = await supabase
-        .from('match_events')
-        .select('*')
-        .eq('status', 'completed')
-        .order('match_date', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      setCompletedMatches(data || []);
-    } catch (error) {
-      console.error('Error fetching completed matches:', error);
-    }
-  };
-
-  const fetchCompletedPredictions = async () => {
-    try {
-      const predictions = {};
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await fetch(`http://localhost:3001/api/predictions/fixtures?matchday=${currentMatchday}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
       
-      for (const match of completedMatches) {
-        const { data, error } = await supabase
-          .from('match_predictions')
-          .select('*')
-          .eq('match_id', match.id)
-          .order('created_at', { ascending: true });
-
-        if (error) throw error;
-        predictions[match.id] = data || [];
+      if (data.success) {
+        const predictionsMap = {};
+        data.predictions.forEach(fixture => {
+          if (fixture.prediction) {
+            predictionsMap[fixture.id] = {
+              home_score: fixture.prediction.home_score,
+              away_score: fixture.prediction.away_score,
+              points_earned: fixture.prediction.points_earned
+            };
+          }
+        });
+        setPredictions(predictionsMap);
       }
-      
-      setCompletedPredictions(predictions);
-    } catch (error) {
-      console.error('Error fetching completed predictions:', error);
-    }
-  };
-
-  const fetchMatchPredictions = async (matchId) => {
-    try {
-      const { data, error } = await supabase
-        .from('match_predictions')
-        .select('*')
-        .eq('match_id', matchId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setPredictions(data || []);
     } catch (error) {
       console.error('Error fetching predictions:', error);
     }
   };
 
-  const fetchUserProfiles = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .order('total_penalties', { ascending: true });
-
-      if (error) throw error;
-      setUserProfiles(data || []);
-    } catch (error) {
-      console.error('Error fetching user profiles:', error);
-    }
-  };
-
-  const calculateTableScores = async () => {
-    try {
-      // Get current real standings
-      const { data: realData } = await supabase
-        .from('real_standings')
-        .select('positions')
-        .eq('label', 'current')
-        .maybeSingle();
-
-      if (!realData?.positions) return;
-
-      // Get prediction sets
-      const { data: predictionData } = await supabase
-        .from('prediction_sets')
-        .select('p1_order, p2_order')
-        .eq('label', 'default')
-        .maybeSingle();
-
-      if (!predictionData) return;
-
-      const real = realData.positions;
-      
-      // Calculate scores for each user using the same logic as the main page
-      const calculateScore = (order) => {
-        return TEAMS.reduce((sum, t) => {
-          const predicted = order.indexOf(t.id) + 1; // 1-based
-          const rr = real[t.id];
-          if (typeof rr === 'number' && predicted > 0) {
-            return sum + Math.abs(predicted - rr);
-          }
-          return sum;
-        }, 0);
-      };
-
-      const scores = {
-        alon: calculateScore(predictionData.p1_order ? JSON.parse(predictionData.p1_order) : []),
-        nadav: calculateScore(predictionData.p2_order ? JSON.parse(predictionData.p2_order) : [])
-      };
-
-      setTableScores(scores);
-    } catch (error) {
-      console.error('Error calculating table scores:', error);
-    }
-  };
-
-  const submitPrediction = async () => {
-    if (!currentMatch || !username || homeScore === "" || awayScore === "") {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      });
+  const savePrediction = async (fixtureId, homeScore, awayScore) => {
+    if (!user) {
+      toast.error('You must be logged in to make predictions');
       return;
     }
 
-    setLoading(true);
     try {
-      // Check if prediction already exists for this user and match (case-insensitive)
-      const { data: existingPrediction } = await supabase
-        .from('match_predictions')
-        .select('*')
-        .eq('match_id', currentMatch.id)
-        .ilike('username', username)
-        .maybeSingle();
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await fetch('http://localhost:3001/api/predictions/fixture', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fixture_id: fixtureId,
+          home_score: parseInt(homeScore) || 0,
+          away_score: parseInt(awayScore) || 0
+        })
+      });
 
-      if (existingPrediction) {
-        toast({
-          title: "Prediction Already Exists",
-          description: `${username} has already made a prediction for this match`,
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Get or create user profile (case-insensitive check)
-      const { data: existingProfile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .ilike('username', username)
-        .maybeSingle();
-
-      let userProfileId;
-
-      if (!existingProfile) {
-        // Create new profile
-        const newUserId = crypto.randomUUID();
-        const { data: newProfile, error: profileError } = await supabase
-          .from('user_profiles')
-          .insert({
-            user_id: newUserId,
-            username,
-            total_penalties: 0
-          })
-          .select('id')
-          .single();
-
-        if (profileError) throw profileError;
-        userProfileId = newProfile.id;
+      const data = await response.json();
+      
+      if (data.success) {
+        setPredictions(prev => ({
+          ...prev,
+          [fixtureId]: {
+            home_score: parseInt(homeScore) || 0,
+            away_score: parseInt(awayScore) || 0,
+            points_earned: data.points_earned
+          }
+        }));
+        toast.success('Prediction saved!');
       } else {
-        userProfileId = existingProfile.id;
+        toast.error(data.error || 'Failed to save prediction');
       }
-
-      // Submit prediction with correct user_id from profile
-      const { error } = await supabase
-        .from('match_predictions')
-        .insert({
-          match_id: currentMatch.id,
-          user_id: userProfileId,
-          username,
-          predicted_home_score: parseInt(homeScore),
-          predicted_away_score: parseInt(awayScore),
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Prediction Submitted",
-        description: `Your prediction: ${homeScore}-${awayScore}`,
-      });
-
-      setHomeScore("");
-      setAwayScore("");
-      await fetchMatchPredictions(currentMatch.id);
     } catch (error) {
-      console.error('Error submitting prediction:', error);
-      toast({
-        title: "Error",
-        description: "Failed to submit prediction",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      console.error('Error saving prediction:', error);
+      toast.error('Error saving prediction');
     }
   };
 
-  const deletePrediction = async (predictionId, predictionUsername) => {
-    if (!currentMatch) return;
+  const getStatusBadge = (status, scheduledDate) => {
+    const now = new Date();
+    const fixtureDate = new Date(scheduledDate);
     
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('match_predictions')
-        .delete()
-        .eq('id', predictionId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Prediction Deleted",
-        description: `${predictionUsername}'s prediction has been removed`,
-      });
-
-      await fetchMatchPredictions(currentMatch.id);
-    } catch (error) {
-      console.error('Error deleting prediction:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete prediction",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    if (status === 'FINISHED') {
+      return <Badge className="bg-green-500">Finished</Badge>;
+    } else if (status === 'IN_PLAY') {
+      return <Badge className="bg-blue-500">Live</Badge>;
+    } else if (fixtureDate <= now) {
+      return <Badge className="bg-gray-500">Started</Badge>;
+    } else {
+      return <Badge className="bg-yellow-500">Not Started</Badge>;
     }
   };
 
-  const closeCurrentBetting = async () => {
-    if (!currentMatch) return;
-
-    setLoading(true);
-    try {
-      // Update match status to betting_closed to show winner selection
-      await supabase
-        .from('match_events')
-        .update({ status: 'betting_closed' })
-        .eq('id', currentMatch.id);
-
-      toast({
-        title: "Ready to Close",
-        description: "Select a winner from the current predictions to complete the match.",
-      });
-
-      setCurrentMatch({ ...currentMatch, status: 'betting_closed' });
-    } catch (error) {
-      console.error('Error closing betting:', error);
-      toast({
-        title: "Error",
-        description: "Failed to close betting",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const canEditPrediction = (scheduledDate) => {
+    const now = new Date();
+    const fixtureDate = new Date(scheduledDate);
+    return fixtureDate > now;
   };
 
-  const setWinner = async (winnerUsername) => {
-    if (!currentMatch) return;
+  const calculateMatchdayPoints = () => {
+    return Object.values(predictions).reduce((total, pred) => total + (pred.points_earned || 0), 0);
+  };
 
-    setLoading(true);
+  const refreshFixtures = async () => {
     try {
-      // Apply penalty to winner
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('total_penalties')
-        .eq('username', winnerUsername)
-        .single();
-
-      if (profile) {
-        await supabase
-          .from('user_profiles')
-          .update({ 
-            total_penalties: profile.total_penalties - 0.25 
-          })
-          .eq('username', winnerUsername);
-
-        // Update prediction with penalty
-        await supabase
-          .from('match_predictions')
-          .update({ penalty_applied: -0.25 })
-          .eq('match_id', currentMatch.id)
-          .eq('username', winnerUsername);
-
-        // Update match status to completed
-        await supabase
-          .from('match_events')
-          .update({ status: 'completed' })
-          .eq('id', currentMatch.id);
-
-        toast({
-          title: "Winner Selected",
-          description: `${winnerUsername} gets -0.25 penalty points! Match completed.`,
-        });
-
-        fetchUserProfiles();
-        calculateTableScores(); // Recalculate scores after event completion
-        fetchCompletedMatches(); // Refresh completed matches
-        fetchCurrentMatch(); // Refresh to get next available match or clear current match
+      setLoading(true);
+      const response = await fetch(`http://localhost:3001/api/fixtures/refresh?season=2025`);
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success(`Refreshed ${data.stored_count} fixtures`);
+        fetchFixtures();
+      } else {
+        toast.error('Failed to refresh fixtures');
       }
     } catch (error) {
-      console.error('Error setting winner:', error);
-      toast({
-        title: "Error",
-        description: "Failed to set winner",
-        variant: "destructive",
-      });
+      console.error('Error refreshing fixtures:', error);
+      toast.error('Error refreshing fixtures');
     } finally {
       setLoading(false);
     }
   };
 
-  // Always render the leaderboard and any available content
+  const refreshUpcomingFixtures = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:3001/api/fixtures/upcoming?season=2025&matchday=${currentMatchday}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success(`Refreshed ${data.stored_count} upcoming fixtures`);
+        fetchFixtures();
+      } else {
+        toast.error('Failed to refresh upcoming fixtures');
+      }
+    } catch (error) {
+      console.error('Error refreshing upcoming fixtures:', error);
+      toast.error('Error refreshing upcoming fixtures');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshResults = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:3001/api/fixtures/results?season=2025&matchday=${currentMatchday}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success(`Refreshed ${data.stored_count} results`);
+        fetchFixtures();
+      } else {
+        toast.error('Failed to refresh results');
+      }
+    } catch (error) {
+      console.error('Error refreshing results:', error);
+      toast.error('Error refreshing results');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="prediction-section">
+        <div className="prediction-header">
+          <h2 className="prediction-title">Match Predictions</h2>
+          <p className="prediction-description">
+            Please sign in to make match predictions
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full max-w-4xl mx-auto mt-8 space-y-6">
-      {/* Current Match */}
-      {currentMatch ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>{currentMatch.home_team} vs {currentMatch.away_team}</span>
-              <div className="flex items-center gap-2">
-                <Badge variant={currentMatch.status === 'betting_open' ? 'default' : 'secondary'}>
-                  {currentMatch.status.replace('_', ' ').toUpperCase()}
-                </Badge>
-                {currentMatch.status === 'betting_open' && predictions.length > 0 && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={closeCurrentBetting}
-                    disabled={loading}
-                  >
-                    Ready to Select Winner
-                  </Button>
-                )}
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-foreground">
-              Match Date: {new Date(currentMatch.match_date).toLocaleDateString()}
-            </p>
+    <div className="prediction-section">
+      <div className="prediction-header">
+        <h2 className="prediction-title">Match Predictions</h2>
+        <p className="prediction-description">
+          Predict the scores for Premier League matches
+        </p>
+      </div>
 
-            {currentMatch.status === 'betting_open' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Select value={username} onValueChange={setUsername}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your username" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="nadav">Nadav</SelectItem>
-                      <SelectItem value="alon">Alon</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="flex space-x-2">
-                    <Input
-                      type="number"
-                      placeholder="Home"
-                      value={homeScore}
-                      onChange={(e) => setHomeScore(e.target.value)}
-                      min="0"
-                    />
-                    <span className="flex items-center text-foreground">-</span>
-                    <Input
-                      type="number"
-                      placeholder="Away"
-                      value={awayScore}
-                      onChange={(e) => setAwayScore(e.target.value)}
-                      min="0"
-                    />
-                  </div>
-                  <Button onClick={submitPrediction} disabled={loading} className="w-full">
-                    Submit Prediction
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {currentMatch.status === 'betting_closed' && predictions.length > 0 && (
-              <div className="space-y-4">
-                <p className="text-sm text-foreground">Betting is now closed. Select the winner:</p>
-                <div className="flex space-x-2">
-                  <Select value={selectedWinner} onValueChange={setSelectedWinner}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Select winner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {predictions.map((prediction) => (
-                        <SelectItem key={prediction.id} value={prediction.username}>
-                          {prediction.username} ({prediction.predicted_home_score}-{prediction.predicted_away_score})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    onClick={() => setWinner(selectedWinner)}
-                    disabled={loading || !selectedWinner}
-                  >
-                    Set Winner
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {currentMatch.status === 'completed' && (
-              <div className="text-center">
-                <Badge variant="default" className="text-lg px-4 py-2">
-                  Match Completed!
-                </Badge>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Match Predictions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-foreground">No matches available for prediction at the moment.</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Current Predictions - Always show when available */}
-      {currentMatch && predictions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Current Predictions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {predictions.map((prediction) => (
-                <div key={prediction.id} className="flex justify-between items-center p-2 border rounded">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-card-foreground">{prediction.username}</span>
-                    <span className="text-card-foreground">{prediction.predicted_home_score} - {prediction.predicted_away_score}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {prediction.penalty_applied !== 0 && (
-                      <Badge variant={prediction.penalty_applied < 0 ? 'default' : 'destructive'}>
-                        {prediction.penalty_applied > 0 ? '+' : ''}{prediction.penalty_applied}
-                      </Badge>
-                    )}
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deletePrediction(prediction.id, prediction.username)}
-                      disabled={loading}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
+      <div className="prediction-card">
+        <div className="prediction-actions" style={{ justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => setCurrentMatchday(Math.max(1, currentMatchday - 1))}
+              disabled={currentMatchday <= 1}
+              variant="outline"
+            >
+              ← Previous
+            </Button>
+            <span className="font-semibold">Matchday {currentMatchday}</span>
+            <Button
+              onClick={() => setCurrentMatchday(currentMatchday + 1)}
+              disabled={currentMatchday >= maxMatchday}
+              variant="outline"
+            >
+              Next →
+            </Button>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-600">
+              Points this matchday: <strong>{calculateMatchdayPoints()}</strong>
+            </span>
+            <div className="flex gap-2">
+              <Button onClick={refreshUpcomingFixtures} disabled={loading} size="sm" variant="outline">
+                {loading ? 'Refreshing...' : 'Upcoming'}
+              </Button>
+              <Button onClick={refreshResults} disabled={loading} size="sm" variant="outline">
+                {loading ? 'Refreshing...' : 'Results'}
+              </Button>
+              <Button onClick={refreshFixtures} disabled={loading} size="sm">
+                {loading ? 'Refreshing...' : 'All Fixtures'}
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </div>
 
-      {/* Completed Matches with Winners */}
-      {completedMatches.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Completed Bets & Winners</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {completedMatches.map((match) => {
-                const matchPredictions = completedPredictions[match.id] || [];
-                const winner = matchPredictions.find(p => p.penalty_applied === -0.25);
-                
-                return (
-                  <div key={match.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-semibold text-card-foreground">
-                        {match.home_team} vs {match.away_team}
-                      </h4>
-                      <Badge variant="outline" className="text-card-foreground">
-                        {new Date(match.match_date).toLocaleDateString()}
-                      </Badge>
-                    </div>
-                    
-                    {winner && (
-                      <div className="mb-3 p-2 bg-primary/10 rounded border">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="default">Winner</Badge>
-                           <span className="font-medium text-card-foreground">{winner.username}</span>
-                           <span className="text-card-foreground">
-                             Prediction: {winner.predicted_home_score}-{winner.predicted_away_score}
-                           </span>
-                          <Badge variant="default" className="ml-2">
-                            -0.25 pts
+        {loading ? (
+          <div className="text-center py-8">
+            <p>Loading fixtures...</p>
+          </div>
+        ) : fixtures.length === 0 ? (
+          <div className="text-center py-8">
+            <p>No fixtures found for matchday {currentMatchday}</p>
+            <Button onClick={refreshFixtures} className="mt-4">
+              Refresh Fixtures
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {fixtures.map((fixture) => {
+              const prediction = predictions[fixture.id] || { home_score: '', away_score: '' };
+              const canEdit = canEditPrediction(fixture.scheduled_date);
+              
+              return (
+                <Card key={fixture.id} className="match-card">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">
+                          {new Date(fixture.scheduled_date).toLocaleDateString()} at{' '}
+                          {new Date(fixture.scheduled_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(fixture.status, fixture.scheduled_date)}
+                        {prediction.points_earned !== undefined && (
+                          <Badge className="bg-purple-500">
+                            {prediction.points_earned} pts
                           </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      {/* Home Team */}
+                      <div className="flex items-center gap-3 flex-1">
+                        <img
+                          src={fixture.home_team_logo}
+                          alt={fixture.home_team_name}
+                          className="team-logo"
+                          onError={(e) => e.target.style.display = 'none'}
+                        />
+                        <span className="font-semibold">{fixture.home_team_name}</span>
+                      </div>
+
+                      {/* Score Input */}
+                      <div className="flex items-center gap-2 mx-4">
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="20"
+                            value={prediction.home_score}
+                            onChange={(e) => {
+                              const newPredictions = { ...predictions };
+                              if (!newPredictions[fixture.id]) {
+                                newPredictions[fixture.id] = { home_score: '', away_score: '' };
+                              }
+                              newPredictions[fixture.id].home_score = e.target.value;
+                              setPredictions(newPredictions);
+                            }}
+                            disabled={!canEdit}
+                            className="w-12 text-center"
+                          />
+                          <span className="text-gray-500">-</span>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="20"
+                            value={prediction.away_score}
+                            onChange={(e) => {
+                              const newPredictions = { ...predictions };
+                              if (!newPredictions[fixture.id]) {
+                                newPredictions[fixture.id] = { home_score: '', away_score: '' };
+                              }
+                              newPredictions[fixture.id].away_score = e.target.value;
+                              setPredictions(newPredictions);
+                            }}
+                            disabled={!canEdit}
+                            className="w-12 text-center"
+                          />
+                        </div>
+                        
+                        {canEdit && (
+                          <Button
+                            onClick={() => savePrediction(fixture.id, prediction.home_score, prediction.away_score)}
+                            size="sm"
+                            disabled={prediction.home_score === '' || prediction.away_score === ''}
+                          >
+                            Save
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Away Team */}
+                      <div className="flex items-center gap-3 flex-1 justify-end">
+                        <span className="font-semibold">{fixture.away_team_name}</span>
+                        <img
+                          src={fixture.away_team_logo}
+                          alt={fixture.away_team_name}
+                          className="team-logo"
+                          onError={(e) => e.target.style.display = 'none'}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Actual Result */}
+                    {fixture.status === 'FINISHED' && fixture.home_score !== null && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="flex items-center justify-center gap-4">
+                          <span className="text-sm text-gray-600">Actual Result:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{fixture.home_team_name}</span>
+                            <span className="text-lg font-bold">{fixture.home_score} - {fixture.away_score}</span>
+                            <span className="font-semibold">{fixture.away_team_name}</span>
+                          </div>
                         </div>
                       </div>
                     )}
-                    
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-card-foreground">All Predictions:</p>
-                      {matchPredictions.map((prediction) => (
-                        <div key={prediction.id} className="flex justify-between items-center text-sm p-1">
-                          <div className="flex items-center gap-2">
-                             <span className={`${prediction.penalty_applied === -0.25 ? 'font-bold' : ''} text-card-foreground`}>
-                               {prediction.username}
-                             </span>
-                             <span className="text-card-foreground">
-                               {prediction.predicted_home_score}-{prediction.predicted_away_score}
-                             </span>
-                          </div>
-                          {prediction.penalty_applied === -0.25 && (
-                            <Badge variant="default">
-                              Winner
-                            </Badge>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Leaderboard - Always visible when there are profiles */}
-      {userProfiles.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Leaderboard (Lower is Better)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-               <div className="grid grid-cols-4 gap-2 p-2 border-b font-semibold text-card-foreground">
-                 <span>Rank</span>
-                 <span>Player</span>
-                 <span>Event Score</span>
-                 <span>Total Score</span>
-               </div>
-              {userProfiles
-                .map((profile) => {
-                  const baseTableScore = tableScores[profile.username.toLowerCase()] || 0;
-                  const totalScore = baseTableScore + profile.total_penalties; // penalties are negative for winners
-                  return { ...profile, totalScore };
-                })
-                .sort((a, b) => a.totalScore - b.totalScore) // Lower is better
-                .map((profile, index) => (
-                   <div key={profile.id} className="grid grid-cols-4 gap-2 p-2 border rounded items-center">
-                     <span className="font-bold text-card-foreground">#{index + 1}</span>
-                     <span className="text-card-foreground">{profile.username}</span>
-                     <span className="font-mono text-card-foreground">{profile.total_penalties.toFixed(2)}</span>
-                     <span className="font-mono text-card-foreground font-semibold">
-                       {profile.totalScore.toFixed(2)}
-                     </span>
-                   </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
+
+export { MatchPredictions };

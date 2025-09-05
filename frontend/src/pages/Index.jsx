@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { TEAMS } from "../data/teams";
 import { toast } from "sonner";
 import { supabase } from "../integrations/supabase/client";
@@ -6,6 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { UserTablePredictions } from "../components/UserTablePredictions";
 import { LeaguesSection } from "../components/LeaguesSection";
 import { MatchPredictions } from "../components/MatchPredictions";
+import { Leaderboard } from "../components/Leaderboard";
 import { AdminMatchControls } from "../components/AdminMatchControls";
 import { Button } from "../components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
@@ -16,6 +17,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [standingsData, setStandingsData] = useState([]);
   const [lastUpdated, setLastUpdated] = useState("");
+  const standingsLoaded = useRef(false);
 
   useEffect(() => {
     document.title = "Premier League Predictions";
@@ -31,18 +33,39 @@ const Index = () => {
   // Load live standings
   useEffect(() => {
     const loadStandings = async () => {
+      if (standingsLoaded.current) return; // Prevent multiple calls
+      
       try {
+        standingsLoaded.current = true;
+        console.log('Loading live standings...');
         const response = await fetch('http://localhost:3001/api/standings');
-        if (!response.ok) throw new Error('Failed to fetch standings');
+        
+        if (!response.ok) {
+          console.error('Standings API error:', response.status, response.statusText);
+          throw new Error(`Failed to fetch standings: ${response.status}`);
+        }
         
         const data = await response.json();
+        console.log('Standings response:', data);
+        
         const standings = data?.standingsData;
         const updated = data?.lastUpdated;
         
-        if (standings) setStandingsData(standings);
-        if (updated) setLastUpdated(updated);
+        if (standings && standings.length > 0) {
+          setStandingsData(standings);
+          console.log(`✅ Loaded ${standings.length} teams`);
+        } else {
+          console.warn('No standings data received');
+        }
+        
+        if (updated) {
+          setLastUpdated(updated);
+        }
       } catch (e) {
-        console.warn('fetch-pl-standings error:', e?.message || e);
+        console.error('❌ Error loading standings:', e?.message || e);
+        // Set some fallback data for testing
+        setStandingsData([]);
+        standingsLoaded.current = false; // Reset on error so it can retry
       }
     };
 
@@ -104,6 +127,7 @@ const Index = () => {
             <TabsTrigger value="predictions">My Predictions</TabsTrigger>
             <TabsTrigger value="leagues">Leagues</TabsTrigger>
             <TabsTrigger value="matches">Match Predictions</TabsTrigger>
+            <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
             <TabsTrigger value="standings">Live Standings</TabsTrigger>
           </TabsList>
 
@@ -120,6 +144,10 @@ const Index = () => {
               <AdminMatchControls />
               <MatchPredictions />
             </div>
+          </TabsContent>
+
+          <TabsContent value="leaderboard" className="dashboard-tabs-content">
+            <Leaderboard />
           </TabsContent>
 
           <TabsContent value="standings" className="dashboard-tabs-content">
