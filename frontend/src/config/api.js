@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
   TABLE_PREDICTIONS: `${API_BASE_URL}/api/predictions/table`,
   FIXTURE_PREDICTIONS: `${API_BASE_URL}/api/predictions/fixture`,
   USER_SCORES: `${API_BASE_URL}/api/predictions/scores`,
+  LEADERBOARD: `${API_BASE_URL}/api/predictions/leaderboard`,
   RECALCULATE_USER: `${API_BASE_URL}/api/predictions/recalculate-user`,
   
   // Fixtures

@@ -3,6 +3,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 
 const Leaderboard = () => {
   const { user } = useAuth();
@@ -12,8 +14,8 @@ const Leaderboard = () => {
   // Hardcoded season - no need for state
 
   useEffect(() => {
+    fetchLeaderboard();
     if (user) {
-      fetchLeaderboard();
       fetchUserScores();
     }
   }, [user]);
@@ -21,8 +23,8 @@ const Leaderboard = () => {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/predictions/leaderboard?limit=50`);
-      const data = await response.json();
+      const response = await axios.get(`${API_ENDPOINTS.LEADERBOARD}?limit=50`);
+      const data = response.data;
       
       if (data.success) {
         setLeaderboard(data.leaderboard);
@@ -41,13 +43,13 @@ const Leaderboard = () => {
 
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const response = await fetch(`http://localhost:3001/api/predictions/scores`, {
+      const response = await axios.get(API_ENDPOINTS.USER_SCORES, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      const data = await response.json();
+      const data = response.data;
       
       if (data.success) {
         setUserScores(data.scores);
@@ -71,35 +73,27 @@ const Leaderboard = () => {
     return 'text-gray-600';
   };
 
-  if (!user) {
-    return (
-      <div className="prediction-section">
-        <div className="prediction-header">
-          <h2 className="prediction-title">Leaderboard</h2>
-          <p className="prediction-description">
-            Please sign in to view the leaderboard
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Remove the auth requirement - leaderboard is now public
 
   return (
     <div className="prediction-section">
       <div className="prediction-header">
         <h2 className="prediction-title">Leaderboard</h2>
         <p className="prediction-description">
-          See how you rank against other players
+          {user ? 'See how you rank against other players' : 'View the top players and their scores'}
         </p>
       </div>
 
 
       {/* Leaderboard */}
-      <div className="prediction-card">
-        <CardHeader>
-          <CardTitle className="text-center">2025/2026 Season Leaderboard</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="leaderboard-full-width">
+        <div className="leaderboard-header">
+          <h3 className="leaderboard-title">2025/2026 Season Leaderboard</h3>
+          <p className="leaderboard-subtitle">
+            Showing top {leaderboard.length} players
+          </p>
+        </div>
+        <div className="leaderboard-content">
           {loading ? (
             <div className="text-center py-8">
               <p>Loading leaderboard...</p>
@@ -109,48 +103,63 @@ const Leaderboard = () => {
               <p>No scores yet. Be the first to make predictions!</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {leaderboard.map((entry, index) => {
-                const position = index + 1;
-                const isCurrentUser = entry.user_id === user?.id;
-                
-                return (
-                  <div
-                    key={entry.id}
-                    className={`leaderboard-entry ${isCurrentUser ? 'current-user' : ''}`}
-                  >
-                    <div className="flex items-center justify-between p-4 rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className={`text-2xl font-bold ${getRankColor(position)}`}>
-                          {getRankIcon(position)}
-                        </div>
-                        <div>
-                          <div className="font-semibold">
-                            {entry.user?.raw_user_meta_data?.username || 
-                             entry.user?.email?.split('@')[0] || 
-                             'Anonymous User'}
-                            {isCurrentUser && (
-                              <Badge className="ml-2 bg-blue-500">You</Badge>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-600">
-                            {entry.fixture_points} fixture + {entry.table_points} table
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-purple-500">
-                          {entry.total_points}
-                        </div>
-                        <div className="text-sm text-gray-600">points</div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="leaderboard-table-container">
+              <table className="leaderboard-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Player</th>
+                    <th>Fixture</th>
+                    <th>Table</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboard.map((entry, index) => {
+                    const position = index + 1;
+                    const isCurrentUser = user && entry.user_id === user.id;
+                    const displayName = entry.display_name || 
+                                       entry.email?.split('@')[0] || 
+                                       'Anonymous User';
+                    
+                    return (
+                      <tr 
+                        key={entry.id}
+                        className={`leaderboard-row ${
+                          isCurrentUser 
+                            ? 'current-user-row' 
+                            : position <= 3 
+                              ? 'top-three-row' 
+                              : ''
+                        }`}
+                      >
+                        <td className="leaderboard-position">
+                          <span className={`position-icon ${getRankColor(position)}`}>
+                            {getRankIcon(position)}
+                          </span>
+                        </td>
+                        <td className="leaderboard-player">
+                          <span className={`player-name ${isCurrentUser ? 'current-user' : ''}`}>
+                            {displayName}
+                          </span>
+                        </td>
+                        <td className="leaderboard-fixture">
+                          {entry.fixture_points || 0}
+                        </td>
+                        <td className="leaderboard-table">
+                          {entry.table_points || 0}
+                        </td>
+                        <td className="leaderboard-total">
+                          <strong>{entry.total_points || 0}</strong>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
-        </CardContent>
+        </div>
       </div>
     </div>
   );

@@ -36,6 +36,34 @@ const authenticateUser = async (req, res, next) => {
   }
 };
 
+// GET /api/predictions/leaderboard - Get leaderboard (PUBLIC - no auth required)
+router.get('/leaderboard', async (req, res) => {
+  try {
+    const { limit = 50 } = req.query;
+
+    const { data: leaderboard, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .order('total_points', { ascending: false })
+      .limit(parseInt(limit));
+
+    if (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
+
+    res.json({
+      success: true,
+      leaderboard
+    });
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Apply authentication to all routes
 router.use(authenticateUser);
 
@@ -364,40 +392,6 @@ router.get('/scores', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching user scores:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// GET /api/predictions/leaderboard - Get leaderboard
-router.get('/leaderboard', async (req, res) => {
-  try {
-    const { limit = 50 } = req.query;
-
-    const { data: leaderboard, error } = await supabase
-      .from('user_profiles')
-      .select(`
-        *,
-        user:user_id (
-          email,
-          raw_user_meta_data
-        )
-      `)
-      .order('total_points', { ascending: false })
-      .limit(parseInt(limit));
-
-    if (error) {
-      throw new Error(`Database error: ${error.message}`);
-    }
-
-    res.json({
-      success: true,
-      leaderboard
-    });
-  } catch (error) {
-    console.error('Error fetching leaderboard:', error);
     res.status(500).json({
       success: false,
       error: error.message
