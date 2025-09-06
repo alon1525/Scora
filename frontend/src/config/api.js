@@ -10,13 +10,15 @@ export const API_ENDPOINTS = {
   
   // Predictions
   TABLE_PREDICTIONS: `${API_BASE_URL}/api/predictions/table`,
-  FIXTURE_PREDICTIONS: `${API_BASE_URL}/api/predictions/fixture`,
+  FIXTURE_PREDICTIONS: `${API_BASE_URL}/api/predictions/fixtures`,
   USER_SCORES: `${API_BASE_URL}/api/predictions/scores`,
   LEADERBOARD: `${API_BASE_URL}/api/predictions/leaderboard`,
+  USER_STATS: `${API_BASE_URL}/api/predictions/user-stats`,
   RECALCULATE_USER: `${API_BASE_URL}/api/predictions/recalculate-user`,
   
   // Fixtures
   FIXTURES_MATCHDAY: `${API_BASE_URL}/api/fixtures/matchday`,
+  FIXTURES_ALL: `${API_BASE_URL}/api/fixtures`,
   FIXTURES_REFRESH: `${API_BASE_URL}/api/fixtures/refresh`,
   FIXTURES_REFRESH_AND_RECALCULATE: `${API_BASE_URL}/api/fixtures/refresh-and-recalculate`,
   

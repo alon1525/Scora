@@ -406,6 +406,14 @@ router.post('/refresh-and-recalculate', async (req, res) => {
           standingsLookup[team.team_id] = team.position;
         });
 
+        // Get finished fixtures for fixture points calculation
+        const { data: finishedFixtures, error: fixturesError } = await supabase
+          .from('fixtures')
+          .select('id, home_score, away_score, status')
+          .eq('status', 'FINISHED')
+          .not('home_score', 'is', null)
+          .not('away_score', 'is', null);
+
         // Update each user's scores
         for (const profile of profiles) {
           // Calculate table points
@@ -423,13 +431,61 @@ router.post('/refresh-and-recalculate', async (req, res) => {
             }
           }
 
-          const totalPoints = profile.fixture_points + tablePoints;
+          // Calculate fixture points
+          let fixturePoints = 0;
+          let exactPredictions = 0;
+          let resultPredictions = 0;
+          let missPredictions = 0;
+          let totalPredictions = 0;
+
+          if (profile.fixture_predictions && finishedFixtures) {
+            for (const fixture of finishedFixtures) {
+              const prediction = profile.fixture_predictions[fixture.id.toString()];
+              if (!prediction || !prediction.home_score || !prediction.away_score) {
+                continue;
+              }
+
+              // Calculate points
+              let points = 0;
+              
+              // Exact score match = 3 points
+              if (prediction.home_score === fixture.home_score && prediction.away_score === fixture.away_score) {
+                points = 3;
+              }
+              // Correct result (win/draw/loss) = 1 point
+              else {
+                const predictedResult = prediction.home_score > prediction.away_score ? 'home_win' : 
+                                       prediction.home_score < prediction.away_score ? 'away_win' : 'draw';
+                const actualResult = fixture.home_score > fixture.away_score ? 'home_win' : 
+                                     fixture.home_score < fixture.away_score ? 'away_win' : 'draw';
+                
+                if (predictedResult === actualResult) {
+                  points = 1;
+                }
+              }
+
+              fixturePoints += points;
+              totalPredictions++;
+
+              if (points === 3) {
+                exactPredictions++;
+              } else if (points === 1) {
+                resultPredictions++;
+              }
+            }
+          }
+
+          const totalPoints = fixturePoints + tablePoints;
 
           // Update user profile
           await supabase
             .from('user_profiles')
             .update({
               table_points: tablePoints,
+              fixture_points: fixturePoints,
+              exact_predictions: exactPredictions,
+              result_predictions: resultPredictions,
+              total_predictions: totalPredictions,
               total_points: totalPoints,
               updated_at: new Date().toISOString()
             })

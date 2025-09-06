@@ -64,6 +64,77 @@ router.get('/leaderboard', async (req, res) => {
   }
 });
 
+// GET /api/predictions/user-stats/:userId - Get user statistics (PUBLIC - no auth required)
+router.get('/user-stats/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const { data: userStats, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
+
+    if (!userStats) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Calculate global rank
+    const { data: allUsers, error: rankError } = await supabase
+      .from('user_profiles')
+      .select('user_id, total_points')
+      .order('total_points', { ascending: false });
+
+    if (rankError) {
+      console.error('Error calculating rank:', rankError);
+    }
+
+    let globalRank = null;
+    let totalUsers = 0;
+    if (allUsers) {
+      totalUsers = allUsers.length;
+      const userIndex = allUsers.findIndex(user => user.user_id === userId);
+      globalRank = userIndex >= 0 ? userIndex + 1 : null;
+    }
+
+    // Calculate country rank (assuming we have country data)
+    const { data: countryUsers, error: countryRankError } = await supabase
+      .from('user_profiles')
+      .select('user_id, total_points, country_code')
+      .eq('country_code', userStats.country_code || 'GB')
+      .order('total_points', { ascending: false });
+
+    let countryRank = null;
+    let totalCountryUsers = 0;
+    if (countryUsers && !countryRankError) {
+      totalCountryUsers = countryUsers.length;
+      const userIndex = countryUsers.findIndex(user => user.user_id === userId);
+      countryRank = userIndex >= 0 ? userIndex + 1 : null;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        ...userStats,
+        globalRank,
+        totalUsers,
+        countryRank,
+        totalCountryUsers
+      }
+    });
+  } catch (error) {
+    console.error('Error in user-stats endpoint:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Apply authentication to all routes
 router.use(authenticateUser);
 
@@ -344,11 +415,31 @@ router.get('/fixtures', async (req, res) => {
       throw new Error(`Database error: ${fixturesError.message}`);
     }
 
+    // Get The Monkey's predictions once
+    const monkeyUserId = '00000000-0000-0000-0000-000000000001';
+    const { data: monkeyProfile } = await supabase
+      .from('user_profiles')
+      .select('fixture_predictions')
+      .eq('user_id', monkeyUserId)
+      .single();
+
     // Combine fixtures with user predictions
-    const predictions = fixtures.map(fixture => ({
-      ...fixture,
-      prediction: profile?.fixture_predictions?.[fixture.id] || null
-    }));
+    const predictions = fixtures.map(fixture => {
+      let prediction = profile?.fixture_predictions?.[fixture.id] || null;
+      
+      // If user has no prediction, use The Monkey's prediction
+      if (!prediction && monkeyProfile?.fixture_predictions?.[fixture.id]) {
+        prediction = {
+          ...monkeyProfile.fixture_predictions[fixture.id],
+          is_monkey_prediction: true
+        };
+      }
+      
+      return {
+        ...fixture,
+        prediction
+      };
+    });
 
     res.json({
       success: true,
@@ -481,6 +572,224 @@ router.post('/recalculate-user/:userId', async (req, res) => {
 
   } catch (error) {
     console.error('❌ User recalculation failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// POST /api/predictions/fixtures - Create or update fixture prediction (alias for /fixture)
+router.post('/fixtures', async (req, res) => {
+  try {
+    const { fixture_id, home_score, away_score } = req.body;
+    const user_id = req.user.id;
+
+    if (!fixture_id || home_score === undefined || away_score === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: 'fixture_id, home_score, and away_score are required'
+      });
+    }
+
+    // Check if fixture exists and hasn't started yet
+    const { data: fixture, error: fixtureError } = await supabase
+      .from('fixtures')
+      .select('*')
+      .eq('id', fixture_id)
+      .single();
+
+    if (fixtureError) {
+      throw new Error(`Fixture not found: ${fixtureError.message}`);
+    }
+
+    // Check if fixture has already started
+    const fixtureStartTime = new Date(fixture.scheduled_date);
+    const now = new Date();
+    
+    if (now >= fixtureStartTime) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot predict on fixtures that have already started'
+      });
+    }
+
+    // Calculate points if fixture is finished
+    let points_earned = 0;
+    if (fixture.status === 'FINISHED') {
+      const { data: pointsData, error: pointsError } = await supabase
+        .rpc('calculate_fixture_points', {
+          predicted_home: home_score,
+          predicted_away: away_score,
+          actual_home: fixture.home_score,
+          actual_away: fixture.away_score
+        });
+
+      if (!pointsError && pointsData) {
+        points_earned = pointsData;
+      }
+    }
+
+    // Create prediction object
+    const prediction = {
+      home_score: parseInt(home_score) || 0,
+      away_score: parseInt(away_score) || 0,
+      points_earned: points_earned
+    };
+
+    // Get current user profile
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('fixture_predictions')
+      .eq('user_id', user_id)
+      .single();
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      throw new Error(`Database error: ${profileError.message}`);
+    }
+
+    // Merge with existing predictions
+    const existingPredictions = profile?.fixture_predictions || {};
+    const updatedPredictions = {
+      ...existingPredictions,
+      [fixture_id]: prediction
+    };
+
+    // Update user profile with new predictions
+    const { error: updateError } = await supabase
+      .from('user_profiles')
+      .update({
+        fixture_predictions: updatedPredictions,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', user_id);
+
+    if (updateError) {
+      throw new Error(`Failed to update prediction: ${updateError.message}`);
+    }
+
+    res.json({
+      success: true,
+      message: 'Prediction saved successfully',
+      prediction: prediction
+    });
+
+  } catch (error) {
+    console.error('Error saving fixture prediction:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// POST /api/predictions/update-all-scores - Update fixture points for all users
+router.post('/update-all-scores', async (req, res) => {
+  try {
+    console.log('🔄 Updating fixture scores for all users...');
+    
+    // Get all users with predictions
+    const { data: users, error: usersError } = await supabase
+      .from('user_profiles')
+      .select('id, display_name, fixture_predictions, fixture_points, table_points')
+      .not('fixture_predictions', 'is', null);
+    
+    if (usersError) {
+      throw new Error(`Database error: ${usersError.message}`);
+    }
+
+    // Get all finished fixtures
+    const { data: fixtures, error: fixturesError } = await supabase
+      .from('fixtures')
+      .select('id, home_score, away_score, status')
+      .eq('status', 'FINISHED')
+      .not('home_score', 'is', null)
+      .not('away_score', 'is', null);
+    
+    if (fixturesError) {
+      throw new Error(`Database error: ${fixturesError.message}`);
+    }
+
+    let totalUpdated = 0;
+
+    // Process each user
+    for (const user of users) {
+      if (!user.fixture_predictions || typeof user.fixture_predictions !== 'object') {
+        continue;
+      }
+
+      let userTotalPoints = 0;
+      let exactPredictions = 0;
+      let resultPredictions = 0;
+      let missPredictions = 0;
+      let totalPredictions = 0;
+
+      // Calculate points for each finished fixture
+      for (const fixture of fixtures) {
+        const prediction = user.fixture_predictions[fixture.id.toString()];
+        if (!prediction || !prediction.home_score || !prediction.away_score) {
+          continue;
+        }
+
+        // Calculate points
+        let points = 0;
+        
+        // Exact score match = 3 points
+        if (prediction.home_score === fixture.home_score && prediction.away_score === fixture.away_score) {
+          points = 3;
+        }
+        // Correct result (win/draw/loss) = 1 point
+        else {
+          const predictedResult = prediction.home_score > prediction.away_score ? 'home_win' : 
+                                 prediction.home_score < prediction.away_score ? 'away_win' : 'draw';
+          const actualResult = fixture.home_score > fixture.away_score ? 'home_win' : 
+                               fixture.home_score < fixture.away_score ? 'away_win' : 'draw';
+          
+          if (predictedResult === actualResult) {
+            points = 1;
+          }
+        }
+
+        userTotalPoints += points;
+        totalPredictions++;
+
+        if (points === 3) {
+          exactPredictions++;
+        } else if (points === 1) {
+          resultPredictions++;
+        } else {
+          missPredictions++;
+        }
+      }
+
+      // Update user profile
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({
+          fixture_points: userTotalPoints,
+          exact_predictions: exactPredictions,
+          result_predictions: resultPredictions,
+          close_predictions: missPredictions, // Store miss predictions in close_predictions field
+          total_predictions: totalPredictions,
+          total_points: userTotalPoints + (user.table_points || 0),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (!updateError) {
+        totalUpdated++;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Updated fixture scores for ${totalUpdated} users`,
+      updated_users: totalUpdated,
+      finished_fixtures: fixtures.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error updating fixture scores:', error);
     res.status(500).json({
       success: false,
       error: error.message

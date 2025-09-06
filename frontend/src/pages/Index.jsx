@@ -7,8 +7,9 @@ import { UserTablePredictions } from "../components/UserTablePredictions";
 import { LeaguesSection } from "../components/LeaguesSection";
 import { MatchPredictions } from "../components/MatchPredictions";
 import { Leaderboard } from "../components/Leaderboard";
-import { AdminMatchControls } from "../components/AdminMatchControls";
 import { UserScore } from "../components/UserScore";
+import UserStats from "../components/UserStats";
+import UserStatsCompact from "../components/UserStatsCompact";
 import { Button } from "../components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
@@ -21,11 +22,24 @@ const Index = () => {
   const [standingsData, setStandingsData] = useState([]);
   const [lastUpdated, setLastUpdated] = useState("");
   const [scoreRefreshTrigger, setScoreRefreshTrigger] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
   const standingsLoaded = useRef(false);
 
   useEffect(() => {
     document.title = "Premier League Predictions";
   }, []);
+
+  // Handle scroll to hide/show sign out button
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      setIsScrolled(scrollTop > 50); // Hide after scrolling 50px
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
 
   // Redirect to auth if not authenticated
   useEffect(() => {
@@ -116,31 +130,33 @@ const Index = () => {
 
   return (
     <main className="dashboard-page">
+      {/* Sign Out Button - Top Right Corner */}
+      <div className={`top-right-signout ${isScrolled ? 'hidden' : ''}`}>
+        <Button variant="outline" size="sm" onClick={handleSignOut}>
+          Sign Out
+        </Button>
+      </div>
+
       <section className="container">
-        {/* Header with user info and sign out */}
+        {/* Header with user info */}
         <header className="dashboard-header">
           <div className="dashboard-header-content">
-            <div>
-              <h1 className="dashboard-title">Premier League Predictions</h1>
+            <div className="dashboard-title-section">
+              <h1 className="dashboard-title">
+                Premier League Predictions
+              </h1>
               <p className="dashboard-subtitle">
                 Welcome back! Create your predictions and compete with friends.
               </p>
             </div>
-            <div className="dashboard-actions">
-              <span className="user-email">
-                {user.email}
-              </span>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                Sign Out
-              </Button>
+            <div className="dashboard-user-section">
+              <UserStatsCompact refreshTrigger={scoreRefreshTrigger} />
             </div>
           </div>
         </header>
 
-        {/* User Score Section - Always Visible */}
-        <UserScore refreshTrigger={scoreRefreshTrigger} />
 
-        <Tabs defaultValue="predictions" className="dashboard-tabs">
+        <Tabs defaultValue="matches" className="dashboard-tabs">
           <TabsList className="dashboard-tabs-list">
             <TabsTrigger value="predictions">My Predictions</TabsTrigger>
             <TabsTrigger value="leagues">Leagues</TabsTrigger>
@@ -159,7 +175,6 @@ const Index = () => {
 
           <TabsContent value="matches" className="dashboard-tabs-content">
             <div className="dashboard-tabs-content">
-              <AdminMatchControls />
               <MatchPredictions onPredictionSaved={triggerScoreRefresh} />
             </div>
           </TabsContent>
