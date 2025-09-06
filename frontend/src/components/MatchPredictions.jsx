@@ -11,6 +11,51 @@ import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import RoundNavigation from './RoundNavigation';
 
+// Team kit images mapping
+const TEAM_KITS = {
+  'Arsenal': '/src/assets/Teams_kits/Arsenal.png',
+  'Arsenal FC': '/src/assets/Teams_kits/Arsenal.png',
+  'Aston Villa': '/src/assets/Teams_kits/Aston_Villa.png',
+  'Aston Villa FC': '/src/assets/Teams_kits/Aston_Villa.png',
+  'AFC Bournemouth': '/src/assets/Teams_kits/Bournemouth.png',
+  'Bournemouth': '/src/assets/Teams_kits/Bournemouth.png',
+  'Brentford': '/src/assets/Teams_kits/Brentford.png',
+  'Brentford FC': '/src/assets/Teams_kits/Brentford.png',
+  'Brighton & Hove Albion': '/src/assets/Teams_kits/Brighton.png',
+  'Brighton': '/src/assets/Teams_kits/Brighton.png',
+  'Burnley': '/src/assets/Teams_kits/Burnley.png',
+  'Burnley FC': '/src/assets/Teams_kits/Burnley.png',
+  'Chelsea': '/src/assets/Teams_kits/Chelsea.png',
+  'Chelsea FC': '/src/assets/Teams_kits/Chelsea.png',
+  'Crystal Palace': '/src/assets/Teams_kits/Crystal_Palace.png',
+  'Crystal Palace FC': '/src/assets/Teams_kits/Crystal_Palace.png',
+  'Everton': '/src/assets/Teams_kits/Everton.png',
+  'Everton FC': '/src/assets/Teams_kits/Everton.png',
+  'Fulham': '/src/assets/Teams_kits/Fulham.png',
+  'Fulham FC': '/src/assets/Teams_kits/Fulham.png',
+  'Leeds United': '/src/assets/Teams_kits/Leeds_United.png',
+  'Leeds': '/src/assets/Teams_kits/Leeds_United.png',
+  'Liverpool': '/src/assets/Teams_kits/Liverpool.png',
+  'Liverpool FC': '/src/assets/Teams_kits/Liverpool.png',
+  'Manchester City': '/src/assets/Teams_kits/Manchester_City.png',
+  'Manchester City FC': '/src/assets/Teams_kits/Manchester_City.png',
+  'Manchester United': '/src/assets/Teams_kits/Manchester_United.png',
+  'Manchester United FC': '/src/assets/Teams_kits/Manchester_United.png',
+  'Newcastle United': '/src/assets/Teams_kits/Newcastle.png',
+  'Newcastle': '/src/assets/Teams_kits/Newcastle.png',
+  'Nottingham Forest': '/src/assets/Teams_kits/Nottingham_Forest.png',
+  'Nottingham': '/src/assets/Teams_kits/Nottingham_Forest.png',
+  'Sunderland AFC': '/src/assets/Teams_kits/Sunderland.png',
+  'Sunderland': '/src/assets/Teams_kits/Sunderland.png',
+  'Tottenham Hotspur': '/src/assets/Teams_kits/Tottenham.png',
+  'Tottenham': '/src/assets/Teams_kits/Tottenham.png',
+  'West Ham United': '/src/assets/Teams_kits/West_Ham.png',
+  'West Ham': '/src/assets/Teams_kits/West_Ham.png',
+  'Wolverhampton Wanderers': '/src/assets/Teams_kits/Wolves.png',
+  'Wolves': '/src/assets/Teams_kits/Wolves.png',
+  'Wolverhampton': '/src/assets/Teams_kits/Wolves.png'
+};
+
 // Stadium data for Premier League teams (including common API variations)
 const STADIUM_DATA = {
   // Original names
@@ -57,6 +102,144 @@ const STADIUM_DATA = {
   'West Ham': { stadium: 'London Stadium', capacity: '62,500' },
   'Wolves': { stadium: 'Molineux Stadium', capacity: '31,750' },
   'Wolverhampton': { stadium: 'Molineux Stadium', capacity: '31,750' }
+};
+
+// Function to clean up team names for display
+const getCleanTeamName = (teamName) => {
+  // Debug: log the team name to see what we're getting
+  console.log('Original team name:', teamName);
+  
+  const nameMapping = {
+    // Brighton variations
+    'Brighton & Hove Albion': 'Brighton',
+    'Brighton & Hove Albion FC': 'Brighton',
+    'Brighton': 'Brighton',
+    
+    // Wolves variations
+    'Wolverhampton Wanderers': 'Wolves',
+    'Wolverhampton Wanderers FC': 'Wolves',
+    'Wolves': 'Wolves',
+    'Wolverhampton': 'Wolves',
+    
+    // AFC Bournemouth
+    'AFC Bournemouth': 'Bournemouth',
+    'Bournemouth': 'Bournemouth',
+    
+    // Arsenal
+    'Arsenal FC': 'Arsenal',
+    'Arsenal': 'Arsenal',
+    
+    // Aston Villa
+    'Aston Villa FC': 'Aston Villa',
+    'Aston Villa': 'Aston Villa',
+    
+    // Brentford
+    'Brentford FC': 'Brentford',
+    'Brentford': 'Brentford',
+    
+    // Burnley
+    'Burnley FC': 'Burnley',
+    'Burnley': 'Burnley',
+    
+    // Chelsea
+    'Chelsea FC': 'Chelsea',
+    'Chelsea': 'Chelsea',
+    
+    // Crystal Palace
+    'Crystal Palace FC': 'Crystal Palace',
+    'Crystal Palace': 'Crystal Palace',
+    
+    // Everton
+    'Everton FC': 'Everton',
+    'Everton': 'Everton',
+    
+    // Fulham
+    'Fulham FC': 'Fulham',
+    'Fulham': 'Fulham',
+    
+    // Leeds
+    'Leeds United': 'Leeds',
+    'Leeds United FC': 'Leeds',
+    'Leeds': 'Leeds',
+    
+    // Liverpool
+    'Liverpool FC': 'Liverpool',
+    'Liverpool': 'Liverpool',
+    
+    // Manchester City
+    'Manchester City FC': 'Manchester City',
+    'Manchester City': 'Manchester City',
+    
+    // Manchester United
+    'Manchester United FC': 'Manchester United',
+    'Manchester United': 'Manchester United',
+    
+    // Newcastle
+    'Newcastle United': 'Newcastle',
+    'Newcastle United FC': 'Newcastle',
+    'Newcastle': 'Newcastle',
+    
+    // Nottingham Forest
+    'Nottingham Forest FC': 'Nottingham Forest',
+    'Nottingham Forest': 'Nottingham Forest',
+    'Nottingham': 'Nottingham Forest',
+    
+    // Sunderland
+    'Sunderland AFC': 'Sunderland',
+    'Sunderland FC': 'Sunderland',
+    'Sunderland': 'Sunderland',
+    
+    // Tottenham
+    'Tottenham Hotspur': 'Tottenham',
+    'Tottenham Hotspur FC': 'Tottenham',
+    'Tottenham': 'Tottenham',
+    
+    // West Ham
+    'West Ham United': 'West Ham',
+    'West Ham United FC': 'West Ham',
+    'West Ham': 'West Ham'
+  };
+  
+  const cleanName = nameMapping[teamName] || teamName;
+  console.log('Cleaned team name:', cleanName);
+  return cleanName;
+};
+
+// Function to get team kit image
+const getTeamKit = (teamName) => {
+  // Try exact match first
+  if (TEAM_KITS[teamName]) {
+    return TEAM_KITS[teamName];
+  }
+  
+  // Try to find a match by removing common suffixes
+  const cleanName = teamName.replace(/\s+(FC|United|City|Town|Albion|Hotspur|Wanderers|Rovers)$/i, '').trim();
+  
+  // Try cleaned name
+  if (TEAM_KITS[cleanName]) {
+    return TEAM_KITS[cleanName];
+  }
+  
+  // Try some common variations
+  const variations = [
+    teamName.replace('FC', '').trim(),
+    teamName.replace('United', '').trim(),
+    teamName.replace('City', '').trim(),
+    teamName.replace('Town', '').trim(),
+    teamName.replace('Albion', '').trim(),
+    teamName.replace('Hotspur', '').trim(),
+    teamName.replace('Wanderers', '').trim(),
+    teamName.replace('Rovers', '').trim()
+  ];
+  
+  for (const variation of variations) {
+    if (TEAM_KITS[variation]) {
+      return TEAM_KITS[variation];
+    }
+  }
+  
+  // Return a default kit image if no match found
+  return '/src/assets/Teams_kits/Arsenal.png'; // Default fallback
 };
 
 // Function to get stadium info for a team
@@ -471,9 +654,15 @@ const MatchPredictions = ({ onPredictionSaved }) => {
                   <div className="teams-section">
                     {/* Home Team */}
                     <div className="team-section home-team">
-                      <div className="team-jersey">👕</div>
+                      <div className="team-jersey">
+                        <img 
+                          src={getTeamKit(fixture.home_team_name)} 
+                          alt={`${fixture.home_team_name} kit`}
+                          className="kit-image"
+                        />
+                      </div>
                       <div className="team-info">
-                        <div className="team-name">{fixture.home_team_name}</div>
+                        <div className="team-name">{getCleanTeamName(fixture.home_team_name)}</div>
                         <div className="team-stats">Recent Form</div>
                         <div className="team-form">
                           {getLastThreeResults(fixture.home_team_name).map((result, index) => (
@@ -561,7 +750,7 @@ const MatchPredictions = ({ onPredictionSaved }) => {
                     {/* Away Team */}
                     <div className="team-section away-team">
                       <div className="team-info">
-                        <div className="team-name">{fixture.away_team_name}</div>
+                        <div className="team-name">{getCleanTeamName(fixture.away_team_name)}</div>
                         <div className="team-stats">Recent Form</div>
                         <div className="team-form">
                           {getLastThreeResults(fixture.away_team_name).map((result, index) => (
@@ -575,7 +764,13 @@ const MatchPredictions = ({ onPredictionSaved }) => {
                           ))}
                         </div>
                       </div>
-                      <div className="team-jersey">👕</div>
+                      <div className="team-jersey">
+                        <img 
+                          src={getTeamKit(fixture.away_team_name)} 
+                          alt={`${fixture.away_team_name} kit`}
+                          className="kit-image"
+                        />
+                      </div>
                     </div>
                   </div>
 

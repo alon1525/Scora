@@ -1270,10 +1270,9 @@ a:hover {
   font-weight: 700;
   font-size: 18px;
   color: #1a1a1a;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 150px;
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.2;
 }
 
 .team-stats {
@@ -1456,6 +1455,30 @@ a:hover {
 .prediction-result.miss .result-badge {
   background: #ef4444;
   color: white;
+}
+
+/* Team Kit Images */
+.kit-image {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: white;
+  padding: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.kit-image:hover {
+  transform: scale(1.05);
+}
+
+/* Team jersey container adjustments */
+.team-jersey {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70px;
 }
 
 /* Round Navigation */
@@ -2607,6 +2630,16 @@ a:hover {
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
+  /* Kit Images */
+  .kit-image {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .team-jersey {
+    min-height: 60px;
+  }
+
   /* Main Layout */
   .app {
     padding: 8px;
@@ -2683,6 +2716,9 @@ a:hover {
   .team-name {
     font-size: 0.875rem;
     line-height: 1.2;
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: none;
   }
   
   .team-record {
@@ -2831,6 +2867,16 @@ a:hover {
 
 /* Small Mobile */
 @media (max-width: 480px) {
+  /* Kit Images */
+  .kit-image {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .team-jersey {
+    min-height: 50px;
+  }
+
   .app {
     padding: 4px;
   }
@@ -2862,6 +2908,9 @@ a:hover {
   
   .team-name {
     font-size: 0.8rem;
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: none;
   }
   
   .prediction-input {
