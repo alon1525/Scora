@@ -7,6 +7,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 
 const MatchPredictions = ({ onPredictionSaved }) => {
   const { user } = useAuth();
@@ -34,8 +36,8 @@ const MatchPredictions = ({ onPredictionSaved }) => {
   const fetchFixtures = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/fixtures/matchday/${currentMatchday}`);
-      const data = await response.json();
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${currentMatchday}`);
+      const data = response.data;
       
       if (data.success) {
         setFixtures(data.fixtures);
@@ -54,13 +56,13 @@ const MatchPredictions = ({ onPredictionSaved }) => {
   const fetchPredictions = async () => {
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const response = await fetch(`http://localhost:3001/api/predictions/fixtures?matchday=${currentMatchday}`, {
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURE_PREDICTIONS}?matchday=${currentMatchday}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      const data = await response.json();
+      const data = response.data;
       
       if (data.success) {
         const predictionsMap = {};
@@ -88,20 +90,18 @@ const MatchPredictions = ({ onPredictionSaved }) => {
 
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const response = await fetch('http://localhost:3001/api/predictions/fixture', {
-        method: 'POST',
+      const response = await axios.post(API_ENDPOINTS.FIXTURE_PREDICTIONS, {
+        fixture_id: fixtureId,
+        home_score: parseInt(homeScore) || 0,
+        away_score: parseInt(awayScore) || 0
+      }, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fixture_id: fixtureId,
-          home_score: parseInt(homeScore) || 0,
-          away_score: parseInt(awayScore) || 0
-        })
+        }
       });
 
-      const data = await response.json();
+      const data = response.data;
       
       if (data.success) {
         setPredictions(prev => ({
@@ -116,16 +116,13 @@ const MatchPredictions = ({ onPredictionSaved }) => {
         
         // Recalculate scores after saving prediction
         try {
-          const scoreResponse = await fetch('http://localhost:3001/api/predictions/recalculate-user/' + user.id, {
-            method: 'POST',
+          const scoreResponse = await axios.post(`${API_ENDPOINTS.RECALCULATE_USER}/${user.id}`, {}, {
             headers: {
               'Content-Type': 'application/json'
             }
           });
           
-          if (scoreResponse.ok) {
-            console.log('✅ Scores recalculated after fixture prediction save');
-          }
+          console.log('✅ Scores recalculated after fixture prediction save');
         } catch (scoreError) {
           console.error('❌ Error recalculating scores:', scoreError);
         }
@@ -171,8 +168,8 @@ const MatchPredictions = ({ onPredictionSaved }) => {
   const refreshFixtures = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/fixtures/refresh?season=2025`);
-      const data = await response.json();
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURES_REFRESH}?season=2025`);
+      const data = response.data;
       
       if (data.success) {
         toast.success(`Refreshed ${data.stored_count} fixtures`);
@@ -191,8 +188,8 @@ const MatchPredictions = ({ onPredictionSaved }) => {
   const refreshUpcomingFixtures = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/fixtures/upcoming?season=2025&matchday=${currentMatchday}`);
-      const data = await response.json();
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURES_REFRESH}?season=2025&matchday=${currentMatchday}&type=upcoming`);
+      const data = response.data;
       
       if (data.success) {
         toast.success(`Refreshed ${data.stored_count} upcoming fixtures`);
@@ -211,8 +208,8 @@ const MatchPredictions = ({ onPredictionSaved }) => {
   const refreshResults = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3001/api/fixtures/results?season=2025&matchday=${currentMatchday}`);
-      const data = await response.json();
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURES_REFRESH}?season=2025&matchday=${currentMatchday}&type=results`);
+      const data = response.data;
       
       if (data.success) {
         toast.success(`Refreshed ${data.stored_count} results`);

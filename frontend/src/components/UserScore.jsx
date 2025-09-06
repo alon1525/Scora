@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 
 const UserScore = ({ refreshTrigger }) => {
   const { user } = useAuth();
@@ -20,13 +22,13 @@ const UserScore = ({ refreshTrigger }) => {
     try {
       setLoading(true);
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const response = await fetch(`http://localhost:3001/api/predictions/scores`, {
+      const response = await axios.get(API_ENDPOINTS.USER_SCORES, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      const data = await response.json();
+      const data = response.data;
       console.log('User scores response:', data);
       
       if (data.success) {

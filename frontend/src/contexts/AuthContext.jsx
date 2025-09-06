@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../integrations/supabase/client';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 
 const AuthContext = createContext(undefined);
 
@@ -61,19 +63,17 @@ export const AuthProvider = ({ children }) => {
     if (!error && data.user) {
       console.log('Signup successful, creating user profile via backend...');
       try {
-        const response = await fetch('http://localhost:3001/api/users/create-profile', {
-          method: 'POST',
+        const response = await axios.post(API_ENDPOINTS.CREATE_PROFILE, {
+          user_id: data.user.id,
+          email: email,
+          display_name: username || email
+        }, {
           headers: {
             'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: data.user.id,
-            email: email,
-            display_name: username || email
-          })
+          }
         });
 
-        const result = await response.json();
+        const result = response.data;
         
         if (result.success) {
           console.log('User profile created successfully via backend');

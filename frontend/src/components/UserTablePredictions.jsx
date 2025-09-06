@@ -8,6 +8,8 @@ import {
   Droppable,
   Draggable,
 } from "@hello-pangea/dnd";
+import axios from "axios";
+import { API_ENDPOINTS } from "../config/api";
 
 function reorder(list, startIndex, endIndex) {
   const result = Array.from(list);
@@ -29,14 +31,14 @@ export const UserTablePredictions = ({ onPredictionSaved }) => {
 
       try {
         const token = (await supabase.auth.getSession()).data.session?.access_token;
-        const response = await fetch('http://localhost:3001/api/predictions/table', {
+        const response = await axios.get(API_ENDPOINTS.TABLE_PREDICTIONS, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
 
-        const data = await response.json();
+        const data = response.data;
         
         if (data.success && data.prediction) {
           const savedOrder = data.prediction;
@@ -60,36 +62,29 @@ export const UserTablePredictions = ({ onPredictionSaved }) => {
     setLoading(true);
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const response = await fetch('http://localhost:3001/api/predictions/table', {
-        method: 'POST',
+      const response = await axios.post(API_ENDPOINTS.TABLE_PREDICTIONS, {
+        table_order: userOrder
+      }, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          table_order: userOrder
-        })
+        }
       });
 
-      const data = await response.json();
+      const data = response.data;
       
       if (data.success) {
         toast.success("Your predictions have been saved!");
         
         // Recalculate scores after saving prediction
         try {
-          const scoreResponse = await fetch('http://localhost:3001/api/predictions/recalculate-user/' + user.id, {
-            method: 'POST',
+          const scoreResponse = await axios.post(`${API_ENDPOINTS.RECALCULATE_USER}/${user.id}`, {}, {
             headers: {
               'Content-Type': 'application/json'
             }
           });
           
-          if (scoreResponse.ok) {
-            console.log('✅ Scores recalculated after prediction save');
-          } else {
-            console.error('❌ Score recalculation failed:', scoreResponse.status);
-          }
+          console.log('✅ Scores recalculated after prediction save');
         } catch (scoreError) {
           console.error('❌ Error recalculating scores:', scoreError);
         }

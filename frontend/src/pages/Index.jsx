@@ -12,6 +12,8 @@ import { UserScore } from "../components/UserScore";
 import { Button } from "../components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import axios from "axios";
+import { API_ENDPOINTS } from "../config/api";
 
 const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -42,14 +44,8 @@ const Index = () => {
         console.log('Loading live standings...');
         
         // Get the standings data first
-        const response = await fetch('http://localhost:3001/api/standings');
-        
-        if (!response.ok) {
-          console.error('Standings API error:', response.status, response.statusText);
-          throw new Error(`Failed to fetch standings: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        const response = await axios.get(API_ENDPOINTS.STANDINGS);
+        const data = response.data;
         console.log('Standings response:', data);
         
         const standings = data?.standingsData;

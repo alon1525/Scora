@@ -10,11 +10,17 @@
     "start:all": "concurrently \"npm start\" \"npm run scheduler\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["football", "predictions", "premier-league", "api"],
+  "keywords": [
+    "football",
+    "predictions",
+    "premier-league",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
+    "axios": "^1.11.0",
     "concurrently": "^8.2.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
