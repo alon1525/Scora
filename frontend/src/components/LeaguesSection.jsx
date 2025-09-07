@@ -1,142 +1,214 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import axios from 'axios';
 
 export const LeaguesSection = () => {
   const { user } = useAuth();
-  const [leagues, setLeagues] = useState([]);
   const [myLeagues, setMyLeagues] = useState([]);
-  const [newLeague, setNewLeague] = useState({ name: '', description: '' });
+  const [newLeague, setNewLeague] = useState({ name: '' });
+  const [joinCode, setJoinCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [selectedLeague, setSelectedLeague] = useState(null);
+  const [userPositions, setUserPositions] = useState({});
+
+  const getOrdinalSuffix = (num) => {
+    const j = num % 10;
+    const k = num % 100;
+    if (j === 1 && k !== 11) {
+      return "st";
+    }
+    if (j === 2 && k !== 12) {
+      return "nd";
+    }
+    if (j === 3 && k !== 13) {
+      return "rd";
+    }
+    return "th";
+  };
 
   useEffect(() => {
     if (user) {
-      loadLeagues();
       loadMyLeagues();
     }
   }, [user]);
-
-  const loadLeagues = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('user_leagues')
-        .select(`
-          id,
-          name,
-          description,
-          created_by,
-          league_memberships(count)
-        `)
-        .eq('is_public', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      const leaguesWithCount = data?.map(league => ({
-        ...league,
-        member_count: league.league_memberships?.[0]?.count || 0
-      })) || [];
-
-      setLeagues(leaguesWithCount);
-    } catch (error) {
-      console.error('Error loading leagues:', error);
-    }
-  };
 
   const loadMyLeagues = async () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('league_memberships')
-        .select(`
-          league_id,
-          user_leagues(
-            id,
-            name,
-            description,
-            created_by
-          )
-        `)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      console.log('Loading my leagues...');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      const myLeaguesList = data?.map(membership => membership.user_leagues).filter(Boolean) || [];
-      setMyLeagues(myLeaguesList);
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        toast.error('Authentication error. Please sign in again.');
+        return;
+      }
+      
+      if (!session) {
+        console.error('No session found');
+        toast.error('Please sign in to view leagues');
+        return;
+      }
+      
+      const token = session.access_token;
+      console.log('Token for loadMyLeagues:', token ? 'Yes' : 'No');
+      
+      const response = await axios.get('http://localhost:3001/api/leagues/my-leagues', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Load my leagues response:', response.data);
+      if (response.data.success) {
+        setMyLeagues(response.data.data);
+        
+        // Load positions for each league
+        const positions = {};
+        for (const membership of response.data.data) {
+          try {
+            const leagueResponse = await axios.get(`http://localhost:3001/api/leagues/${membership.league.id}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            const standings = leagueResponse.data.standings || [];
+            const userPosition = standings.findIndex(member => member.user_id === user.id) + 1;
+            positions[membership.league.id] = userPosition || 1;
+          } catch (error) {
+            console.error(`Error loading position for league ${membership.league.id}:`, error);
+            positions[membership.league.id] = 1;
+          }
+        }
+        setUserPositions(positions);
+      }
     } catch (error) {
       console.error('Error loading my leagues:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        if (error.response.status === 401) {
+          toast.error('Authentication expired. Please sign in again.');
+        } else {
+          toast.error(error.response.data.error || 'Failed to load leagues');
+        }
+      } else {
+        toast.error('Failed to load leagues');
+      }
     }
   };
 
-  const createLeague = async (e) => {
-    e.preventDefault();
+  const createLeague = async () => {
     if (!user || !newLeague.name) return;
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('user_leagues')
-        .insert({
-          name: newLeague.name,
-          description: newLeague.description || null,
-          created_by: user.id,
-          is_public: true
-        })
-        .select()
-        .single();
+      console.log('Creating league with name:', newLeague.name);
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        toast.error('Authentication error. Please sign in again.');
+        return;
+      }
+      
+      if (!session) {
+        console.error('No session found');
+        toast.error('Please sign in to create leagues');
+        return;
+      }
+      
+      const token = session.access_token;
+      console.log('Token obtained:', token ? 'Yes' : 'No');
+      
+      const response = await axios.post('http://localhost:3001/api/leagues/create', {
+        name: newLeague.name
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-      if (error) throw error;
-
-      // Auto-join the creator to the league
-      await supabase
-        .from('league_memberships')
-        .insert({
-          league_id: data.id,
-          user_id: user.id,
-        });
-
-      toast.success('League created successfully!');
-      setNewLeague({ name: '', description: '' });
-      loadLeagues();
-      loadMyLeagues();
+      console.log('Create league response:', response.data);
+      if (response.data.success) {
+        toast.success(`League created successfully! Code: ${response.data.data.league.code}`);
+        setNewLeague({ name: '' });
+        loadMyLeagues();
+      } else {
+        toast.error(response.data.error || 'Failed to create league');
+      }
     } catch (error) {
-      toast.error('Failed to create league');
       console.error('Error creating league:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        if (error.response.status === 401) {
+          toast.error('Authentication expired. Please sign in again.');
+        } else {
+          toast.error(error.response.data.error || 'Failed to create league');
+        }
+      } else {
+        toast.error('Failed to create league');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const joinLeague = async (leagueId) => {
-    if (!user) return;
+  const joinLeague = async () => {
+    if (!user || !joinCode) return;
 
+    setLoading(true);
     try {
-      const { error } = await supabase
-        .from('league_memberships')
-        .insert({
-          league_id: leagueId,
-          user_id: user.id,
-        });
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await axios.post('http://localhost:3001/api/leagues/join', {
+        code: joinCode.trim().toUpperCase()
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-      if (error) throw error;
-
-      toast.success('Joined league successfully!');
-      loadLeagues();
-      loadMyLeagues();
+      if (response.data.success) {
+        toast.success(`Joined ${response.data.data.league.name} successfully!`);
+        setJoinCode('');
+        loadMyLeagues();
+      }
     } catch (error) {
-      if (error.code === '23505') {
-        toast.error('You are already a member of this league');
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
       } else {
         toast.error('Failed to join league');
       }
       console.error('Error joining league:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const viewLeagueDetails = async (leagueId) => {
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const response = await axios.get(`http://localhost:3001/api/leagues/${leagueId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success) {
+        setSelectedLeague(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error loading league details:', error);
+      toast.error('Failed to load league details');
     }
   };
 
@@ -149,115 +221,233 @@ export const LeaguesSection = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="my-leagues" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="my-leagues">My Leagues</TabsTrigger>
-          <TabsTrigger value="public-leagues">Public Leagues</TabsTrigger>
-          <TabsTrigger value="create">Create League</TabsTrigger>
-        </TabsList>
+      {/* Action Buttons */}
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'row', 
+        gap: '16px', 
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        flexWrap: 'wrap'
+      }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '8px', 
+          padding: '16px', 
+          backgroundColor: 'var(--bg-card)', 
+          border: '1px solid var(--border-light)', 
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: '0 4px 12px var(--shadow-light)',
+          minWidth: '280px'
+        }}>
+          <label style={{ 
+            display: 'block', 
+            fontSize: '14px', 
+            fontWeight: '500', 
+            color: 'var(--text-primary)', 
+            marginBottom: '4px' 
+          }}>
+            Join League
+          </label>
+          <input
+            type="text"
+            value={joinCode}
+            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+            placeholder="Enter 8-character code"
+            maxLength={8}
+            className="form-input"
+            style={{ fontFamily: 'monospace', textAlign: 'center', padding: '8px 12px' }}
+          />
+          <button 
+            onClick={joinLeague}
+            disabled={loading || !joinCode || joinCode.length !== 8}
+            className="btn btn-outline"
+            style={{ padding: '8px 16px', fontSize: '14px' }}
+          >
+            {loading ? 'Joining...' : 'Join League'}
+          </button>
+        </div>
+        
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '8px', 
+          padding: '16px', 
+          backgroundColor: 'var(--bg-card)', 
+          border: '1px solid var(--border-light)', 
+          borderRadius: 'var(--radius-lg)',
+          boxShadow: '0 4px 12px var(--shadow-light)',
+          minWidth: '280px'
+        }}>
+          <label style={{ 
+            display: 'block', 
+            fontSize: '14px', 
+            fontWeight: '500', 
+            color: 'var(--text-primary)', 
+            marginBottom: '4px' 
+          }}>
+            Create League
+          </label>
+          <input
+            type="text"
+            value={newLeague.name}
+            onChange={(e) => setNewLeague({ name: e.target.value })}
+            placeholder="Enter league name"
+            className="form-input"
+            style={{ padding: '8px 12px' }}
+          />
+          <button 
+            onClick={createLeague}
+            disabled={loading || !newLeague.name.trim()}
+            className="btn btn-primary"
+            style={{ padding: '8px 16px', fontSize: '14px' }}
+          >
+            {loading ? 'Creating...' : 'Create League'}
+          </button>
+        </div>
+      </div>
 
-        <TabsContent value="my-leagues" className="space-y-4">
-          {myLeagues.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">
-                  You haven't joined any leagues yet. Create one or join a public league!
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {myLeagues.map((league) => (
-                <Card key={league.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{league.name}</CardTitle>
-                      <Badge variant="secondary">Member</Badge>
-                    </div>
-                    {league.description && (
-                      <CardDescription>{league.description}</CardDescription>
-                    )}
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
+      {/* Leagues Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>My Leagues</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="standings-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>League Code</th>
+                  <th>League Name</th>
+                  <th>Members</th>
+                  <th>Your Position</th>
+                  <th>Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                {myLeagues.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="text-center text-muted-foreground py-8">
+                      You haven't joined any leagues yet. Create one or join a league with a code!
+                    </td>
+                  </tr>
+                ) : (
+                  myLeagues.map((membership, index) => (
+                    <tr 
+                      key={membership.league.id} 
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => viewLeagueDetails(membership.league.id)}
+                    >
+                      <td>{index + 1}</td>
+                      <td className="font-mono text-sm">{membership.league.code}</td>
+                      <td className="font-medium">{membership.league.name}</td>
+                      <td>{membership.league.member_count}</td>
+                      <td>
+                        <Badge variant="outline">
+                          {userPositions[membership.league.id] ? `${userPositions[membership.league.id]}${getOrdinalSuffix(userPositions[membership.league.id])}` : 'Loading...'}
+                        </Badge>
+                      </td>
+                      <td>
+                        <Badge variant={membership.role === 'owner' ? 'default' : 'secondary'}>
+                          {membership.role === 'owner' ? 'Owner' : 'Member'}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="public-leagues" className="space-y-4">
-          <div className="grid gap-4">
-            {leagues.map((league) => {
-              const isMember = myLeagues.some(ml => ml.id === league.id);
-              return (
-                <Card key={league.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{league.name}</CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{league.member_count} members</Badge>
-                        {isMember ? (
-                          <Badge variant="secondary">Joined</Badge>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            onClick={() => joinLeague(league.id)}
-                          >
-                            Join
-                          </Button>
-                        )}
+      {/* League Details Modal */}
+      {selectedLeague && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl">{selectedLeague.league.name}</CardTitle>
+                  <CardDescription>Code: {selectedLeague.league.code}</CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSelectedLeague(null)}
+                >
+                  Close
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* League Info */}
+              <div>
+                <h3 className="font-semibold mb-2">League Information</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Members:</span>
+                    <span className="ml-2 font-medium">{selectedLeague.members.length}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Max Members:</span>
+                    <span className="ml-2 font-medium">{selectedLeague.league.max_members}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Created:</span>
+                    <span className="ml-2 font-medium">
+                      {new Date(selectedLeague.league.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Your Role:</span>
+                    <span className="ml-2 font-medium capitalize">{selectedLeague.membership.role}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Standings */}
+              <div>
+                <h3 className="font-semibold mb-3">League Standings</h3>
+                <div className="space-y-2">
+                  {selectedLeague.standings.map((member, index) => (
+                    <div 
+                      key={member.user_id}
+                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                        member.user_id === user?.id ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold">
+                          {member.rank}
+                        </div>
+                        <div>
+                          <div className="font-medium">
+                            {member.user?.display_name || member.user?.email?.split('@')[0] || 'Unknown User'}
+                            {member.user_id === user?.id && ' (You)'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="text-center">
+                          <div className="font-bold text-lg">{member.total_points || 0}</div>
+                          <div className="text-muted-foreground">Points</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-bold text-lg">{member.exact_predictions || 0}</div>
+                          <div className="text-muted-foreground">Exact</div>
+                        </div>
                       </div>
                     </div>
-                    {league.description && (
-                      <CardDescription>{league.description}</CardDescription>
-                    )}
-                  </CardHeader>
-                </Card>
-              );
-            })}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="create" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create New League</CardTitle>
-              <CardDescription>
-                Create a public league that others can join
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={createLeague} className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="league-name" className="text-sm font-medium">
-                    League Name
-                  </label>
-                  <Input
-                    id="league-name"
-                    value={newLeague.name}
-                    onChange={(e) => setNewLeague({ ...newLeague, name: e.target.value })}
-                    placeholder="Enter league name"
-                    required
-                  />
+                  ))}
                 </div>
-                <div className="space-y-2">
-                  <label htmlFor="league-description" className="text-sm font-medium">
-                    Description (Optional)
-                  </label>
-                  <Input
-                    id="league-description"
-                    value={newLeague.description}
-                    onChange={(e) => setNewLeague({ ...newLeague, description: e.target.value })}
-                    placeholder="Describe your league"
-                  />
-                </div>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Creating...' : 'Create League'}
-                </Button>
-              </form>
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   );
 };

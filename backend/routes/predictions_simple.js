@@ -5,8 +5,8 @@ require('dotenv').config();
 const router = express.Router();
 
 // Supabase client
-const supabaseUrl = process.env.SUPABASE_API_URL || "https://nopucomnlyvogmfdldaw.supabase.co";
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ";
+const supabaseUrl = process.env.SUPABASE_API_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Middleware to verify user authentication
@@ -21,8 +21,8 @@ const authenticateUser = async (req, res, next) => {
   try {
     // Use a separate client with publishable key for user authentication
     const userSupabase = createClient(
-      process.env.SUPABASE_API_URL || "https://nopucomnlyvogmfdldaw.supabase.co",
-      process.env.SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ"
+      process.env.SUPABASE_API_URL,
+      process.env.SUPABASE_PUBLISHABLE_KEY
     );
     
     const { data: { user }, error } = await userSupabase.auth.getUser(token);

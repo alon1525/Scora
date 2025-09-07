@@ -348,6 +348,11 @@ const MatchPredictions = ({ onPredictionSaved }) => {
     }
   }, [user, fixtures, currentMatchday]);
 
+  // Force re-render when fixtures or predictions change to update matchday points
+  useEffect(() => {
+    // This will trigger a re-render and recalculate matchday points
+  }, [fixtures, predictions]);
+
   const fetchTeamForms = async () => {
     try {
       // Fetch fixtures from the last few matchdays to get recent form
@@ -540,7 +545,54 @@ const MatchPredictions = ({ onPredictionSaved }) => {
   };
 
   const calculateMatchdayPoints = () => {
-    return Object.values(predictions).reduce((total, pred) => total + (pred.points_earned || 0), 0);
+    let totalPoints = 0;
+    let gamesWithPredictions = 0;
+    let finishedGames = 0;
+    
+    // Calculate points for each fixture in current matchday
+    fixtures.forEach(fixture => {
+      const prediction = predictions[fixture.id];
+      if (!prediction || prediction.home_score === null || prediction.home_score === undefined || 
+          prediction.away_score === null || prediction.away_score === undefined) {
+        return;
+      }
+      
+      gamesWithPredictions++;
+      
+      // Only calculate points for finished games
+      if (fixture.status === 'FINISHED' && fixture.home_score !== null && fixture.away_score !== null) {
+        finishedGames++;
+        const predictedHome = parseInt(prediction.home_score);
+        const predictedAway = parseInt(prediction.away_score);
+        const actualHome = fixture.home_score;
+        const actualAway = fixture.away_score;
+        
+        // Exact score match = 3 points
+        if (predictedHome === actualHome && predictedAway === actualAway) {
+          totalPoints += 3;
+        }
+        // Correct result (win/draw/loss) = 1 point
+        else {
+          const predictedResult = predictedHome > predictedAway ? 'home_win' : 
+                                 predictedHome < predictedAway ? 'away_win' : 'draw';
+          const actualResult = actualHome > actualAway ? 'home_win' : 
+                               actualHome < actualAway ? 'away_win' : 'draw';
+          
+          if (predictedResult === actualResult) {
+            totalPoints += 1;
+          }
+        }
+      }
+    });
+    
+    console.log(`Matchday ${currentMatchday} points calculation:`, {
+      totalPoints,
+      gamesWithPredictions,
+      finishedGames,
+      totalFixtures: fixtures.length
+    });
+    
+    return totalPoints;
   };
 
   // Function to get last 3 results for a team from cached team forms

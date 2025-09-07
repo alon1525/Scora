@@ -7,6 +7,7 @@ require('dotenv').config();
 const fixturesRoutes = require('./routes/fixtures');
 const predictionsRoutes = require('./routes/predictions_simple');
 const standingsRoutes = require('./routes/standings');
+const leaguesRoutes = require('./routes/leagues');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -16,8 +17,8 @@ app.use(cors());
 app.use(express.json());
 
 // Supabase client
-const supabaseUrl = process.env.SUPABASE_API_URL || "https://nopucomnlyvogmfdldaw.supabase.co";
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vcHVjb21ubHl2b2dtZmRsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5NzYzNDYsImV4cCI6MjA3MjU1MjM0Nn0.mUjCaE0knZ5KzaM1bdVX3a16u3PUXl7w0gkZfMnaVlQ";
+const supabaseUrl = process.env.SUPABASE_API_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
 
 
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -90,6 +91,7 @@ function getMockStandings() {
 // Routes
 app.use('/api/fixtures', fixturesRoutes);
 app.use('/api/predictions', predictionsRoutes);
+app.use('/api/leagues', leaguesRoutes);
 // app.use('/api/standings', standingsRoutes); // Commented out to use direct endpoint below
 
 app.get('/api/standings', async (req, res) => {
