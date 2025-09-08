@@ -41,7 +41,7 @@ const Index = () => {
   }, []);
 
 
-  // Redirect to auth if not authenticated
+  // Redirect to auth if not authenticated (but wait for auth to finish loading)
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
@@ -118,6 +118,18 @@ const Index = () => {
       <div className="loading-container">
         <div className="loading-content">
           <h1 className="loading-title">Loading...</h1>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while auth is being checked
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-green mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     );
