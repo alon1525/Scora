@@ -237,13 +237,10 @@ router.get('/:leagueId', authenticateUser, async (req, res) => {
       return res.status(403).json({ success: false, error: 'You are not a member of this league' });
     }
 
-    // Get league members with their stats
+    // Get league members
     const { data: members, error: membersError } = await supabase
       .from('league_memberships')
-      .select(`
-        *,
-        user:user_profiles(display_name, email, total_points, exact_predictions)
-      `)
+      .select('*')
       .eq('league_id', leagueId)
       .order('joined_at', { ascending: true });
 
@@ -252,13 +249,36 @@ router.get('/:leagueId', authenticateUser, async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to fetch league members' });
     }
 
+    // Get user profiles for all members
+    const userIds = members.map(member => member.user_id);
+    const { data: userProfiles, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select('user_id, display_name, email, total_points, exact_predictions')
+      .in('user_id', userIds);
+
+    if (profilesError) {
+      console.error('Error fetching user profiles:', profilesError);
+      return res.status(500).json({ success: false, error: 'Failed to fetch user profiles' });
+    }
+
+    // Create a map of user_id to profile for quick lookup
+    const profileMap = {};
+    userProfiles.forEach(profile => {
+      profileMap[profile.user_id] = profile;
+    });
+
     // Sort members by total points (league standings)
     const standings = members
-      .map(member => ({
-        ...member,
-        total_points: member.user?.total_points || 0,
-        exact_predictions: member.user?.exact_predictions || 0
-      }))
+      .map(member => {
+        const profile = profileMap[member.user_id];
+        return {
+          ...member,
+          total_points: profile?.total_points || 0,
+          display_name: profile?.display_name || 'Unknown User',
+          email: profile?.email || '',
+          exact_predictions: profile?.exact_predictions || 0
+        };
+      })
       .sort((a, b) => {
         if (b.total_points !== a.total_points) {
           return b.total_points - a.total_points;
