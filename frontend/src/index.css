@@ -2093,12 +2093,16 @@ a:hover {
 .standings-stats {
   text-align: center;
   font-size: 0.875rem;
-  padding-left: 16px;
+  padding-left: 24px;
 }
 
 .standings-goal-diff {
   font-weight: 500;
   font-size: 0.875rem;
+}
+
+.standings-goal-diff.neutral {
+  color: var(--text-primary);
 }
 
 .standings-goal-diff.positive {
