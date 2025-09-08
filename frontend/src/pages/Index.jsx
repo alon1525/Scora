@@ -220,8 +220,8 @@ const Index = () => {
                             <td>
                               <div className="standings-team">
                                 <img
-                                  src={TEAMS.find(t => t.id === team.id)?.logo}
-                                  alt={`${team.name} badge`}
+                                  src={TEAMS.find(t => t.id === team.team_id)?.logo}
+                                  alt={`${team.team_name || team.name} badge`}
                                   loading="lazy"
                                   width={24}
                                   height={24}
@@ -230,7 +230,7 @@ const Index = () => {
                                     e.currentTarget.style.display = "none";
                                   }}
                                 />
-                                <span className="standings-team-name">{team.name}</span>
+                                <span className="standings-team-name">{team.team_name || team.name}</span>
                               </div>
                             </td>
                             <td className="standings-stats">{team.played}</td>

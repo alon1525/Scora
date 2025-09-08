@@ -11,49 +11,71 @@ import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import RoundNavigation from './RoundNavigation';
 
+// Import team kit images
+import Arsenal from '../assets/Teams_Kits/Arsenal.png';
+import Aston_Villa from '../assets/Teams_Kits/Aston_Villa.png';
+import Bournemouth from '../assets/Teams_Kits/Bournemouth.png';
+import Brentford from '../assets/Teams_Kits/Brentford.png';
+import Brighton from '../assets/Teams_Kits/Brighton.png';
+import Burnley from '../assets/Teams_Kits/Burnley.png';
+import Chelsea from '../assets/Teams_Kits/Chelsea.png';
+import Crystal_Palace from '../assets/Teams_Kits/Crystal_Palace.png';
+import Everton from '../assets/Teams_Kits/Everton.png';
+import Fulham from '../assets/Teams_Kits/Fulham.png';
+import Leeds_United from '../assets/Teams_Kits/Leeds_United.png';
+import Liverpool from '../assets/Teams_Kits/Liverpool.png';
+import Manchester_City from '../assets/Teams_Kits/Manchester_City.png';
+import Manchester_United from '../assets/Teams_Kits/Manchester_United.png';
+import Newcastle from '../assets/Teams_Kits/Newcastle.png';
+import Nottingham_Forest from '../assets/Teams_Kits/Nottingham_Forest.png';
+import Sunderland from '../assets/Teams_Kits/Sunderland.png';
+import Tottenham from '../assets/Teams_Kits/Tottenham.png';
+import West_Ham from '../assets/Teams_Kits/West_Ham.png';
+import Wolves from '../assets/Teams_Kits/Wolves.png';
+
 // Team kit images mapping
 const TEAM_KITS = {
-  'Arsenal': '/assets/Teams_kits/Arsenal.png',
-  'Arsenal FC': '/assets/Teams_kits/Arsenal.png',
-  'Aston Villa': '/assets/Teams_kits/Aston_Villa.png',
-  'Aston Villa FC': '/assets/Teams_kits/Aston_Villa.png',
-  'AFC Bournemouth': '/assets/Teams_kits/Bournemouth.png',
-  'Bournemouth': '/assets/Teams_kits/Bournemouth.png',
-  'Brentford': '/assets/Teams_kits/Brentford.png',
-  'Brentford FC': '/assets/Teams_kits/Brentford.png',
-  'Brighton & Hove Albion': '/assets/Teams_kits/Brighton.png',
-  'Brighton': '/assets/Teams_kits/Brighton.png',
-  'Burnley': '/assets/Teams_kits/Burnley.png',
-  'Burnley FC': '/assets/Teams_kits/Burnley.png',
-  'Chelsea': '/assets/Teams_kits/Chelsea.png',
-  'Chelsea FC': '/assets/Teams_kits/Chelsea.png',
-  'Crystal Palace': '/assets/Teams_kits/Crystal_Palace.png',
-  'Crystal Palace FC': '/assets/Teams_kits/Crystal_Palace.png',
-  'Everton': '/assets/Teams_kits/Everton.png',
-  'Everton FC': '/assets/Teams_kits/Everton.png',
-  'Fulham': '/assets/Teams_kits/Fulham.png',
-  'Fulham FC': '/assets/Teams_kits/Fulham.png',
-  'Leeds United': '/assets/Teams_kits/Leeds_United.png',
-  'Leeds': '/assets/Teams_kits/Leeds_United.png',
-  'Liverpool': '/assets/Teams_kits/Liverpool.png',
-  'Liverpool FC': '/assets/Teams_kits/Liverpool.png',
-  'Manchester City': '/assets/Teams_kits/Manchester_City.png',
-  'Manchester City FC': '/assets/Teams_kits/Manchester_City.png',
-  'Manchester United': '/assets/Teams_kits/Manchester_United.png',
-  'Manchester United FC': '/assets/Teams_kits/Manchester_United.png',
-  'Newcastle United': '/assets/Teams_kits/Newcastle.png',
-  'Newcastle': '/assets/Teams_kits/Newcastle.png',
-  'Nottingham Forest': '/assets/Teams_kits/Nottingham_Forest.png',
-  'Nottingham': '/assets/Teams_kits/Nottingham_Forest.png',
-  'Sunderland AFC': '/assets/Teams_kits/Sunderland.png',
-  'Sunderland': '/assets/Teams_kits/Sunderland.png',
-  'Tottenham Hotspur': '/assets/Teams_kits/Tottenham.png',
-  'Tottenham': '/assets/Teams_kits/Tottenham.png',
-  'West Ham United': '/assets/Teams_kits/West_Ham.png',
-  'West Ham': '/assets/Teams_kits/West_Ham.png',
-  'Wolverhampton Wanderers': '/assets/Teams_kits/Wolves.png',
-  'Wolves': '/assets/Teams_kits/Wolves.png',
-  'Wolverhampton': '/assets/Teams_kits/Wolves.png'
+  'Arsenal': Arsenal,
+  'Arsenal FC': Arsenal,
+  'Aston Villa': Aston_Villa,
+  'Aston Villa FC': Aston_Villa,
+  'AFC Bournemouth': Bournemouth,
+  'Bournemouth': Bournemouth,
+  'Brentford': Brentford,
+  'Brentford FC': Brentford,
+  'Brighton & Hove Albion': Brighton,
+  'Brighton': Brighton,
+  'Burnley': Burnley,
+  'Burnley FC': Burnley,
+  'Chelsea': Chelsea,
+  'Chelsea FC': Chelsea,
+  'Crystal Palace': Crystal_Palace,
+  'Crystal Palace FC': Crystal_Palace,
+  'Everton': Everton,
+  'Everton FC': Everton,
+  'Fulham': Fulham,
+  'Fulham FC': Fulham,
+  'Leeds United': Leeds_United,
+  'Leeds': Leeds_United,
+  'Liverpool': Liverpool,
+  'Liverpool FC': Liverpool,
+  'Manchester City': Manchester_City,
+  'Manchester City FC': Manchester_City,
+  'Manchester United': Manchester_United,
+  'Manchester United FC': Manchester_United,
+  'Newcastle United': Newcastle,
+  'Newcastle': Newcastle,
+  'Nottingham Forest': Nottingham_Forest,
+  'Nottingham': Nottingham_Forest,
+  'Sunderland AFC': Sunderland,
+  'Sunderland': Sunderland,
+  'Tottenham Hotspur': Tottenham,
+  'Tottenham': Tottenham,
+  'West Ham United': West_Ham,
+  'West Ham': West_Ham,
+  'Wolverhampton Wanderers': Wolves,
+  'Wolves': Wolves,
+  'Wolverhampton': Wolves
 };
 
 // Stadium data for Premier League teams (including common API variations)
@@ -239,7 +261,7 @@ const getTeamKit = (teamName) => {
   }
   
   // Return a default kit image if no match found
-  return '/assets/Teams_kits/Arsenal.png'; // Default fallback
+  return Arsenal; // Default fallback
 };
 
 // Function to get stadium info for a team
