@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
+import { API_ENDPOINTS } from '../config/api';
+import axios from 'axios';
 
 export const AdminMatchControls = () => {
   const [loading, setLoading] = useState(false);
@@ -8,8 +10,8 @@ export const AdminMatchControls = () => {
   const refreshAllFixtures = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/fixtures/refresh?season=2025');
-      const data = await response.json();
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURES_REFRESH}?season=2025`);
+      const data = response.data;
       
       if (data.success) {
         toast.success(`Refreshed ${data.stored_count} fixtures`);
@@ -27,8 +29,8 @@ export const AdminMatchControls = () => {
   const refreshUpcomingFixtures = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/fixtures/upcoming?season=2025');
-      const data = await response.json();
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURES_ALL}/upcoming?season=2025`);
+      const data = response.data;
       
       if (data.success) {
         toast.success(`Refreshed ${data.stored_count} upcoming fixtures`);
@@ -46,8 +48,8 @@ export const AdminMatchControls = () => {
   const refreshResults = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/fixtures/results?season=2025');
-      const data = await response.json();
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURES_ALL}/results?season=2025`);
+      const data = response.data;
       
       if (data.success) {
         toast.success(`Refreshed ${data.stored_count} results`);
@@ -65,8 +67,8 @@ export const AdminMatchControls = () => {
   const refreshLiveFixtures = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/fixtures/live?season=2025');
-      const data = await response.json();
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURES_ALL}/live?season=2025`);
+      const data = response.data;
       
       if (data.success) {
         toast.success(`Refreshed ${data.stored_count} live fixtures`);

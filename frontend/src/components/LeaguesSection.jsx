@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 
 export const LeaguesSection = () => {
   const { user } = useAuth();
@@ -58,7 +59,7 @@ export const LeaguesSection = () => {
       const token = session.access_token;
       console.log('Token for loadMyLeagues:', token ? 'Yes' : 'No');
       
-      const response = await axios.get('http://localhost:3001/api/leagues/my-leagues', {
+      const response = await axios.get(API_ENDPOINTS.LEAGUES_MY_LEAGUES, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -73,7 +74,7 @@ export const LeaguesSection = () => {
         const positions = {};
         for (const membership of response.data.data) {
           try {
-            const leagueResponse = await axios.get(`http://localhost:3001/api/leagues/${membership.league.id}`, {
+            const leagueResponse = await axios.get(`${API_ENDPOINTS.LEAGUES_DETAILS}/${membership.league.id}`, {
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -127,7 +128,7 @@ export const LeaguesSection = () => {
       const token = session.access_token;
       console.log('Token obtained:', token ? 'Yes' : 'No');
       
-      const response = await axios.post('http://localhost:3001/api/leagues/create', {
+      const response = await axios.post(API_ENDPOINTS.LEAGUES_CREATE, {
         name: newLeague.name
       }, {
         headers: {
@@ -167,7 +168,7 @@ export const LeaguesSection = () => {
     setLoading(true);
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const response = await axios.post('http://localhost:3001/api/leagues/join', {
+      const response = await axios.post(API_ENDPOINTS.LEAGUES_JOIN, {
         code: joinCode.trim().toUpperCase()
       }, {
         headers: {
@@ -196,7 +197,7 @@ export const LeaguesSection = () => {
   const viewLeagueDetails = async (leagueId) => {
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const response = await axios.get(`http://localhost:3001/api/leagues/${leagueId}`, {
+      const response = await axios.get(`${API_ENDPOINTS.LEAGUES_DETAILS}/${leagueId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

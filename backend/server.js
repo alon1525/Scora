@@ -94,6 +94,17 @@ app.use('/api/predictions', predictionsRoutes);
 app.use('/api/leagues', leaguesRoutes);
 // app.use('/api/standings', standingsRoutes); // Commented out to use direct endpoint below
 
+// Test endpoint to check environment variables
+app.get('/api/test-env', (req, res) => {
+  res.json({
+    hasSupabaseUrl: !!process.env.SUPABASE_API_URL,
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    hasPublishableKey: !!process.env.SUPABASE_PUBLISHABLE_KEY,
+    hasLeagueApiKey: !!process.env.LEAGUE_STANDINGS_API_KEY,
+    supabaseUrl: process.env.SUPABASE_API_URL ? 'Set' : 'Missing'
+  });
+});
+
 app.get('/api/standings', async (req, res) => {
   try {
     const API_KEY = process.env.LEAGUE_STANDINGS_API_KEY;
