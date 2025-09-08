@@ -241,7 +241,7 @@ const Index = () => {
                             <td className="standings-stats">{team.goals_against || team.goalsAgainst}</td>
                             <td className="standings-stats">
                               <span className={`standings-goal-diff ${(team.goal_difference || team.goalDifference) >= 0 ? 'positive' : 'negative'}`}>
-                                {(team.goal_difference || team.goalDifference) > 0 ? '+' : ''}{team.goal_difference || team.goalDifference}
+                                {(team.goal_difference || team.goalDifference) > 0 ? '+' : ''}{(team.goal_difference || team.goalDifference) || 0}
                               </span>
                             </td>
                             <td className="standings-points">{team.points}</td>

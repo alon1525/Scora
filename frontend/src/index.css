@@ -2093,7 +2093,7 @@ a:hover {
 .standings-stats {
   text-align: center;
   font-size: 0.875rem;
-  padding-left: 8px;
+  padding-left: 16px;
 }
 
 .standings-goal-diff {
