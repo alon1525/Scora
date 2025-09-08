@@ -245,12 +245,12 @@ const Index = () => {
                                 <span className="standings-team-name">{team.team_name || team.name}</span>
                               </div>
                             </td>
-                            <td className="standings-stats">{team.played}</td>
-                            <td className="standings-stats">{team.wins}</td>
-                            <td className="standings-stats">{team.draws}</td>
-                            <td className="standings-stats">{team.losses}</td>
-                            <td className="standings-stats">{team.goals_for || team.goalsFor}</td>
-                            <td className="standings-stats">{team.goals_against || team.goalsAgainst}</td>
+                            <td className="standings-stats">{team.played || 0}</td>
+                            <td className="standings-stats">{team.wins || 0}</td>
+                            <td className="standings-stats">{team.draws || 0}</td>
+                            <td className="standings-stats">{team.losses || 0}</td>
+                            <td className="standings-stats">{team.goals_for || team.goalsFor || 0}</td>
+                            <td className="standings-stats">{team.goals_against || team.goalsAgainst || 0}</td>
                             <td className="standings-stats">
                               <span className={`standings-goal-diff ${(team.goal_difference || team.goalDifference) > 0 ? 'positive' : (team.goal_difference || team.goalDifference) < 0 ? 'negative' : 'neutral'}`}>
                                 {(team.goal_difference || team.goalDifference) > 0 ? '+' : ''}{(team.goal_difference || team.goalDifference) || 0}
