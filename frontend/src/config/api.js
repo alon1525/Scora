@@ -24,7 +24,13 @@ export const API_ENDPOINTS = {
   
   // Users
   CREATE_PROFILE: `${API_BASE_URL}/api/users/create-profile`,
-  RECALCULATE_SCORES: `${API_BASE_URL}/api/users/recalculate-scores`
+  RECALCULATE_SCORES: `${API_BASE_URL}/api/users/recalculate-scores`,
+  
+  // Leagues
+  LEAGUES_CREATE: `${API_BASE_URL}/api/leagues/create`,
+  LEAGUES_JOIN: `${API_BASE_URL}/api/leagues/join`,
+  LEAGUES_MY_LEAGUES: `${API_BASE_URL}/api/leagues/my-leagues`,
+  LEAGUES_DETAILS: `${API_BASE_URL}/api/leagues`
 };
 
 export default API_BASE_URL;
