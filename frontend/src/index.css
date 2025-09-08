@@ -1721,6 +1721,7 @@ a:hover {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
+  padding-left: 4px;
 }
 
 .standings-team-logo {
@@ -2092,6 +2093,7 @@ a:hover {
 .standings-stats {
   text-align: center;
   font-size: 0.875rem;
+  padding-left: 8px;
 }
 
 .standings-goal-diff {
