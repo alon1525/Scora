@@ -56,7 +56,27 @@ const Index = () => {
 
       console.log('🚀 Starting comprehensive data load...');
 
-      // Load all data in parallel
+      // Load fixtures first (priority), then other data in parallel
+      console.log('🏃‍♂️ Loading fixtures first (priority)...');
+      const fixturesPromises = [];
+      for (let matchday = 1; matchday <= 5; matchday++) { // Load first 5 matchdays
+        fixturesPromises.push(
+          axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${matchday}`)
+            .then(response => ({ matchday, data: response.data }))
+            .catch(error => ({ matchday, error }))
+        );
+      }
+      
+      const fixturesResults = await Promise.allSettled(fixturesPromises);
+      const fixtures = {};
+      fixturesResults.forEach(result => {
+        if (result.status === 'fulfilled' && result.value.data?.success) {
+          fixtures[result.value.matchday] = result.value.data.fixtures;
+        }
+      });
+      console.log(`✅ Loaded fixtures for ${Object.keys(fixtures).length} matchdays`);
+
+      // Load other data in parallel
       const [
         standingsResponse,
         leaderboardResponse,
@@ -104,7 +124,7 @@ const Index = () => {
         leaderboard,
         userStats,
         leagues,
-        fixtures: {},
+        fixtures,
         predictions: {},
         loading: false,
         error: null

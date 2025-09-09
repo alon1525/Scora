@@ -339,7 +339,7 @@ const getPredictionResult = (fixture, prediction) => {
   return { type: 'miss', text: 'MISS', points: 0 };
 };
 
-const MatchPredictions = ({ onPredictionSaved }) => {
+const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const { user } = useAuth();
   const [fixtures, setFixtures] = useState([]);
   const [allFixtures, setAllFixtures] = useState([]); // Store all fixtures for team form
@@ -491,11 +491,22 @@ const MatchPredictions = ({ onPredictionSaved }) => {
   const fetchFixtures = async () => {
     try {
       setLoading(true);
+      
+      // Check if we have preloaded fixtures for this matchday
+      if (preloadedData?.fixtures?.[currentMatchday]) {
+        console.log(`✅ Using preloaded fixtures for matchday ${currentMatchday}`);
+        setFixtures(preloadedData.fixtures[currentMatchday]);
+        setLoading(false);
+        return;
+      }
+      
+      // Fallback to API call
       const response = await axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${currentMatchday}`);
       const data = response.data;
       
       if (data.success) {
         setFixtures(data.fixtures);
+        console.log(`✅ Loaded ${data.fixtures?.length || 0} fixtures for matchday ${currentMatchday}`);
       } else {
         toast.error('Failed to fetch fixtures');
       }

@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 
-export const LeaguesSection = () => {
+export const LeaguesSection = ({ preloadedData }) => {
   const { user } = useAuth();
   const [myLeagues, setMyLeagues] = useState([]);
   const [newLeague, setNewLeague] = useState({ name: '' });
@@ -33,9 +33,15 @@ export const LeaguesSection = () => {
 
   useEffect(() => {
     if (user) {
-      loadMyLeagues();
+      // Use preloaded data if available
+      if (preloadedData?.leagues) {
+        console.log('✅ Using preloaded leagues data');
+        setMyLeagues(preloadedData.leagues);
+      } else {
+        loadMyLeagues();
+      }
     }
-  }, [user]);
+  }, [user, preloadedData]);
 
   const loadMyLeagues = async () => {
     if (!user) return;

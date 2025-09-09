@@ -6,7 +6,7 @@ import { Badge } from './ui/badge';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 
-const Leaderboard = () => {
+const Leaderboard = ({ preloadedData }) => {
   const { user } = useAuth();
   const [leaderboard, setLeaderboard] = useState([]);
   const [userScores, setUserScores] = useState(null);
@@ -14,11 +14,18 @@ const Leaderboard = () => {
   // Hardcoded season - no need for state
 
   useEffect(() => {
-    fetchLeaderboard();
+    // Use preloaded data if available
+    if (preloadedData?.leaderboard) {
+      console.log('✅ Using preloaded leaderboard data');
+      setLeaderboard(preloadedData.leaderboard);
+    } else {
+      fetchLeaderboard();
+    }
+    
     if (user) {
       fetchUserScores();
     }
-  }, [user]);
+  }, [user, preloadedData]);
 
   const fetchLeaderboard = async () => {
     try {
