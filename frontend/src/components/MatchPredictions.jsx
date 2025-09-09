@@ -351,16 +351,28 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
 
   // Simple function to get current matchday from API response
   const getCurrentMatchday = () => {
+    console.log('🔍 Debugging preloadedData:', preloadedData);
+    
     // Check if we have any fixture data with currentMatchday info
     if (preloadedData?.fixtures) {
+      console.log('🔍 preloadedData.fixtures keys:', Object.keys(preloadedData.fixtures));
+      
       for (const [matchdayStr, fixtures] of Object.entries(preloadedData.fixtures)) {
-        if (fixtures.length > 0 && fixtures[0].season?.currentMatchday) {
-          const currentMatchday = fixtures[0].season.currentMatchday;
-          console.log(`🎯 API says current matchday is: ${currentMatchday}`);
-          return currentMatchday;
+        console.log(`🔍 Checking matchday ${matchdayStr}, fixtures length:`, fixtures.length);
+        
+        if (fixtures.length > 0) {
+          console.log('🔍 First fixture structure:', fixtures[0]);
+          console.log('🔍 Season object:', fixtures[0].season);
+          
+          if (fixtures[0].season?.currentMatchday) {
+            const currentMatchday = fixtures[0].season.currentMatchday;
+            console.log(`🎯 API says current matchday is: ${currentMatchday}`);
+            return currentMatchday;
+          }
         }
       }
     }
+    console.log('🔍 No currentMatchday found, using fallback 1');
     return 1; // Fallback
   };
 
