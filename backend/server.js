@@ -64,8 +64,8 @@ app.post('/api/users/create-profile', async (req, res) => {
           'nottingham', 'sunderland', 'tottenham', 'west-ham', 'wolves'
         ],
         fixture_points: 0,
-        table_points: 20, // Default 20 points for table prediction
-        total_points: 20,
+        table_points: 0, // Will be calculated by the trigger
+        total_points: 0, // Will be calculated by the trigger
         fixture_predictions: {}
       })
       .select();
@@ -76,6 +76,22 @@ app.post('/api/users/create-profile', async (req, res) => {
         success: false, 
         error: 'Failed to create user profile' 
       });
+    }
+
+    // Calculate the user's points after creating the profile
+    try {
+      const { data: calcResult, error: calcError } = await supabase.rpc('calculate_user_points', {
+        p_user_id: user_id
+      });
+
+      if (calcError) {
+        console.error('Error calculating initial points:', calcError);
+        // Don't fail the request, just log the error
+      } else {
+        console.log(`✅ Calculated initial points for new user: ${calcResult} points`);
+      }
+    } catch (calcError) {
+      console.error('Exception calculating initial points:', calcError);
     }
 
     res.json({ 
