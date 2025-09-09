@@ -1,22 +1,19 @@
--- Add calculate_user_points function to database
+-- Function to calculate ONLY table points (when table prediction changes)
 -- Run this in your Supabase SQL Editor
 
--- Function to calculate user points (fixture + table predictions)
-CREATE OR REPLACE FUNCTION calculate_user_points(p_user_id UUID)
+CREATE OR REPLACE FUNCTION calculate_table_points_only(p_user_id UUID)
 RETURNS INTEGER AS $$
 DECLARE
-    calc_fixture_points INTEGER := 0;
     calc_table_points INTEGER := 0;
-    calc_total_points INTEGER := 0;
     user_prediction TEXT[];
     actual_standings TEXT[];
     correct_positions INTEGER := 0;
     i INTEGER;
     current_fixture_points INTEGER := 0;
-    current_table_points INTEGER := 0;
+    calc_total_points INTEGER := 0;
 BEGIN
-    -- Get current points (don't reset them unless we're recalculating everything)
-    SELECT fixture_points, table_points INTO current_fixture_points, current_table_points
+    -- Get current fixture points (don't touch them)
+    SELECT fixture_points INTO current_fixture_points
     FROM user_profiles
     WHERE user_id = p_user_id;
     
@@ -41,20 +38,16 @@ BEGIN
         calc_table_points := correct_positions;
     END IF;
     
-    -- Keep existing fixture points (don't reset them)
-    calc_fixture_points := COALESCE(current_fixture_points, 0);
+    calc_total_points := COALESCE(current_fixture_points, 0) + calc_table_points;
     
-    calc_total_points := calc_fixture_points + calc_table_points;
-    
-    -- Update user profile with calculated points
+    -- Update user profile with calculated table points only
     UPDATE user_profiles
     SET 
-        fixture_points = calc_fixture_points,
         table_points = calc_table_points,
         total_points = calc_total_points,
         updated_at = NOW()
     WHERE user_id = p_user_id;
     
-    RETURN calc_total_points;
+    RETURN calc_table_points;
 END;
 $$ LANGUAGE plpgsql;
