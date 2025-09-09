@@ -343,118 +343,24 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const { user } = useAuth();
   const [fixtures, setFixtures] = useState([]);
   const [allFixtures, setAllFixtures] = useState([]); // Store all fixtures for team form
-  const [currentMatchday, setCurrentMatchday] = useState(null); // Start with null, will be set by findClosestUpcomingGame
+  const [currentMatchday, setCurrentMatchday] = useState(1); // Start with 1, user can navigate
   const [maxMatchday, setMaxMatchday] = useState(38); // Premier League has 38 matchdays
-  const [initialMatchdaySet, setInitialMatchdaySet] = useState(false);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const [predictions, setPredictions] = useState({});
   const [loading, setLoading] = useState(false);
   // Hardcoded season - no need for state
 
-  // Function to find the closest upcoming game and set initial matchday
-  const findClosestUpcomingGame = () => {
-    if (initialMatchdaySet) return;
-    
-    try {
-      const now = new Date();
-      let closestMatchday = 1;
-      let closestTime = Infinity;
-      
-      // Use preloaded fixtures if available (instant - no API calls!)
-      if (preloadedData?.fixtures) {
-        console.log('🎯 Using preloaded fixtures to find closest game...');
-        for (const [matchdayStr, fixtures] of Object.entries(preloadedData.fixtures)) {
-          const matchday = parseInt(matchdayStr);
-          
-          // Find the closest upcoming game in this matchday
-          for (const fixture of fixtures) {
-            if (fixture.scheduled_date && fixture.status === 'SCHEDULED') {
-              const gameTime = new Date(fixture.scheduled_date);
-              const timeDiff = gameTime.getTime() - now.getTime();
-              
-              // If game is in the future and closer than current closest
-              if (timeDiff > 0 && timeDiff < closestTime) {
-                closestTime = timeDiff;
-                closestMatchday = matchday;
-                console.log(`🎯 New closest: Matchday ${matchday} (${Math.round(timeDiff / (1000 * 60 * 60))}h away)`);
-              }
-            }
-          }
-        }
-      } else {
-        // No preloaded data available, default to matchday 1
-        console.log('🎯 No preloaded data available, defaulting to matchday 1');
-        closestMatchday = 1;
-      }
-      
-      // Set the closest matchday
-      setCurrentMatchday(closestMatchday);
-      setInitialMatchdaySet(true);
-      console.log(`🎯 Set initial matchday to ${closestMatchday} (closest upcoming game)`);
-    } catch (error) {
-      console.error('Error finding closest upcoming game:', error);
-      // Fallback to matchday 1 if we can't determine current matchday
-      setCurrentMatchday(1);
-      setInitialMatchdaySet(true);
-    }
-  };
+  // Removed complex current matchday detection to avoid infinite loops
+  // User can navigate to any fixture they want
 
-  // Find closest upcoming game when component mounts or preloaded data is available
-  useEffect(() => {
-    console.log('🔍 MatchPredictions useEffect triggered:', {
-      user: !!user,
-      initialMatchdaySet,
-      hasPreloadedData: !!preloadedData?.fixtures,
-      currentMatchday
-    });
-    
-    if (user && !initialMatchdaySet) {
-      if (preloadedData?.fixtures) {
-        console.log('🎯 Calling findClosestUpcomingGame...');
-        findClosestUpcomingGame();
-      } else {
-        // Fallback: set to matchday 1 if no data is available yet
-        console.log('🔄 Setting fallback to matchday 1');
-        setCurrentMatchday(1);
-        setInitialMatchdaySet(true);
-      }
-    }
-  }, [user, initialMatchdaySet, preloadedData?.fixtures]);
+  // Simple approach: start with matchday 1, user can navigate
+  // No complex current matchday detection to avoid infinite loops
 
-  // Timeout fallback - if we're stuck loading for too long, default to matchday 1
-  useEffect(() => {
-    if (user && currentMatchday === null && !loadingTimeout) {
-      const timeout = setTimeout(() => {
-        console.log('⏰ Loading timeout - defaulting to matchday 1');
-        setCurrentMatchday(1);
-        setInitialMatchdaySet(true);
-        setLoadingTimeout(true);
-      }, 3000); // 3 second timeout
-
-      return () => clearTimeout(timeout);
-    }
-  }, [user, currentMatchday, loadingTimeout]);
-
-  // Don't render until we have determined the current matchday
+  // Don't render if user is not logged in
   if (!user) {
     return (
       <div className="prediction-card">
         <div className="text-center py-8">
           <p>Please log in to view predictions</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (currentMatchday === null) {
-    console.log('🔄 Rendering loading state - currentMatchday is null');
-    return (
-      <div className="prediction-card">
-        <div className="text-center py-8">
-          <p>Loading fixtures...</p>
-          <p className="text-sm text-gray-500 mt-2">
-            Debug: user={user ? 'yes' : 'no'}, initialMatchdaySet={initialMatchdaySet ? 'yes' : 'no'}
-          </p>
         </div>
       </div>
     );
@@ -469,7 +375,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
 
   // Fetch fixtures for current matchday
   useEffect(() => {
-    if (user) {
+    if (user && currentMatchday !== null) {
       fetchFixtures();
     }
   }, [user, currentMatchday]);
