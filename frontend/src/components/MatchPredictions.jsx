@@ -128,8 +128,6 @@ const STADIUM_DATA = {
 
 // Function to clean up team names for display
 const getCleanTeamName = (teamName) => {
-  // Debug: log the team name to see what we're getting
-  console.log('Original team name:', teamName);
   
   const nameMapping = {
     // Brighton variations
@@ -223,7 +221,6 @@ const getCleanTeamName = (teamName) => {
   };
   
   const cleanName = nameMapping[teamName] || teamName;
-  console.log('Cleaned team name:', cleanName);
   return cleanName;
 };
 
@@ -266,8 +263,6 @@ const getTeamKit = (teamName) => {
 
 // Function to get stadium info for a team
 const getStadiumInfo = (teamName) => {
-  // Debug: log the team name to see what we're getting
-  console.log('Team name from API:', teamName);
   
   // Try exact match first
   if (STADIUM_DATA[teamName]) {
@@ -276,7 +271,6 @@ const getStadiumInfo = (teamName) => {
   
   // Try to find a match by removing common suffixes
   const cleanName = teamName.replace(/\s+(FC|United|City|Town|Albion|Hotspur|Wanderers|Rovers)$/i, '').trim();
-  console.log('Cleaned team name:', cleanName);
   
   // Try cleaned name
   if (STADIUM_DATA[cleanName]) {
