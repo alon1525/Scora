@@ -27,15 +27,29 @@ BEGIN
     FROM standings
     WHERE season = '2025';
     
-    -- Calculate table prediction points
+    -- Calculate table prediction points (20 points per team, -1 for each position away)
     IF user_prediction IS NOT NULL AND actual_standings IS NOT NULL THEN
-        -- Count correct positions (each correct position = 1 point)
-        FOR i IN 1..LEAST(array_length(user_prediction, 1), array_length(actual_standings, 1)) LOOP
-            IF user_prediction[i] = actual_standings[i] THEN
-                correct_positions := correct_positions + 1;
-            END IF;
+        -- For each team in prediction, find its actual position and calculate points
+        FOR i IN 1..array_length(user_prediction, 1) LOOP
+            DECLARE
+                predicted_team TEXT := user_prediction[i];
+                actual_position INTEGER;
+                position_diff INTEGER;
+                team_points INTEGER;
+            BEGIN
+                -- Find actual position of this team
+                SELECT position INTO actual_position
+                FROM standings
+                WHERE team_id = predicted_team AND season = '2025';
+                
+                -- Calculate points: 20 - (difference in positions)
+                IF actual_position IS NOT NULL THEN
+                    position_diff := ABS(i - actual_position);
+                    team_points := 20 - position_diff;
+                    calc_table_points := calc_table_points + team_points;
+                END IF;
+            END;
         END LOOP;
-        calc_table_points := correct_positions;
     END IF;
     
     calc_total_points := COALESCE(current_fixture_points, 0) + calc_table_points;
