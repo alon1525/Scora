@@ -343,7 +343,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const { user } = useAuth();
   const [fixtures, setFixtures] = useState([]);
   const [allFixtures, setAllFixtures] = useState([]); // Store all fixtures for team form
-  const [currentMatchday, setCurrentMatchday] = useState(1);
+  const [currentMatchday, setCurrentMatchday] = useState(null); // Start with null, will be set by findClosestUpcomingGame
   const [maxMatchday, setMaxMatchday] = useState(38); // Premier League has 38 matchdays
   const [initialMatchdaySet, setInitialMatchdaySet] = useState(false);
   const [predictions, setPredictions] = useState({});
@@ -406,7 +406,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       console.log(`🎯 Set initial matchday to ${closestMatchday} (closest upcoming game)`);
     } catch (error) {
       console.error('Error finding closest upcoming game:', error);
-      // Fallback to matchday 1
+      // Fallback to matchday 1 if we can't determine current matchday
       setCurrentMatchday(1);
       setInitialMatchdaySet(true);
     }
@@ -418,6 +418,17 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       findClosestUpcomingGame();
     }
   }, [user, initialMatchdaySet, preloadedData?.fixtures, fixtures]);
+
+  // Don't render until we have determined the current matchday
+  if (!user || currentMatchday === null) {
+    return (
+      <div className="prediction-card">
+        <div className="text-center py-8">
+          <p>Loading fixtures...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Fetch team form data when fixtures change
   useEffect(() => {
