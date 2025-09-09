@@ -12,7 +12,13 @@ DECLARE
     actual_standings TEXT[];
     correct_positions INTEGER := 0;
     i INTEGER;
+    current_fixture_points INTEGER := 0;
 BEGIN
+    -- Get current fixture points (don't reset them)
+    SELECT fixture_points INTO current_fixture_points
+    FROM user_profiles
+    WHERE user_id = p_user_id;
+    
     -- Get user's table prediction
     SELECT table_prediction INTO user_prediction
     FROM user_profiles
@@ -23,6 +29,11 @@ BEGIN
     FROM standings
     WHERE season = '2025';
     
+    -- Debug: Log what we found
+    RAISE NOTICE 'User prediction: %', user_prediction;
+    RAISE NOTICE 'Actual standings: %', actual_standings;
+    RAISE NOTICE 'Current fixture points: %', current_fixture_points;
+    
     -- Calculate table prediction points
     IF user_prediction IS NOT NULL AND actual_standings IS NOT NULL THEN
         -- Count correct positions (each correct position = 1 point)
@@ -32,10 +43,13 @@ BEGIN
             END IF;
         END LOOP;
         calc_table_points := correct_positions;
+        RAISE NOTICE 'Correct positions: %', correct_positions;
+    ELSE
+        RAISE NOTICE 'Missing data - user_prediction: %, actual_standings: %', user_prediction IS NOT NULL, actual_standings IS NOT NULL;
     END IF;
     
-    -- For now, set fixture_points to 0 (we'll calculate this separately)
-    calc_fixture_points := 0;
+    -- Keep existing fixture points (don't reset them)
+    calc_fixture_points := COALESCE(current_fixture_points, 0);
     
     calc_total_points := calc_fixture_points + calc_table_points;
     
