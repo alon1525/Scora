@@ -414,13 +414,29 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
 
   // Find closest upcoming game when component mounts or preloaded data is available
   useEffect(() => {
-    if (user && !initialMatchdaySet && (preloadedData?.fixtures || fixtures.length > 0)) {
-      findClosestUpcomingGame();
+    if (user && !initialMatchdaySet) {
+      if (preloadedData?.fixtures || fixtures.length > 0) {
+        findClosestUpcomingGame();
+      } else {
+        // Fallback: set to matchday 1 if no data is available yet
+        setCurrentMatchday(1);
+        setInitialMatchdaySet(true);
+      }
     }
   }, [user, initialMatchdaySet, preloadedData?.fixtures, fixtures]);
 
   // Don't render until we have determined the current matchday
-  if (!user || currentMatchday === null) {
+  if (!user) {
+    return (
+      <div className="prediction-card">
+        <div className="text-center py-8">
+          <p>Please log in to view predictions</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentMatchday === null) {
     return (
       <div className="prediction-card">
         <div className="text-center py-8">
