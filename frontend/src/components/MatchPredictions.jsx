@@ -263,6 +263,7 @@ const getTeamKit = (teamName) => {
 
 // Function to get stadium info for a team
 const getStadiumInfo = (teamName) => {
+  if (!teamName) return null;
   
   // Try exact match first
   if (STADIUM_DATA[teamName]) {
@@ -337,7 +338,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const { user } = useAuth();
   const [fixtures, setFixtures] = useState([]);
   const [allFixtures, setAllFixtures] = useState([]); // Store all fixtures for team form
-  const [currentMatchweek, setCurrentMatchweek] = useState(1); // Start with 1, user can navigate
+  const [currentMatchweek, setCurrentMatchweek] = useState(null); // Start with null, will be set from preloaded data
   const [maxMatchweek, setMaxMatchweek] = useState(38); // Premier League has 38 matchweeks
   const [predictions, setPredictions] = useState({});
   const [loading, setLoading] = useState(false);
@@ -359,6 +360,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   useEffect(() => {
     if (preloadedData?.fixtures && Object.keys(preloadedData.fixtures).length > 0) {
       const currentMatchweek = getCurrentMatchweek();
+      console.log(`🎯 Setting current matchweek to: ${currentMatchweek}`);
       setCurrentMatchweek(currentMatchweek);
     }
   }, [preloadedData?.fixtures]);
@@ -384,13 +386,21 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   // Fetch fixtures for current matchweek
   useEffect(() => {
     if (user && currentMatchweek !== null) {
-      fetchFixtures();
+      // Check if we have preloaded fixtures for this matchweek
+      if (preloadedData?.fixtures?.[currentMatchweek]) {
+        console.log(`✅ Using preloaded fixtures for matchweek ${currentMatchweek}`);
+        setFixtures(preloadedData.fixtures[currentMatchweek]);
+      } else {
+        console.log(`🔄 Fetching fixtures for matchweek ${currentMatchweek} from API`);
+        fetchFixtures();
+      }
     }
-  }, [user, currentMatchweek]);
+  }, [user, currentMatchweek, preloadedData?.fixtures]);
 
   // Fetch user predictions for current matchweek
   useEffect(() => {
-    if (user && fixtures.length > 0) {
+    if (user && fixtures.length > 0 && currentMatchweek !== null) {
+      console.log(`🔍 Fetching predictions for matchweek ${currentMatchweek} with ${fixtures.length} fixtures`);
       fetchPredictions();
     }
   }, [user, fixtures, currentMatchweek]);
@@ -489,6 +499,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
 
   const fetchPredictions = async () => {
     try {
+      console.log(`🔍 Fetching predictions for matchweek ${currentMatchweek}`);
       const token = (await supabase.auth.getSession()).data.session?.access_token;
       const response = await axios.get(`${API_ENDPOINTS.FIXTURE_PREDICTIONS}?matchday=${currentMatchweek}`, {
         headers: {

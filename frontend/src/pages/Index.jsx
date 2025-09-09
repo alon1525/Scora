@@ -56,10 +56,28 @@ const Index = () => {
 
       console.log('🚀 Starting comprehensive data load...');
 
-      // Load fixtures first (priority), then other data in parallel
-      console.log('🏃‍♂️ Loading fixtures first (priority)...');
+      // Load leaderboard first (priority)
+      console.log('🏃‍♂️ Loading leaderboard first (priority)...');
+      const leaderboardResponse = await axios.get(`${API_ENDPOINTS.LEADERBOARD}?limit=50`);
+      console.log('✅ Leaderboard loaded first');
+
+      // Load standings to get current matchweek
+      console.log('🏃‍♂️ Loading standings to get current matchweek...');
+      const standingsResponse = await axios.get(API_ENDPOINTS.STANDINGS);
+      
+      let currentMatchday = 1;
+      if (standingsResponse.data?.success) {
+        currentMatchday = standingsResponse.data.currentMatchday || 1;
+        console.log(`🎯 Found current matchday: ${currentMatchday}`);
+      }
+
+      // Load fixtures for current matchweek and surrounding ones
+      console.log(`🏃‍♂️ Loading fixtures for matchweek ${currentMatchday} and surrounding ones...`);
       const fixturesPromises = [];
-      for (let matchday = 1; matchday <= 5; matchday++) { // Load first 5 matchdays
+      const startMatchday = Math.max(1, currentMatchday - 1);
+      const endMatchday = Math.min(38, currentMatchday + 3);
+      
+      for (let matchday = startMatchday; matchday <= endMatchday; matchday++) {
         fixturesPromises.push(
           axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${matchday}`)
             .then(response => ({ matchday, data: response.data }))
@@ -69,46 +87,36 @@ const Index = () => {
       
       const fixturesResults = await Promise.allSettled(fixturesPromises);
       const fixtures = {};
-      let currentMatchday = null;
       fixturesResults.forEach(result => {
         if (result.status === 'fulfilled' && result.value.data?.success) {
           fixtures[result.value.matchday] = result.value.data.fixtures;
-          // Get currentMatchday from any successful response
-          if (result.value.data.currentMatchday && !currentMatchday) {
-            currentMatchday = result.value.data.currentMatchday;
-            console.log(`🎯 Found current matchday from API: ${currentMatchday}`);
-          }
         }
       });
       console.log(`✅ Loaded fixtures for ${Object.keys(fixtures).length} matchdays`);
 
       // Load other data in parallel
       const [
-        standingsResponse,
-        leaderboardResponse,
         userStatsResponse,
         leaguesResponse
       ] = await Promise.allSettled([
-        axios.get(API_ENDPOINTS.STANDINGS),
-        axios.get(`${API_ENDPOINTS.LEADERBOARD}?limit=50`),
         axios.get(API_ENDPOINTS.USER_SCORES, { headers }),
         axios.get(API_ENDPOINTS.LEAGUES_MY_LEAGUES, { headers })
       ]);
 
-      // Process standings
+      // Process standings (already loaded above)
       let standings = null;
-      if (standingsResponse.status === 'fulfilled' && standingsResponse.value.data?.standingsData) {
-        standings = standingsResponse.value.data.standingsData;
+      if (standingsResponse.data?.success) {
+        standings = standingsResponse.data.standingsData;
         setStandingsData(standings);
-        setLastUpdated(standingsResponse.value.data?.lastUpdated || "");
-        console.log('✅ Standings loaded');
+        setLastUpdated(standingsResponse.data?.lastUpdated || "");
+        console.log(`✅ Standings loaded - Current matchday: ${currentMatchday}`);
       }
 
-      // Process leaderboard
+      // Process leaderboard (already loaded above)
       let leaderboard = null;
-      if (leaderboardResponse.status === 'fulfilled' && leaderboardResponse.value.data?.success) {
-        leaderboard = leaderboardResponse.value.data.leaderboard;
-        console.log('✅ Leaderboard loaded');
+      if (leaderboardResponse.data?.success) {
+        leaderboard = leaderboardResponse.data.leaderboard;
+        console.log('✅ Leaderboard processed');
       }
 
       // Process user stats
@@ -256,12 +264,12 @@ const Index = () => {
         </header>
 
 
-        <Tabs defaultValue="matches" className="dashboard-tabs">
+        <Tabs defaultValue="leaderboard" className="dashboard-tabs">
           <TabsList className="dashboard-tabs-list">
             <TabsTrigger value="predictions">My Predictions</TabsTrigger>
             <TabsTrigger value="leagues">Leagues</TabsTrigger>
-            <TabsTrigger value="matches">Match Predictions</TabsTrigger>
             <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+            <TabsTrigger value="matches">Match Predictions</TabsTrigger>
             <TabsTrigger value="standings">Live Standings</TabsTrigger>
           </TabsList>
 
@@ -273,14 +281,14 @@ const Index = () => {
             <LeaguesSection preloadedData={preloadedData} />
           </TabsContent>
 
+          <TabsContent value="leaderboard" className="dashboard-tabs-content">
+            <Leaderboard preloadedData={preloadedData} />
+          </TabsContent>
+
           <TabsContent value="matches" className="dashboard-tabs-content">
             <div className="dashboard-tabs-content">
               <MatchPredictions onPredictionSaved={triggerScoreRefresh} preloadedData={preloadedData} />
             </div>
-          </TabsContent>
-
-          <TabsContent value="leaderboard" className="dashboard-tabs-content">
-            <Leaderboard preloadedData={preloadedData} />
           </TabsContent>
 
           <TabsContent value="standings" className="dashboard-tabs-content">

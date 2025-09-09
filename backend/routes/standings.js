@@ -133,12 +133,22 @@ router.get('/', async (req, res) => {
       throw new Error(`Database error: ${error.message}`);
     }
 
+    // Calculate current matchday from lowest "played" value
+    let currentMatchday = 1;
+    if (standings.length > 0) {
+      let min = Math.min(...standings.map(team => team.played || 0));
+      let max = Math.max(...standings.map(team => team.played || 0));
+      currentMatchday = max === min ? min+1 : min;
+
+    }
+
     res.json({
       success: true,
       standingsData: standings,
       lastUpdated: standings.length > 0 ? standings[0].last_updated : null,
       count: standings.length,
-      season
+      season,
+      currentMatchday
     });
   } catch (error) {
     console.error('Error fetching standings:', error);
