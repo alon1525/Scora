@@ -18,6 +18,9 @@ DECLARE
     actual_home INTEGER;
     actual_away INTEGER;
     fixture_score INTEGER;
+    fixture_id TEXT;
+    prediction JSONB;
+    i INTEGER;
 BEGIN
     -- Get user's table prediction
     SELECT table_prediction INTO user_prediction
