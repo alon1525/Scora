@@ -308,12 +308,30 @@ router.get('/matchday/:matchday', async (req, res) => {
       throw new Error(`Database error: ${error.message}`);
     }
 
+    // Get current matchday from football-data.org API
+    let currentMatchday = null;
+    try {
+      const API_KEY = process.env.LEAGUE_STANDINGS_API_KEY;
+      if (API_KEY) {
+        const response = await fetch(`https://api.football-data.org/v4/competitions/PL/matches?season=${season}&matchday=${matchday}`, {
+          headers: { 'X-Auth-Token': API_KEY }
+        });
+        const data = await response.json();
+        if (data.matches && data.matches.length > 0) {
+          currentMatchday = data.matches[0].season?.currentMatchday;
+        }
+      }
+    } catch (apiError) {
+      console.log('Could not fetch current matchday from API:', apiError.message);
+    }
+
     res.json({
       success: true,
       fixtures,
       count: fixtures.length,
       matchday: parseInt(matchday),
-      season
+      season,
+      currentMatchday
     });
   } catch (error) {
     console.error('Error fetching matchday fixtures:', error);

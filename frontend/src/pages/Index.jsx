@@ -69,9 +69,15 @@ const Index = () => {
       
       const fixturesResults = await Promise.allSettled(fixturesPromises);
       const fixtures = {};
+      let currentMatchday = null;
       fixturesResults.forEach(result => {
         if (result.status === 'fulfilled' && result.value.data?.success) {
           fixtures[result.value.matchday] = result.value.data.fixtures;
+          // Get currentMatchday from any successful response
+          if (result.value.data.currentMatchday && !currentMatchday) {
+            currentMatchday = result.value.data.currentMatchday;
+            console.log(`🎯 Found current matchday from API: ${currentMatchday}`);
+          }
         }
       });
       console.log(`✅ Loaded fixtures for ${Object.keys(fixtures).length} matchdays`);
@@ -125,6 +131,7 @@ const Index = () => {
         userStats,
         leagues,
         fixtures,
+        currentMatchday,
         predictions: {},
         loading: false,
         error: null

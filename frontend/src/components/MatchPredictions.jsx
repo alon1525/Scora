@@ -343,18 +343,14 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const [loading, setLoading] = useState(false);
   // Hardcoded season - no need for state
 
-  // Simple function to get current matchweek from API response
+  // Simple function to get current matchweek from preloaded data
   const getCurrentMatchweek = () => {
-    // Check if we have any fixture data with currentMatchday info
-    if (preloadedData?.fixtures) {
-      for (const [matchweekStr, fixtures] of Object.entries(preloadedData.fixtures)) {
-        if (fixtures.length > 0 && fixtures[0].season?.currentMatchday) {
-          const currentMatchweek = fixtures[0].season.currentMatchday;
-          console.log(`🎯 Found current matchweek: ${currentMatchweek}`);
-          return currentMatchweek;
-        }
-      }
+    // Check if we have currentMatchday directly in preloaded data
+    if (preloadedData?.currentMatchday) {
+      console.log(`🎯 Found current matchweek from preloaded data: ${preloadedData.currentMatchday}`);
+      return preloadedData.currentMatchday;
     }
+    
     console.log('❌ No currentMatchweek found in preloaded data, using fallback 1');
     return 1; // Fallback
   };
@@ -511,13 +507,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
               away_score: fixture.prediction.away_score,
               points_earned: fixture.prediction.points_earned
             };
-            // Debug logging
-            console.log(`Fixture ${fixture.id} prediction:`, {
-              home_score: fixture.prediction.home_score,
-              away_score: fixture.prediction.away_score,
-              fixture_status: fixture.status,
-              actual_scores: { home: fixture.home_score, away: fixture.away_score }
-            });
+            // Removed debug logging
           }
         });
         setPredictions(predictionsMap);
@@ -647,12 +637,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       }
     });
     
-    console.log(`Matchweek ${currentMatchweek} points calculation:`, {
-      totalPoints,
-      gamesWithPredictions,
-      finishedGames,
-      totalFixtures: fixtures.length
-    });
+    // Removed repeated console log
     
     return totalPoints;
   };
