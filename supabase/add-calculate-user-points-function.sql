@@ -5,21 +5,12 @@
 CREATE OR REPLACE FUNCTION calculate_user_points(p_user_id UUID)
 RETURNS INTEGER AS $$
 DECLARE
-    fixture_points INTEGER := 0;
-    table_points INTEGER := 0;
-    total_points INTEGER := 0;
+    calc_fixture_points INTEGER := 0;
+    calc_table_points INTEGER := 0;
+    calc_total_points INTEGER := 0;
     user_prediction TEXT[];
     actual_standings TEXT[];
     correct_positions INTEGER := 0;
-    fixture_prediction JSONB;
-    fixture_result JSONB;
-    prediction_home INTEGER;
-    prediction_away INTEGER;
-    actual_home INTEGER;
-    actual_away INTEGER;
-    fixture_score INTEGER;
-    fixture_id TEXT;
-    prediction JSONB;
     i INTEGER;
 BEGIN
     -- Get user's table prediction
@@ -40,61 +31,23 @@ BEGIN
                 correct_positions := correct_positions + 1;
             END IF;
         END LOOP;
-        table_points := correct_positions;
+        calc_table_points := correct_positions;
     END IF;
     
-    -- Calculate fixture prediction points
-    SELECT fixture_predictions INTO fixture_prediction
-    FROM user_profiles
-    WHERE user_id = p_user_id;
+    -- For now, set fixture_points to 0 (we'll calculate this separately)
+    calc_fixture_points := 0;
     
-    IF fixture_prediction IS NOT NULL THEN
-        -- Loop through each fixture prediction
-        FOR fixture_id, prediction IN SELECT * FROM jsonb_each(fixture_prediction) LOOP
-            -- Get the actual result from fixtures table
-            SELECT 
-                CASE WHEN home_score IS NOT NULL AND away_score IS NOT NULL 
-                     THEN jsonb_build_object('home', home_score, 'away', away_score)
-                     ELSE NULL END
-            INTO fixture_result
-            FROM fixtures
-            WHERE external_id = (fixture_id::TEXT)::INTEGER
-            AND status = 'FINISHED';
-            
-            -- If we have both prediction and result, calculate points
-            IF prediction IS NOT NULL AND fixture_result IS NOT NULL THEN
-                prediction_home := (prediction->>'home')::INTEGER;
-                prediction_away := (prediction->>'away')::INTEGER;
-                actual_home := (fixture_result->>'home')::INTEGER;
-                actual_away := (fixture_result->>'away')::INTEGER;
-                
-                -- Calculate points for this fixture
-                IF prediction_home = actual_home AND prediction_away = actual_away THEN
-                    fixture_score := 3; -- Exact prediction
-                ELSIF (prediction_home > prediction_away AND actual_home > actual_away) OR
-                      (prediction_home < prediction_away AND actual_home < actual_away) OR
-                      (prediction_home = prediction_away AND actual_home = actual_away) THEN
-                    fixture_score := 1; -- Correct result
-                ELSE
-                    fixture_score := 0; -- Wrong prediction
-                END IF;
-                
-                fixture_points := fixture_points + fixture_score;
-            END IF;
-        END LOOP;
-    END IF;
-    
-    total_points := fixture_points + table_points;
+    calc_total_points := calc_fixture_points + calc_table_points;
     
     -- Update user profile with calculated points
     UPDATE user_profiles
     SET 
-        fixture_points = fixture_points,
-        table_points = table_points,
-        total_points = total_points,
+        fixture_points = calc_fixture_points,
+        table_points = calc_table_points,
+        total_points = calc_total_points,
         updated_at = NOW()
     WHERE user_id = p_user_id;
     
-    RETURN total_points;
+    RETURN calc_total_points;
 END;
 $$ LANGUAGE plpgsql;

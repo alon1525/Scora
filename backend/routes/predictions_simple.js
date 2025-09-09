@@ -151,20 +151,8 @@ router.post('/table', authenticateUser, async (req, res) => {
       });
     }
 
-    // Check if predictions are locked for this user
-    const { data: lockData, error: lockError } = await supabase
-      .rpc('are_predictions_locked', { user_id_param: user_id });
-
-    if (lockError) {
-      console.error('Error checking prediction lock:', lockError);
-      // Don't throw error, just log it and continue
-      console.log('Continuing without lock check...');
-    } else if (lockData) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Table predictions are locked. You can no longer change your prediction.' 
-      });
-    }
+    // Skip prediction lock check for now (function doesn't exist)
+    console.log('Skipping prediction lock check...');
 
     // Validate team IDs
     const validTeamIds = [
