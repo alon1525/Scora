@@ -349,75 +349,25 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const [loading, setLoading] = useState(false);
   // Hardcoded season - no need for state
 
-  // Function to find current fixture using binary search on actual fixture dates
-  const findCurrentFixture = () => {
-    if (!preloadedData?.fixtures) return 1;
-    
-    const now = new Date();
-    const fixtureDates = [];
-    
-    // Build array of fixture date ranges
-    for (const [matchdayStr, fixtures] of Object.entries(preloadedData.fixtures)) {
-      const matchday = parseInt(matchdayStr);
-      if (fixtures.length > 0) {
-        // Get first and last game dates
-        const dates = fixtures
-          .map(f => new Date(f.scheduled_date))
-          .filter(d => !isNaN(d.getTime()))
-          .sort((a, b) => a - b);
-        
-        if (dates.length > 0) {
-          const firstGame = dates[0];
-          const lastGame = dates[dates.length - 1];
-          fixtureDates.push({
-            matchday,
-            startDate: firstGame,
-            endDate: lastGame
-          });
-          
-          // Debug logging for first few fixtures
-          if (matchday <= 5) {
-            console.log(`Fixture ${matchday}: ${firstGame.toLocaleDateString()} - ${lastGame.toLocaleDateString()}`);
-          }
+  // Simple function to get current matchday from API response
+  const getCurrentMatchday = () => {
+    // Check if we have any fixture data with currentMatchday info
+    if (preloadedData?.fixtures) {
+      for (const [matchdayStr, fixtures] of Object.entries(preloadedData.fixtures)) {
+        if (fixtures.length > 0 && fixtures[0].season?.currentMatchday) {
+          const currentMatchday = fixtures[0].season.currentMatchday;
+          console.log(`🎯 API says current matchday is: ${currentMatchday}`);
+          return currentMatchday;
         }
       }
     }
-    
-    // Sort by matchday
-    fixtureDates.sort((a, b) => a.matchday - b.matchday);
-    
-    // Binary search to find current fixture
-    let left = 0;
-    let right = fixtureDates.length - 1;
-    let currentFixture = 1;
-    
-    while (left <= right) {
-      const mid = Math.floor((left + right) / 2);
-      const fixture = fixtureDates[mid];
-      
-      if (now >= fixture.startDate && now <= fixture.endDate) {
-        // We're in this fixture period
-        currentFixture = fixture.matchday;
-        break;
-      } else if (now < fixture.startDate) {
-        // Current time is before this fixture, search left
-        right = mid - 1;
-        currentFixture = fixture.matchday; // This could be the current one
-      } else {
-        // Current time is after this fixture, search right
-        left = mid + 1;
-        currentFixture = fixture.matchday + 1; // Next fixture
-      }
-    }
-    
-    console.log(`🎯 Found current fixture: ${currentFixture} (from ${fixtureDates.length} fixtures)`);
-    return currentFixture;
+    return 1; // Fallback
   };
 
   // Set current fixture when preloaded data is available
   useEffect(() => {
     if (preloadedData?.fixtures && Object.keys(preloadedData.fixtures).length > 0) {
-      const currentFixture = findCurrentFixture();
+      const currentFixture = getCurrentMatchday();
       setCurrentMatchday(currentFixture);
       console.log(`🎯 Set current matchday to ${currentFixture}`);
     }
