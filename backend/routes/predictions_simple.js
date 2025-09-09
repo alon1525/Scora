@@ -208,6 +208,21 @@ router.post('/table', authenticateUser, async (req, res) => {
       throw new Error(`Database error: ${error.message}`);
     }
 
+    // Recalculate user points after updating table prediction
+    try {
+      const { data: calcResult, error: calcError } = await supabase.rpc('calculate_user_points', {
+        p_user_id: user_id
+      });
+
+      if (calcError) {
+        console.error('Error calculating points after table prediction update:', calcError);
+        // Don't fail the request, just log the error
+      } else {
+        console.log(`✅ Recalculated points after table prediction update: ${calcResult} points`);
+      }
+    } catch (calcError) {
+      console.error('Exception calculating points after table prediction update:', calcError);
+    }
 
     res.json({
       success: true,
