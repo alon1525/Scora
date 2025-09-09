@@ -382,23 +382,9 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
           }
         }
       } else {
-        // Fallback: Use current fixtures if they're already loaded
-        if (fixtures && fixtures.length > 0) {
-          console.log('🎯 Using current fixtures to find closest game...');
-          for (const fixture of fixtures) {
-            if (fixture.scheduled_date && fixture.status === 'SCHEDULED') {
-              const gameTime = new Date(fixture.scheduled_date);
-              const timeDiff = gameTime.getTime() - now.getTime();
-              
-              // If game is in the future and closer than current closest
-              if (timeDiff > 0 && timeDiff < closestTime) {
-                closestTime = timeDiff;
-                closestMatchday = currentMatchday; // Use current matchday since we're looking at its fixtures
-                console.log(`🎯 New closest: Matchday ${currentMatchday} (${Math.round(timeDiff / (1000 * 60 * 60))}h away)`);
-              }
-            }
-          }
-        }
+        // No preloaded data available, default to matchday 1
+        console.log('🎯 No preloaded data available, defaulting to matchday 1');
+        closestMatchday = 1;
       }
       
       // Set the closest matchday
@@ -419,12 +405,11 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       user: !!user,
       initialMatchdaySet,
       hasPreloadedData: !!preloadedData?.fixtures,
-      fixturesLength: fixtures.length,
       currentMatchday
     });
     
     if (user && !initialMatchdaySet) {
-      if (preloadedData?.fixtures || fixtures.length > 0) {
+      if (preloadedData?.fixtures) {
         console.log('🎯 Calling findClosestUpcomingGame...');
         findClosestUpcomingGame();
       } else {
@@ -434,7 +419,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         setInitialMatchdaySet(true);
       }
     }
-  }, [user, initialMatchdaySet, preloadedData?.fixtures, fixtures]);
+  }, [user, initialMatchdaySet, preloadedData?.fixtures]);
 
   // Timeout fallback - if we're stuck loading for too long, default to matchday 1
   useEffect(() => {
