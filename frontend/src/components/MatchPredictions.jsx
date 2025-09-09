@@ -337,33 +337,33 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const { user } = useAuth();
   const [fixtures, setFixtures] = useState([]);
   const [allFixtures, setAllFixtures] = useState([]); // Store all fixtures for team form
-  const [currentMatchday, setCurrentMatchday] = useState(1); // Start with 1, user can navigate
-  const [maxMatchday, setMaxMatchday] = useState(38); // Premier League has 38 matchdays
+  const [currentMatchweek, setCurrentMatchweek] = useState(1); // Start with 1, user can navigate
+  const [maxMatchweek, setMaxMatchweek] = useState(38); // Premier League has 38 matchweeks
   const [predictions, setPredictions] = useState({});
   const [loading, setLoading] = useState(false);
   // Hardcoded season - no need for state
 
-  // Simple function to get current matchday from API response
-  const getCurrentMatchday = () => {
+  // Simple function to get current matchweek from API response
+  const getCurrentMatchweek = () => {
     // Check if we have any fixture data with currentMatchday info
     if (preloadedData?.fixtures) {
-      for (const [matchdayStr, fixtures] of Object.entries(preloadedData.fixtures)) {
+      for (const [matchweekStr, fixtures] of Object.entries(preloadedData.fixtures)) {
         if (fixtures.length > 0 && fixtures[0].season?.currentMatchday) {
-          const currentMatchday = fixtures[0].season.currentMatchday;
-          console.log(`🎯 Found current matchday: ${currentMatchday}`);
-          return currentMatchday;
+          const currentMatchweek = fixtures[0].season.currentMatchday;
+          console.log(`🎯 Found current matchweek: ${currentMatchweek}`);
+          return currentMatchweek;
         }
       }
     }
-    console.log('❌ No currentMatchday found in preloaded data, using fallback 1');
+    console.log('❌ No currentMatchweek found in preloaded data, using fallback 1');
     return 1; // Fallback
   };
 
-  // Set current fixture when preloaded data is available
+  // Set current matchweek when preloaded data is available
   useEffect(() => {
     if (preloadedData?.fixtures && Object.keys(preloadedData.fixtures).length > 0) {
-      const currentFixture = getCurrentMatchday();
-      setCurrentMatchday(currentFixture);
+      const currentMatchweek = getCurrentMatchweek();
+      setCurrentMatchweek(currentMatchweek);
     }
   }, [preloadedData?.fixtures]);
 
@@ -385,19 +385,19 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     }
   }, [user, fixtures]);
 
-  // Fetch fixtures for current matchday
+  // Fetch fixtures for current matchweek
   useEffect(() => {
-    if (user && currentMatchday !== null) {
+    if (user && currentMatchweek !== null) {
       fetchFixtures();
     }
-  }, [user, currentMatchday]);
+  }, [user, currentMatchweek]);
 
-  // Fetch user predictions for current matchday
+  // Fetch user predictions for current matchweek
   useEffect(() => {
     if (user && fixtures.length > 0) {
       fetchPredictions();
     }
-  }, [user, fixtures, currentMatchday]);
+  }, [user, fixtures, currentMatchweek]);
 
   // Force re-render when fixtures or predictions change to update matchday points
   useEffect(() => {
@@ -409,10 +409,10 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       // Fetch fixtures from the last few matchdays to get recent form
       const recentFixtures = [];
       
-      // Get fixtures from current matchday and a few previous ones
-      for (let matchday = Math.max(1, currentMatchday - 5); matchday <= currentMatchday; matchday++) {
+      // Get fixtures from current matchweek and a few previous ones
+      for (let matchweek = Math.max(1, currentMatchweek - 5); matchweek <= currentMatchweek; matchweek++) {
         try {
-          const response = await axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${matchday}`);
+          const response = await axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${matchweek}`);
           if (response.data.success && response.data.fixtures) {
             recentFixtures.push(...response.data.fixtures);
           }
@@ -465,21 +465,21 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     try {
       setLoading(true);
       
-      // Check if we have preloaded fixtures for this matchday
-      if (preloadedData?.fixtures?.[currentMatchday]) {
-        console.log(`✅ Using preloaded fixtures for matchday ${currentMatchday}`);
-        setFixtures(preloadedData.fixtures[currentMatchday]);
+      // Check if we have preloaded fixtures for this matchweek
+      if (preloadedData?.fixtures?.[currentMatchweek]) {
+        console.log(`✅ Using preloaded fixtures for matchweek ${currentMatchweek}`);
+        setFixtures(preloadedData.fixtures[currentMatchweek]);
         setLoading(false);
         return;
       }
       
       // Fallback to API call
-      const response = await axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${currentMatchday}`);
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${currentMatchweek}`);
       const data = response.data;
       
       if (data.success) {
         setFixtures(data.fixtures);
-        console.log(`✅ Loaded ${data.fixtures?.length || 0} fixtures for matchday ${currentMatchday}`);
+        console.log(`✅ Loaded ${data.fixtures?.length || 0} fixtures for matchweek ${currentMatchweek}`);
       } else {
         toast.error('Failed to fetch fixtures');
       }
@@ -494,7 +494,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const fetchPredictions = async () => {
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const response = await axios.get(`${API_ENDPOINTS.FIXTURE_PREDICTIONS}?matchday=${currentMatchday}`, {
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURE_PREDICTIONS}?matchday=${currentMatchweek}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -647,7 +647,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       }
     });
     
-    console.log(`Matchday ${currentMatchday} points calculation:`, {
+    console.log(`Matchweek ${currentMatchweek} points calculation:`, {
       totalPoints,
       gamesWithPredictions,
       finishedGames,
@@ -689,9 +689,9 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       <div className="prediction-card">
         {/* Round Navigation */}
         <RoundNavigation 
-          currentMatchday={currentMatchday}
-          maxMatchday={maxMatchday}
-          onMatchdayChange={setCurrentMatchday}
+          currentMatchday={currentMatchweek}
+          maxMatchday={maxMatchweek}
+          onMatchdayChange={setCurrentMatchweek}
         />
 
         {/* Matchday Points */}
@@ -709,7 +709,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
           </div>
         ) : fixtures.length === 0 ? (
           <div className="text-center py-8">
-            <p>No fixtures found for matchday {currentMatchday}</p>
+            <p>No fixtures found for matchweek {currentMatchweek}</p>
           </div>
         ) : (
           <div className="grid gap-4">
