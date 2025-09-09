@@ -1,6 +1,9 @@
 -- Add trigger to automatically recalculate points when predictions change
 -- Run this in your Supabase SQL Editor
 
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS trigger_recalculate_table_points ON user_profiles;
+
 -- Function to trigger point recalculation
 CREATE OR REPLACE FUNCTION trigger_recalculate_points()
 RETURNS TRIGGER AS $$
