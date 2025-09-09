@@ -359,30 +359,57 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       let closestMatchday = 1;
       let closestTime = Infinity;
       
-      // Check matchdays 1-38 to find the closest upcoming game
-      for (let matchday = 1; matchday <= 38; matchday++) {
-        try {
-          const response = await axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${matchday}`);
-          if (response.data.success && response.data.fixtures) {
-            const fixtures = response.data.fixtures;
-            
-            // Find the closest upcoming game in this matchday
-            for (const fixture of fixtures) {
-              if (fixture.scheduled_date && fixture.status === 'SCHEDULED') {
-                const gameTime = new Date(fixture.scheduled_date);
-                const timeDiff = gameTime.getTime() - now.getTime();
-                
-                // If game is in the future and closer than current closest
-                if (timeDiff > 0 && timeDiff < closestTime) {
-                  closestTime = timeDiff;
-                  closestMatchday = matchday;
-                }
+      // Use preloaded fixtures if available (much faster)
+      if (preloadedData?.fixtures) {
+        console.log('🎯 Using preloaded fixtures to find closest game...');
+        for (const [matchdayStr, fixtures] of Object.entries(preloadedData.fixtures)) {
+          const matchday = parseInt(matchdayStr);
+          
+          // Find the closest upcoming game in this matchday
+          for (const fixture of fixtures) {
+            if (fixture.scheduled_date && fixture.status === 'SCHEDULED') {
+              const gameTime = new Date(fixture.scheduled_date);
+              const timeDiff = gameTime.getTime() - now.getTime();
+              
+              // Debug logging
+              console.log(`Matchday ${matchday}: ${fixture.home_team_name} vs ${fixture.away_team_name} at ${gameTime.toLocaleString()}, diff: ${Math.round(timeDiff / (1000 * 60 * 60))}h`);
+              
+              // If game is in the future and closer than current closest
+              if (timeDiff > 0 && timeDiff < closestTime) {
+                closestTime = timeDiff;
+                closestMatchday = matchday;
+                console.log(`🎯 New closest: Matchday ${matchday} (${Math.round(timeDiff / (1000 * 60 * 60))}h away)`);
               }
             }
           }
-        } catch (error) {
-          // Continue to next matchday if this one fails
-          continue;
+        }
+      } else {
+        // Fallback: Check only first 10 matchdays (much faster than 38)
+        console.log('🎯 Checking first 10 matchdays for closest game...');
+        for (let matchday = 1; matchday <= 10; matchday++) {
+          try {
+            const response = await axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${matchday}`);
+            if (response.data.success && response.data.fixtures) {
+              const fixtures = response.data.fixtures;
+              
+              // Find the closest upcoming game in this matchday
+              for (const fixture of fixtures) {
+                if (fixture.scheduled_date && fixture.status === 'SCHEDULED') {
+                  const gameTime = new Date(fixture.scheduled_date);
+                  const timeDiff = gameTime.getTime() - now.getTime();
+                  
+                  // If game is in the future and closer than current closest
+                  if (timeDiff > 0 && timeDiff < closestTime) {
+                    closestTime = timeDiff;
+                    closestMatchday = matchday;
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            // Continue to next matchday if this one fails
+            continue;
+          }
         }
       }
       
@@ -759,18 +786,14 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                       </span>
                     </div>
                     <div className="match-time">
-                      {new Date(fixture.scheduled_date).toLocaleTimeString([], { 
+                      {new Date(fixture.scheduled_date).toLocaleTimeString('en-GB', { 
                         hour: '2-digit', 
-                        minute: '2-digit' 
+                        minute: '2-digit',
+                        timeZone: 'Europe/London'
                       })}
                     </div>
                     <div className="match-status">
                       {getStatusBadge(fixture.status, fixture.scheduled_date)}
-                      {prediction.points_earned !== undefined && (
-                        <Badge className="points-badge">
-                          {prediction.points_earned} pts
-                        </Badge>
-                      )}
                     </div>
                   </div>
 
