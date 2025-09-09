@@ -345,9 +345,65 @@ const MatchPredictions = ({ onPredictionSaved }) => {
   const [allFixtures, setAllFixtures] = useState([]); // Store all fixtures for team form
   const [currentMatchday, setCurrentMatchday] = useState(1);
   const [maxMatchday, setMaxMatchday] = useState(38); // Premier League has 38 matchdays
+  const [initialMatchdaySet, setInitialMatchdaySet] = useState(false);
   const [predictions, setPredictions] = useState({});
   const [loading, setLoading] = useState(false);
   // Hardcoded season - no need for state
+
+  // Function to find the closest upcoming game and set initial matchday
+  const findClosestUpcomingGame = async () => {
+    if (initialMatchdaySet) return;
+    
+    try {
+      const now = new Date();
+      let closestMatchday = 1;
+      let closestTime = Infinity;
+      
+      // Check matchdays 1-38 to find the closest upcoming game
+      for (let matchday = 1; matchday <= 38; matchday++) {
+        try {
+          const response = await axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${matchday}`);
+          if (response.data.success && response.data.fixtures) {
+            const fixtures = response.data.fixtures;
+            
+            // Find the closest upcoming game in this matchday
+            for (const fixture of fixtures) {
+              if (fixture.scheduled_date && fixture.status === 'SCHEDULED') {
+                const gameTime = new Date(fixture.scheduled_date);
+                const timeDiff = gameTime.getTime() - now.getTime();
+                
+                // If game is in the future and closer than current closest
+                if (timeDiff > 0 && timeDiff < closestTime) {
+                  closestTime = timeDiff;
+                  closestMatchday = matchday;
+                }
+              }
+            }
+          }
+        } catch (error) {
+          // Continue to next matchday if this one fails
+          continue;
+        }
+      }
+      
+      // Set the closest matchday
+      setCurrentMatchday(closestMatchday);
+      setInitialMatchdaySet(true);
+      console.log(`🎯 Set initial matchday to ${closestMatchday} (closest upcoming game)`);
+    } catch (error) {
+      console.error('Error finding closest upcoming game:', error);
+      // Fallback to matchday 1
+      setCurrentMatchday(1);
+      setInitialMatchdaySet(true);
+    }
+  };
+
+  // Find closest upcoming game when component mounts
+  useEffect(() => {
+    if (user && !initialMatchdaySet) {
+      findClosestUpcomingGame();
+    }
+  }, [user, initialMatchdaySet]);
 
   // Fetch team form data when fixtures change
   useEffect(() => {

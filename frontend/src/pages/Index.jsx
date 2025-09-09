@@ -24,10 +24,102 @@ const Index = () => {
   const [scoreRefreshTrigger, setScoreRefreshTrigger] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const standingsLoaded = useRef(false);
+  
+  // Preloaded data for all tabs
+  const [preloadedData, setPreloadedData] = useState({
+    standings: null,
+    leaderboard: null,
+    userStats: null,
+    leagues: null,
+    fixtures: {},
+    predictions: {},
+    loading: true,
+    error: null
+  });
 
   useEffect(() => {
     document.title = "Premier League Predictions";
   }, []);
+
+  // Comprehensive data loading function
+  const loadAllData = async () => {
+    if (!user) return;
+    
+    setPreloadedData(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      console.log('🚀 Starting comprehensive data load...');
+
+      // Load all data in parallel
+      const [
+        standingsResponse,
+        leaderboardResponse,
+        userStatsResponse,
+        leaguesResponse
+      ] = await Promise.allSettled([
+        axios.get(API_ENDPOINTS.STANDINGS),
+        axios.get(`${API_ENDPOINTS.LEADERBOARD}?limit=50`),
+        axios.get(API_ENDPOINTS.USER_SCORES, { headers }),
+        axios.get(API_ENDPOINTS.LEAGUES_MY_LEAGUES, { headers })
+      ]);
+
+      // Process standings
+      let standings = null;
+      if (standingsResponse.status === 'fulfilled' && standingsResponse.value.data?.standingsData) {
+        standings = standingsResponse.value.data.standingsData;
+        setStandingsData(standings);
+        setLastUpdated(standingsResponse.value.data?.lastUpdated || "");
+        console.log('✅ Standings loaded');
+      }
+
+      // Process leaderboard
+      let leaderboard = null;
+      if (leaderboardResponse.status === 'fulfilled' && leaderboardResponse.value.data?.success) {
+        leaderboard = leaderboardResponse.value.data.leaderboard;
+        console.log('✅ Leaderboard loaded');
+      }
+
+      // Process user stats
+      let userStats = null;
+      if (userStatsResponse.status === 'fulfilled' && userStatsResponse.value.data?.success) {
+        userStats = userStatsResponse.value.data;
+        console.log('✅ User stats loaded');
+      }
+
+      // Process leagues
+      let leagues = null;
+      if (leaguesResponse.status === 'fulfilled' && leaguesResponse.value.data?.success) {
+        leagues = leaguesResponse.value.data.leagues;
+        console.log('✅ Leagues loaded');
+      }
+
+      setPreloadedData({
+        standings,
+        leaderboard,
+        userStats,
+        leagues,
+        fixtures: {},
+        predictions: {},
+        loading: false,
+        error: null
+      });
+
+      console.log('🎉 All data loaded successfully!');
+    } catch (error) {
+      console.error('❌ Error loading data:', error);
+      setPreloadedData(prev => ({
+        ...prev,
+        loading: false,
+        error: error.message
+      }));
+    }
+  };
 
   // Handle scroll to hide/show sign out button
   useEffect(() => {
@@ -48,45 +140,14 @@ const Index = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Load live standings and recalculate scores
+  // Load all data when user is authenticated
   useEffect(() => {
-    const loadStandings = async () => {
-      if (standingsLoaded.current) return; // Prevent multiple calls
-      
-      try {
-        standingsLoaded.current = true;
-        console.log('Loading live standings...');
-        
-        // Get the standings data first
-        const response = await axios.get(API_ENDPOINTS.STANDINGS);
-        const data = response.data;
-        console.log('Standings response:', data);
-        
-        const standings = data?.standingsData;
-        const updated = data?.lastUpdated;
-        
-        if (standings && standings.length > 0) {
-          setStandingsData(standings);
-          console.log(`✅ Loaded ${standings.length} teams`);
-        } else {
-          console.warn('No standings data received');
-        }
-        
-        if (updated) {
-          setLastUpdated(updated);
-        }
-      } catch (e) {
-        console.error('❌ Error loading standings:', e?.message || e);
-        // Set some fallback data for testing
-        setStandingsData([]);
-        standingsLoaded.current = false; // Reset on error so it can retry
-      }
-    };
-
-    if (user) {
-      loadStandings();
+    if (!authLoading && user && preloadedData.loading) {
+      loadAllData();
     }
-  }, [user]);
+  }, [authLoading, user, preloadedData.loading]);
+
+  // Legacy standings loading removed - now handled in comprehensive loadAllData()
 
   const handleSignOut = async () => {
     try {
@@ -182,17 +243,17 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="leagues" className="dashboard-tabs-content">
-            <LeaguesSection />
+            <LeaguesSection preloadedData={preloadedData} />
           </TabsContent>
 
           <TabsContent value="matches" className="dashboard-tabs-content">
             <div className="dashboard-tabs-content">
-              <MatchPredictions onPredictionSaved={triggerScoreRefresh} />
+              <MatchPredictions onPredictionSaved={triggerScoreRefresh} preloadedData={preloadedData} />
             </div>
           </TabsContent>
 
           <TabsContent value="leaderboard" className="dashboard-tabs-content">
-            <Leaderboard />
+            <Leaderboard preloadedData={preloadedData} />
           </TabsContent>
 
           <TabsContent value="standings" className="dashboard-tabs-content">
