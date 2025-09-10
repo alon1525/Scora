@@ -2617,23 +2617,23 @@ a:hover {
   }
   
   .auth-header {
-    margin-bottom: var(--spacing-md);
-    padding-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    padding-bottom: var(--spacing-xs);
     border-bottom: 1px solid var(--border-light);
   }
   
   .auth-title {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     margin-bottom: var(--spacing-xs);
   }
   
   .auth-subtitle {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     margin-bottom: 0;
   }
   
   .auth-tabs-list {
-    flex-direction: row;
+    flex-direction: row !important;
     gap: var(--spacing-xs);
     padding: var(--spacing-xs);
     background: var(--bg-muted);
@@ -2644,7 +2644,7 @@ a:hover {
   .auth-tabs-trigger {
     flex: 1;
     padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
   }
   
@@ -2741,18 +2741,28 @@ a:hover {
   }
   
   .auth-title {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     margin-bottom: var(--spacing-xs);
   }
   
   .auth-subtitle {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     margin-bottom: 0;
   }
   
+  .auth-tabs-list {
+    flex-direction: row !important;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs);
+    background: var(--bg-muted);
+    box-shadow: none;
+    border: 1px solid var(--border-light);
+  }
+  
   .auth-tabs-trigger {
+    flex: 1;
     padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
   }
   
