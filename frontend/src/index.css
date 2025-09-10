@@ -2525,15 +2525,62 @@ a:hover {
   }
   
   .landing-nav {
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .landing-logo h1 {
+    font-size: 1.2rem;
+    text-align: center;
   }
   
   .landing-nav-links {
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .landing-nav-link {
+    font-size: 0.9rem;
+    padding: var(--spacing-xs) var(--spacing-sm);
   }
   
   .landing-hero-actions {
     justify-content: center;
+  }
+  
+  /* Add padding to hero section to account for larger nav */
+  .landing-hero {
+    padding-top: 120px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .landing-nav {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+  
+  .landing-logo h1 {
+    font-size: 1rem;
+  }
+  
+  .landing-nav-links {
+    gap: var(--spacing-xs);
+  }
+  
+  .landing-nav-link {
+    font-size: 0.8rem;
+    padding: var(--spacing-xs);
+  }
+  
+  .landing-hero {
+    padding-top: 100px;
+  }
+  
+  .landing-hero-title {
+    font-size: 2rem;
   }
   
   .football-animation {
