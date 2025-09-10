@@ -440,7 +440,7 @@ a:hover {
 }
 
 .landing-logo h1 {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   font-weight: 800;
   background: linear-gradient(135deg, var(--primary-green), var(--accent-gold));
   -webkit-background-clip: text;
@@ -457,20 +457,14 @@ a:hover {
 }
 
 .landing-nav-link {
-  color: var(--text-primary);
+  color: #333;
   font-weight: 500;
-  transition: all var(--transition-normal);
+  transition: color var(--transition-normal);
   position: relative;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .landing-nav-link:hover {
-  color: white;
-  background: var(--primary-green);
-  border-color: var(--primary-green);
+  color: var(--primary-green);
 }
 
 .landing-nav-link::after {
@@ -2536,10 +2530,8 @@ a:hover {
   
   .landing-hero-title {
     font-size: 2.5rem;
-    background: linear-gradient(135deg, var(--primary-green), var(--accent-gold));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
   
   .landing-nav {
@@ -2557,7 +2549,7 @@ a:hover {
   }
   
   .landing-logo h1 {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     text-align: left;
     margin: 0;
     line-height: 1;
@@ -2571,18 +2563,12 @@ a:hover {
   
   .landing-nav-link {
     font-size: 0.9rem;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    color: var(--text-primary);
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
-    transition: all var(--transition-normal);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #333;
+    transition: color var(--transition-normal);
   }
   
   .landing-nav-link:hover {
-    background: var(--primary-green);
-    color: white;
-    border-color: var(--primary-green);
+    color: var(--primary-green);
   }
   
   .landing-hero-actions {
@@ -2612,7 +2598,7 @@ a:hover {
   }
   
   .landing-logo h1 {
-    font-size: 1rem;
+    font-size: 1.2rem;
     text-align: left;
     margin: 0;
     line-height: 1;
@@ -2625,11 +2611,8 @@ a:hover {
   
   .landing-nav-link {
     font-size: 0.8rem;
-    padding: var(--spacing-xs);
-    color: var(--text-primary);
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    color: #333;
+    transition: color var(--transition-normal);
   }
   
   .landing-hero {
@@ -2638,10 +2621,8 @@ a:hover {
   
   .landing-hero-title {
     font-size: 2rem;
-    background: linear-gradient(135deg, var(--primary-green), var(--accent-gold));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
   
   .football-animation {
