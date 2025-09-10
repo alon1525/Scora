@@ -472,6 +472,10 @@ a:hover {
   .landing-nav-link:hover {
     color: #333;
   }
+  
+  .landing-nav-link:active {
+    color: var(--primary-green);
+  }
 }
 
 .landing-nav-link::after {
@@ -2535,7 +2539,7 @@ a:hover {
     text-align: center;
   }
   
-  .landing-hero-title {
+  .landing-title {
     font-size: 2.5rem;
     color: white !important;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
@@ -2565,15 +2569,16 @@ a:hover {
   }
   
   .landing-nav-links {
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
     flex-wrap: wrap;
     justify-content: flex-end;
   }
   
   .landing-nav-link {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: #333;
     transition: color var(--transition-normal);
+    padding: var(--spacing-xs);
   }
   
   .landing-nav-link:hover {
@@ -2584,6 +2589,10 @@ a:hover {
   @media (hover: none) and (pointer: coarse) {
     .landing-nav-link:hover {
       color: #333;
+    }
+    
+    .landing-nav-link:active {
+      color: var(--primary-green);
     }
   }
   
@@ -2621,21 +2630,22 @@ a:hover {
   }
   
   .landing-nav-links {
-    gap: var(--spacing-xs);
+    gap: var(--spacing-sm);
     justify-content: flex-end;
   }
   
   .landing-nav-link {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #333;
     transition: color var(--transition-normal);
+    padding: var(--spacing-xs);
   }
   
   .landing-hero {
     padding-top: 100px;
   }
   
-  .landing-hero-title {
+  .landing-title {
     font-size: 2rem;
     color: white !important;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
