@@ -2522,28 +2522,42 @@ a:hover {
   
   .landing-hero-title {
     font-size: 2.5rem;
+    background: linear-gradient(135deg, var(--primary-green), var(--accent-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
   
   .landing-nav {
     padding: var(--spacing-sm) var(--spacing-md);
-    flex-direction: column;
-    gap: var(--spacing-sm);
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
   
   .landing-logo h1 {
     font-size: 1.2rem;
-    text-align: center;
+    text-align: left;
   }
   
   .landing-nav-links {
     gap: var(--spacing-sm);
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-end;
   }
   
   .landing-nav-link {
     font-size: 0.9rem;
     padding: var(--spacing-xs) var(--spacing-sm);
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    transition: all var(--transition-normal);
+  }
+  
+  .landing-nav-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--primary-green);
   }
   
   .landing-hero-actions {
@@ -2560,19 +2574,27 @@ a:hover {
 @media (max-width: 480px) {
   .landing-nav {
     padding: var(--spacing-xs) var(--spacing-sm);
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
   
   .landing-logo h1 {
     font-size: 1rem;
+    text-align: left;
   }
   
   .landing-nav-links {
     gap: var(--spacing-xs);
+    justify-content: flex-end;
   }
   
   .landing-nav-link {
     font-size: 0.8rem;
     padding: var(--spacing-xs);
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
   }
   
   .landing-hero {
@@ -2581,6 +2603,10 @@ a:hover {
   
   .landing-hero-title {
     font-size: 2rem;
+    background: linear-gradient(135deg, var(--primary-green), var(--accent-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
   
   .football-animation {

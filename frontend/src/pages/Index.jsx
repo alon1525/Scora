@@ -38,7 +38,7 @@ const Index = () => {
   });
 
   useEffect(() => {
-    document.title = "Premier League Predictions";
+    document.title = "Scora";
   }, []);
 
   // Comprehensive data loading function
@@ -251,7 +251,7 @@ const Index = () => {
           <div className="dashboard-header-content">
             <div className="dashboard-title-section">
               <h1 className="dashboard-title">
-                Premier League Predictions
+                Scora
               </h1>
               <p className="dashboard-subtitle">
                 Welcome back! Create your predictions and compete with friends.

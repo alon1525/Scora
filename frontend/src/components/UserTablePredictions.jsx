@@ -154,7 +154,7 @@ export const UserTablePredictions = ({ onPredictionSaved }) => {
   return (
     <div className="prediction-section">
       <div className="prediction-header">
-        <h2 className="prediction-title">Your Premier League Predictions</h2>
+        <h2 className="prediction-title">Your League Predictions</h2>
         <p className="prediction-description">
           Drag and drop teams to predict the final league table
         </p>

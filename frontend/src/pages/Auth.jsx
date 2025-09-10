@@ -133,7 +133,7 @@ const Auth = () => {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
-          <h1 className="auth-title">Premier League Predictions</h1>
+          <h1 className="auth-title">Scora</h1>
           <p className="auth-subtitle">
             Join the ultimate prediction game
           </p>

@@ -8,7 +8,7 @@ const Landing = () => {
       <header className="landing-header">
         <div className="landing-nav">
           <div className="landing-logo">
-            <h1>Premier League Predictions</h1>
+            <h1>Scora</h1>
           </div>
           <nav className="landing-nav-links">
             <a href="#about" className="landing-nav-link">About</a>
@@ -57,7 +57,7 @@ const Landing = () => {
       {/* About Section */}
       <section id="about" className="landing-about">
         <div className="landing-about-content">
-          <h2 className="landing-about-title">About Premier League Predictions</h2>
+          <h2 className="landing-about-title">About Scora</h2>
           <div className="landing-about-text">
             <p className="landing-about-description">
               Welcome to the ultimate Premier League prediction experience! Our platform lets you bet on how the final league table will end, 
@@ -105,7 +105,7 @@ const Landing = () => {
       <footer className="landing-footer">
         <div className="landing-footer-content">
           <div className="landing-footer-section">
-            <h4 className="landing-footer-title">Premier League Predictions</h4>
+            <h4 className="landing-footer-title">Scora</h4>
             <p className="landing-footer-text">
               The ultimate platform for football fans to test their knowledge, make predictions, and compete with friends.
             </p>
@@ -122,7 +122,7 @@ const Landing = () => {
         </div>
         <div className="landing-footer-bottom">
           <p className="landing-footer-copyright">
-            © 2024 Premier League Predictions. All rights reserved.
+            © 2024 Scora. All rights reserved.
           </p>
         </div>
       </footer>
