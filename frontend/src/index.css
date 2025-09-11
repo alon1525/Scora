@@ -3162,15 +3162,24 @@ a:hover {
   }
   
   .stadium-info {
-    padding: 12px 16px;
-    flex-direction: column;
+    padding: 8px 16px;
+    flex-direction: row;
     align-items: center;
+    justify-content: center;
     text-align: center;
     gap: 8px;
   }
   
   .stadium-icon {
-    font-size: 1.5rem;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  
+  .stadium-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
   }
   
   .stadium-name {
@@ -3747,8 +3756,17 @@ a:hover {
   
   /* Stadium Info - Smaller */
   .stadium-info {
-    padding: 6px 10px;
-    gap: 3px;
+    padding: 4px 10px;
+    gap: 6px;
+  }
+  
+  .stadium-icon {
+    font-size: 0.8rem;
+  }
+  
+  .stadium-details {
+    gap: 1px;
+    align-items: center;
   }
   
   .stadium-name {
