@@ -2821,13 +2821,64 @@ a:hover {
   }
   
   .dashboard-tabs-list {
-    flex-direction: column;
-    gap: var(--spacing-xs);
+    flex-direction: row;
+    gap: 8px;
+    padding: 8px 16px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    justify-content: flex-start;
+    align-items: center;
+  }
+  
+  .dashboard-tabs-list::-webkit-scrollbar {
+    display: none;
   }
   
   .dashboard-tabs-trigger {
-    padding: var(--spacing-md) var(--spacing-lg);
-    font-size: 0.85rem;
+    flex-shrink: 0;
+    padding: 10px 16px;
+    font-size: 0.8rem;
+    min-width: max-content;
+    white-space: nowrap;
+    scroll-snap-align: center;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  
+  .dashboard-tabs-trigger[data-state="active"] {
+    background: #3b82f6;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    font-weight: 600;
+    transform: scale(1.05);
+    z-index: 2;
+  }
+  
+  .dashboard-tabs-trigger:not([data-state="active"]) {
+    background: #f1f5f9;
+    color: #64748b;
+    opacity: 0.8;
+  }
+}
+
+/* Dashboard Tabs - Extra Small Screens (680px and below) */
+@media (max-width: 680px) {
+  .dashboard-tabs-list {
+    gap: 6px;
+    padding: 6px 12px;
+  }
+  
+  .dashboard-tabs-trigger {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    border-radius: 16px;
+  }
+  
+  .dashboard-tabs-trigger[data-state="active"] {
+    transform: scale(1.03);
   }
 }
 
