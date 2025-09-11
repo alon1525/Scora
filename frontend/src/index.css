@@ -2953,11 +2953,13 @@ a:hover {
     margin-bottom: 16px;
     border-radius: 12px;
     overflow: hidden;
+    position: relative;
   }
   
   .match-header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     gap: 8px;
     margin-bottom: 16px;
     padding: 12px 16px;
@@ -2966,13 +2968,21 @@ a:hover {
   }
   
   .match-date-info {
-    gap: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 0.875rem;
   }
   
   .match-time {
     font-size: 0.75rem;
     padding: 4px 8px;
+  }
+  
+  .match-status {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+    border-radius: 4px;
   }
   
   .match-stadium {
@@ -3057,6 +3067,145 @@ a:hover {
     width: 6px;
     height: 6px;
     border-radius: 50%;
+  }
+  
+  /* Actual Classes Used in Component - Mobile */
+  .teams-section {
+    display: flex;
+    flex-direction: row;
+    padding: 16px;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  
+  .team-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    text-align: center;
+  }
+  
+  .team-section.away-team {
+    flex-direction: column;
+  }
+  
+  /* Ensure both teams have same structure: kit, name, form text, form */
+  .team-section .team-jersey {
+    order: 1;
+  }
+  
+  .team-section .team-info {
+    order: 2;
+  }
+  
+  .team-section .team-name {
+    order: 1;
+  }
+  
+  .team-section .team-stats {
+    order: 2;
+  }
+  
+  .team-section .team-form {
+    order: 3;
+  }
+  
+  /* Fix away team structure to match home team: kit first, then info */
+  .team-section.away-team .team-jersey {
+    order: 1;
+  }
+  
+  .team-section.away-team .team-info {
+    order: 2;
+  }
+  
+  .score-prediction {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 12px;
+  }
+  
+  .score-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .score-input {
+    width: 50px;
+    height: 36px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+  }
+  
+  .score-separator {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #64748b;
+  }
+  
+  .save-prediction-btn {
+    width: 120px;
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    border-radius: 6px;
+  }
+  
+  .stadium-info {
+    padding: 12px 16px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+  }
+  
+  .stadium-icon {
+    font-size: 1.5rem;
+  }
+  
+  .stadium-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  
+  .stadium-stats {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+  
+  .prediction-prompt {
+    padding: 8px 16px;
+    text-align: center;
+    font-size: 0.875rem;
+  }
+  
+  .actual-result {
+    padding: 12px 16px;
+    margin-top: 0;
+    text-align: center;
+    background: #f1f5f9;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .result-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 4px;
+  }
+  
+  .result-score .score {
+    font-size: 1.125rem;
+    font-weight: 600;
   }
   
   /* Predictions */
@@ -3228,9 +3377,52 @@ a:hover {
   
   /* Round Navigation */
   .round-navigation {
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
+    flex-direction: row;
+    gap: 8px;
+    padding: 12px 16px;
+    align-items: center;
+    justify-content: center;
+    min-height: 60px;
+  }
+  
+  .round-nav-btn {
+    display: none !important;
+  }
+  
+  .rounds-container {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 4px 0;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .rounds-container::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .round-item {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    min-width: 80px;
+    border-radius: 8px;
+  }
+  
+  .round-number {
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  
+  .round-dates {
+    font-size: 0.65rem;
+    opacity: 0.8;
+    line-height: 1.1;
   }
   
   .round-info {
@@ -3394,5 +3586,196 @@ a:hover {
   .action-button {
     padding: 10px 12px;
     font-size: 0.8rem;
+  }
+  
+  /* Extra Small Mobile - Actual Classes */
+  .teams-section {
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  .team-section {
+    gap: 8px;
+  }
+  
+  .score-prediction {
+    padding: 12px;
+    margin: 8px 0;
+  }
+  
+  .score-input {
+    width: 45px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+  
+  .score-inputs {
+    gap: 6px;
+  }
+  
+  .save-prediction-btn {
+    width: 100px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+  
+  .stadium-info {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  
+  .stadium-name {
+    font-size: 0.8rem;
+  }
+  
+  .stadium-stats {
+    font-size: 0.7rem;
+  }
+  
+  .team-name {
+    font-size: 0.8rem;
+  }
+  
+  .team-stats {
+    font-size: 0.7rem;
+  }
+  
+  .form-result {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+  
+  /* Extra Small Mobile - Round Navigation */
+  .round-navigation {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  
+  .round-item {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    min-width: 70px;
+  }
+  
+  .round-number {
+    font-size: 0.65rem;
+  }
+  
+  .round-dates {
+    font-size: 0.6rem;
+  }
+}
+
+/* Extra Small Mobile - 390px and below */
+@media (max-width: 390px) {
+  /* Match Cards - Smaller */
+  .modern-match-card {
+    margin-bottom: 10px;
+    border-radius: 6px;
+  }
+  
+  .match-header {
+    padding: 6px 10px;
+    border-radius: 6px 6px 0 0;
+  }
+  
+  .match-date-info {
+    font-size: 0.7rem;
+  }
+  
+  .match-time {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+  }
+  
+  .match-status {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+  }
+  
+  /* Teams - Smaller */
+  .teams-section {
+    padding: 10px;
+    gap: 6px;
+  }
+  
+  .team-section {
+    gap: 4px;
+  }
+  
+  .team-jersey {
+    font-size: 20px;
+  }
+  
+  .team-name {
+    font-size: 0.7rem;
+  }
+  
+  .team-stats {
+    font-size: 0.6rem;
+  }
+  
+  .form-result {
+    font-size: 0.55rem;
+    padding: 1px 2px;
+  }
+  
+  /* Score Prediction - Smaller */
+  .score-prediction {
+    padding: 6px 10px;
+  }
+  
+  .score-input {
+    width: 35px;
+    height: 24px;
+    font-size: 0.8rem;
+  }
+  
+  .score-inputs {
+    gap: 4px;
+  }
+  
+  .score-separator {
+    font-size: 0.9rem;
+  }
+  
+  .save-prediction-btn {
+    width: 80px;
+    padding: 4px 8px;
+    font-size: 0.65rem;
+  }
+  
+  /* Stadium Info - Smaller */
+  .stadium-info {
+    padding: 6px 10px;
+    gap: 3px;
+  }
+  
+  .stadium-name {
+    font-size: 0.7rem;
+  }
+  
+  .stadium-stats {
+    font-size: 0.6rem;
+  }
+  
+  /* Round Navigation - Smaller */
+  .round-navigation {
+    padding: 4px 8px;
+    gap: 3px;
+  }
+  
+  .round-item {
+    padding: 3px 5px;
+    font-size: 0.6rem;
+    min-width: 55px;
+  }
+  
+  .round-number {
+    font-size: 0.55rem;
+  }
+  
+  .round-dates {
+    font-size: 0.5rem;
   }
 }
