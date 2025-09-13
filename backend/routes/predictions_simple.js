@@ -430,12 +430,33 @@ router.get('/fixtures', async (req, res) => {
     const predictions = fixtures.map(fixture => {
       let prediction = profile?.fixture_predictions?.[fixture.id] || null;
       
-      // If user has no prediction, use The Monkey's prediction
-      if (!prediction && monkeyProfile?.fixture_predictions?.[fixture.id]) {
-        prediction = {
-          ...monkeyProfile.fixture_predictions[fixture.id],
-          is_monkey_prediction: true
-        };
+      // If user has no prediction
+      if (!prediction) {
+        // Only use monkey prediction if game is Live AND it's not 0-0
+        if (fixture.status === 'IN_PLAY' && monkeyProfile?.fixture_predictions?.[fixture.id]) {
+          const monkeyPrediction = monkeyProfile.fixture_predictions[fixture.id];
+          // Only use monkey prediction if it's not 0-0
+          if (monkeyPrediction.home_score !== '0' || monkeyPrediction.away_score !== '0') {
+            prediction = {
+              ...monkeyPrediction,
+              is_monkey_prediction: true
+            };
+          } else {
+            // Monkey prediction is 0-0, use default instead
+            prediction = {
+              home_score: '0',
+              away_score: '0',
+              is_default: true
+            };
+          }
+        } else {
+          // Default to 0-0 for other cases
+          prediction = {
+            home_score: '0',
+            away_score: '0',
+            is_default: true
+          };
+        }
       }
       
       return {

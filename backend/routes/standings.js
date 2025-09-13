@@ -144,8 +144,7 @@ router.get('/', async (req, res) => {
     let currentMatchday = 1;
     if (standings.length > 0) {
       let min = Math.min(...standings.map(team => team.played || 0));
-      let max = Math.max(...standings.map(team => team.played || 0));
-      currentMatchday = max === min ? min+1 : min;
+      currentMatchday = min+1;
 
     }
 

@@ -709,7 +709,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         ) : (
           <div className="grid gap-4">
             {fixtures.map((fixture) => {
-              const prediction = predictions[fixture.id] || { home_score: '', away_score: '' };
+              const prediction = predictions[fixture.id] || { home_score: '0', away_score: '0' };
               const canEdit = canEditPrediction(fixture.scheduled_date);
               
               return (
