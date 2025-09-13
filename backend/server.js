@@ -265,6 +265,7 @@ async function calculateFixturePoints(userId) {
     console.log(`📊 Current counts - Exact: ${exactCount}, Result: ${resultCount}`);
 
     // Get finished fixtures that haven't been calculated yet
+    console.log(`🔍 Querying fixtures with status='FINISHED' AND calculated=false...`);
     const { data: finishedFixtures, error: fixturesError } = await supabase
       .from('fixtures')
       .select('id, home_score, away_score, status, calculated')
@@ -278,6 +279,13 @@ async function calculateFixturePoints(userId) {
 
     console.log(`⚽ Found ${finishedFixtures.length} finished fixtures that need calculation`);
     console.log(`📋 Finished fixtures details:`, finishedFixtures.map(f => ({ id: f.id, status: f.status, calculated: f.calculated, score: `${f.home_score}-${f.away_score}` })));
+    console.log(`🔍 User prediction keys:`, Object.keys(predictions));
+    console.log(`🔍 Fixture IDs to process:`, finishedFixtures.map(f => f.id));
+    
+    if (finishedFixtures.length === 0) {
+      console.log(`⚠️ No fixtures found to process!`);
+      return { data: { points: 0, exact: exactCount, result: resultCount }, error: null };
+    }
 
     // Also check all finished fixtures to see what we have
     const { data: allFinishedFixtures, error: allFinishedError } = await supabase
@@ -300,8 +308,10 @@ async function calculateFixturePoints(userId) {
         console.log(`📋 Prediction for fixture ${fixture.id}:`, prediction);
       }
       
+      // Process the fixture even if no prediction (mark as calculated)
       if (!prediction || !prediction.home_score || !prediction.away_score) {
-        console.log(`⏭️ Skipping fixture ${fixture.id} - no prediction or empty scores`);
+        console.log(`⏭️ No prediction for fixture ${fixture.id} - marking as calculated`);
+        hasUpdates = true; // Mark that we processed this fixture
         continue;
       }
 
@@ -363,7 +373,7 @@ async function calculateFixturePoints(userId) {
       if (fixtureUpdateError) {
         console.log(`❌ Error marking fixtures as calculated:`, fixtureUpdateError);
       } else {
-        console.log(`✅ Marked ${fixtureIds.length} fixtures as calculated`);
+        console.log(`✅ Marked ${fixtureIds.length} fixtures as calculated:`, fixtureIds);
       }
     }
 
