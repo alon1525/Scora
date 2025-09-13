@@ -441,6 +441,11 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
 
       totalPoints += points;
       
+      // Update the points_earned in the prediction
+      if (prediction) {
+        prediction.points_earned = points;
+      }
+      
       matches.push({
         fixtureId: fixture.id,
         fixtureIdString: fixture.id.toString(),
@@ -452,6 +457,20 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
         predictedResult: predictedHome > predictedAway ? 'home' : (predictedHome < predictedAway ? 'away' : 'draw'),
         actualResult: actualHome > actualAway ? 'home' : (actualHome < actualAway ? 'away' : 'draw')
       });
+    }
+
+    // Update the user's fixture_predictions with the new points_earned values
+    if (Object.keys(predictions).length > 0) {
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ fixture_predictions: predictions })
+        .eq('id', userId);
+      
+      if (updateError) {
+        console.log(`❌ Error updating fixture predictions for user ${userId}:`, updateError);
+      } else {
+        console.log(`✅ Updated fixture predictions for user ${userId}`);
+      }
     }
 
     res.json({
