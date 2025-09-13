@@ -167,6 +167,11 @@ app.post('/api/users/recalculate-scores', async (req, res) => {
 app.get('/api/test-cron', async (req, res) => {
   try {
     console.log('🧪 Manual cron test triggered');
+    console.log('🔍 Environment check:', {
+      hasApiKey: !!process.env.LEAGUE_STANDINGS_API_KEY,
+      hasSupabaseUrl: !!process.env.SUPABASE_API_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    });
     
     // Call the standings refresh endpoint
     const response = await fetch(`${req.protocol}://${req.get('host')}/api/standings/refresh`, {
@@ -177,6 +182,7 @@ app.get('/api/test-cron', async (req, res) => {
     });
     
     const data = await response.json();
+    console.log('📊 Standings refresh response:', data);
     
     res.json({
       success: true,

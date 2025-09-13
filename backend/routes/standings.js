@@ -47,6 +47,8 @@ async function fetchStandingsFromAPI(season = '2025') {
 
   const url = `https://api.football-data.org/v4/competitions/PL/standings?season=${season}`;
   
+  console.log(`🔍 Fetching standings from: ${url}`);
+  
   const response = await fetch(url, {
     headers: {
       'X-Auth-Token': API_KEY,
@@ -54,7 +56,10 @@ async function fetchStandingsFromAPI(season = '2025') {
   });
 
   if (!response.ok) {
-    throw new Error(`API error: ${response.status} ${response.statusText}`);
+    const errorText = await response.text();
+    console.error(`❌ API Error ${response.status}: ${errorText}`);
+    console.error(`❌ Full response headers:`, Object.fromEntries(response.headers.entries()));
+    throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
   return await response.json();
@@ -159,37 +164,55 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/standings/refresh - Refresh standings from API
+// POST /api/standings/refresh - Refresh standings from API (manual)
+// GET /api/standings/refresh - Refresh standings from API (cron)
 router.post('/refresh', async (req, res) => {
+  await handleStandingsRefresh(req, res, 'manual');
+});
+
+router.get('/refresh', async (req, res) => {
+  await handleStandingsRefresh(req, res, 'cron');
+});
+
+// Shared function to handle standings refresh
+async function handleStandingsRefresh(req, res, trigger = 'manual') {
   const startTime = Date.now();
   try {
     const season = '2025'; // Hardcoded season
     
-    console.log(`🔄 [${new Date().toISOString()}] API Request: Fetching standings for season ${season}...`);
+    console.log(`🔄 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Fetching standings for season ${season}...`);
+    console.log(`🔍 ${trigger.toUpperCase()} Environment check:`, {
+      hasApiKey: !!process.env.LEAGUE_STANDINGS_API_KEY,
+      hasSupabaseUrl: !!process.env.SUPABASE_API_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    });
+    
     const standingsData = await fetchStandingsFromAPI(season);
     
-    console.log(`📊 [${new Date().toISOString()}] API Response: Received ${standingsData.standings[0].table.length} teams from football-data.org`);
+    console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Received ${standingsData.standings[0].table.length} teams from football-data.org`);
     const storedCount = await storeStandings(standingsData, season);
     
     const duration = Date.now() - startTime;
-    console.log(`✅ [${new Date().toISOString()}] Success: Refreshed ${storedCount} standings in ${duration}ms`);
+    console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Successfully refreshed ${storedCount} standings in ${duration}ms`);
     
     res.json({
       success: true,
       message: `Successfully refreshed ${storedCount} standings for season ${season}`,
       count: storedCount,
       lastUpdated: new Date().toISOString(),
-      duration: `${duration}ms`
+      duration: `${duration}ms`,
+      triggeredBy: trigger
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`❌ [${new Date().toISOString()}] Error: Failed to refresh standings after ${duration}ms:`, error.message);
+    console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Failed to refresh standings after ${duration}ms:`, error.message);
     res.status(500).json({
       success: false,
       error: error.message,
-      duration: `${duration}ms`
+      duration: `${duration}ms`,
+      triggeredBy: trigger
     });
   }
-});
+};
 
 module.exports = router;
