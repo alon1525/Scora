@@ -163,6 +163,35 @@ app.post('/api/users/recalculate-scores', async (req, res) => {
   }
 });
 
+// Test cron endpoint - manually trigger standings refresh
+app.get('/api/test-cron', async (req, res) => {
+  try {
+    console.log('🧪 Manual cron test triggered');
+    
+    // Call the standings refresh endpoint
+    const response = await fetch(`${req.protocol}://${req.get('host')}/api/standings/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    const data = await response.json();
+    
+    res.json({
+      success: true,
+      message: 'Cron test completed',
+      cronResult: data
+    });
+  } catch (error) {
+    console.error('Error in test cron:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 

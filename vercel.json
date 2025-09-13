@@ -6,11 +6,7 @@
       "use": "@vercel/node"
     },
     {
-      "src": "api/cron/refresh-standings.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/test-cron.js",
+      "src": "backend/api/cron/refresh-standings.js",
       "use": "@vercel/node"
     }
   ],
@@ -21,11 +17,7 @@
     },
     {
       "src": "/api/cron/refresh-standings",
-      "dest": "api/cron/refresh-standings.js"
-    },
-    {
-      "src": "/api/test-cron",
-      "dest": "api/test-cron.js"
+      "dest": "backend/api/cron/refresh-standings.js"
     }
   ],
   "crons": [
