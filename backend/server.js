@@ -331,13 +331,106 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
     const { userId } = req.params;
     console.log(`🧪 Testing fixture points calculation for user: ${userId}`);
     
-    const result = await calculateFixturePoints(userId);
-    console.log(`📊 Result for user ${userId}:`, result);
+    // Get user's fixture predictions
+    const { data: userProfile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('fixture_predictions')
+      .eq('user_id', userId)
+      .single();
+
+    if (profileError || !userProfile) {
+      return res.json({
+        success: true,
+        userId: userId,
+        debug: {
+          userProfile: userProfile,
+          profileError: profileError,
+          message: 'No user profile found'
+        }
+      });
+    }
+
+    const predictions = userProfile.fixture_predictions || {};
     
+    // Get all finished fixtures
+    const { data: finishedFixtures, error: fixturesError } = await supabase
+      .from('fixtures')
+      .select('id, home_score, away_score, status')
+      .eq('status', 'FINISHED');
+
+    if (fixturesError) {
+      return res.json({
+        success: true,
+        userId: userId,
+        debug: {
+          fixturesError: fixturesError,
+          message: 'Error fetching finished fixtures'
+        }
+      });
+    }
+
+    // Calculate points
+    let totalPoints = 0;
+    let exactCount = 0;
+    let resultCount = 0;
+    const matches = [];
+
+    for (const fixture of finishedFixtures) {
+      const prediction = predictions[fixture.id];
+      if (!prediction || !prediction.home_score || !prediction.away_score) {
+        continue;
+      }
+
+      const predictedHome = parseInt(prediction.home_score);
+      const predictedAway = parseInt(prediction.away_score);
+      const actualHome = parseInt(fixture.home_score);
+      const actualAway = parseInt(fixture.away_score);
+
+      if (isNaN(predictedHome) || isNaN(predictedAway) || isNaN(actualHome) || isNaN(actualAway)) {
+        continue;
+      }
+
+      let points = 0;
+      let matchType = 'miss';
+      
+      if (predictedHome === actualHome && predictedAway === actualAway) {
+        points = 3;
+        exactCount++;
+        matchType = 'exact';
+      } else if (
+        (predictedHome > predictedAway && actualHome > actualAway) ||
+        (predictedHome < predictedAway && actualHome < actualAway) ||
+        (predictedHome === predictedAway && actualHome === actualAway)
+      ) {
+        points = 1;
+        resultCount++;
+        matchType = 'result';
+      }
+
+      totalPoints += points;
+      
+      matches.push({
+        fixtureId: fixture.id,
+        predicted: `${predictedHome}-${predictedAway}`,
+        actual: `${actualHome}-${actualAway}`,
+        points: points,
+        type: matchType
+      });
+    }
+
     res.json({
       success: true,
       userId: userId,
-      result: result
+      debug: {
+        predictionCount: Object.keys(predictions).length,
+        finishedFixtureCount: finishedFixtures.length,
+        predictions: predictions,
+        finishedFixtures: finishedFixtures,
+        matches: matches,
+        totalPoints: totalPoints,
+        exactCount: exactCount,
+        resultCount: resultCount
+      }
     });
   } catch (error) {
     console.error('Error testing fixture points:', error);
