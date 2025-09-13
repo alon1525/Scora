@@ -255,6 +255,7 @@ async function calculateFixturePoints(userId) {
 
     const predictions = userProfile.fixture_predictions || {};
     console.log(`📊 User has ${Object.keys(predictions).length} predictions`);
+    console.log(`📋 User predictions:`, JSON.stringify(predictions, null, 2));
     let totalPoints = 0;
     let exactCount = 0;
     let resultCount = 0;
@@ -271,6 +272,7 @@ async function calculateFixturePoints(userId) {
     }
 
     console.log(`⚽ Found ${finishedFixtures.length} finished fixtures`);
+    console.log(`📋 Finished fixtures:`, JSON.stringify(finishedFixtures, null, 2));
 
     // Calculate points for each prediction
     for (const fixture of finishedFixtures) {
