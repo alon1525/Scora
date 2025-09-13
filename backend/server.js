@@ -66,12 +66,11 @@ app.post('/api/users/create-profile', async (req, res) => {
       currentMatchday = maxPlayed === minPlayed ? minPlayed + 1 : minPlayed;
     }
 
-    // Get fixtures from current matchday onwards
-    const { data: futureFixtures, error: fixturesError } = await supabase
+    // Get all fixtures for the season
+    const { data: allFixtures, error: fixturesError } = await supabase
       .from('fixtures')
-      .select('id, matchday')
-      .eq('season', '2025')
-      .gte('matchday', currentMatchday);
+      .select('id, matchday, status')
+      .eq('season', '2025');
 
     if (fixturesError) {
       console.error('Error fetching fixtures for initialization:', fixturesError);
@@ -81,16 +80,23 @@ app.post('/api/users/create-profile', async (req, res) => {
       });
     }
 
-    // Create default fixture predictions (0-0) for future fixtures only
+    // Create fixture predictions with calculated status
     const defaultFixturePredictions = {};
-    futureFixtures.forEach(fixture => {
+    allFixtures.forEach(fixture => {
+      // If fixture is from past matchdays or already finished, mark as calculated (no points)
+      // If fixture is from current matchday onwards, mark as not calculated (can earn points)
+      const isPastFixture = fixture.matchday < currentMatchday || fixture.status === 'FINISHED';
+      
       defaultFixturePredictions[fixture.id] = {
         home_score: '0',
-        away_score: '0'
+        away_score: '0',
+        calculated: isPastFixture // true for past fixtures, false for future fixtures
       };
     });
 
-    console.log(`🎯 Initializing ${futureFixtures.length} future fixture predictions (from matchday ${currentMatchday}) with 0-0 for new user`);
+    const futureFixturesCount = allFixtures.filter(f => f.matchday >= currentMatchday && f.status !== 'FINISHED').length;
+    const pastFixturesCount = allFixtures.filter(f => f.matchday < currentMatchday || f.status === 'FINISHED').length;
+    console.log(`🎯 Initializing ${allFixtures.length} fixture predictions for new user - ${pastFixturesCount} past (calculated: true), ${futureFixturesCount} future (calculated: false)`);
 
     // Create user profile with default prediction
     const { data, error } = await supabase
@@ -241,11 +247,11 @@ async function calculateFixturePoints(userId) {
   try {
     console.log(`🔍 Calculating fixture points for user: ${userId}`);
     
-    // Get user's fixture predictions
+    // Get user's fixture predictions and current counts
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('fixture_predictions')
-      .eq('user_id', userId)
+      .select('fixture_predictions, exact_predictions, result_predictions')
+      .eq('id', userId)
       .single();
 
     if (profileError || !userProfile) {
@@ -254,11 +260,13 @@ async function calculateFixturePoints(userId) {
     }
 
     const predictions = userProfile.fixture_predictions || {};
+    let exactCount = userProfile.exact_predictions || 0;
+    let resultCount = userProfile.result_predictions || 0;
+    let updatedPredictions = { ...predictions };
+    let hasUpdates = false;
+
     console.log(`📊 User has ${Object.keys(predictions).length} predictions`);
-    console.log(`📋 User predictions:`, JSON.stringify(predictions, null, 2));
-    let totalPoints = 0;
-    let exactCount = 0;
-    let resultCount = 0;
+    console.log(`📊 Current counts - Exact: ${exactCount}, Result: ${resultCount}`);
 
     // Get all finished fixtures
     const { data: finishedFixtures, error: fixturesError } = await supabase
@@ -268,19 +276,16 @@ async function calculateFixturePoints(userId) {
 
     if (fixturesError) {
       console.log(`❌ Error fetching finished fixtures:`, fixturesError);
-      return { data: { points: 0, exact: 0, result: 0 }, error: fixturesError };
+      return { data: { points: 0, exact: exactCount, result: resultCount }, error: fixturesError };
     }
 
     console.log(`⚽ Found ${finishedFixtures.length} finished fixtures`);
-    console.log(`📋 Finished fixtures:`, JSON.stringify(finishedFixtures, null, 2));
 
-    // Calculate points for each prediction
+    // Process only fixtures that haven't been calculated yet
     for (const fixture of finishedFixtures) {
-      const prediction = predictions[fixture.id];
-      console.log(`🔍 Checking fixture ${fixture.id}: prediction=${JSON.stringify(prediction)}, actual=${fixture.home_score}-${fixture.away_score}`);
+      const prediction = predictions[fixture.id] || predictions[fixture.id.toString()];
       
-      if (!prediction || !prediction.home_score || !prediction.away_score) {
-        console.log(`⏭️ Skipping fixture ${fixture.id} - no prediction or empty scores`);
+      if (!prediction || !prediction.home_score || !prediction.away_score || prediction.calculated) {
         continue;
       }
 
@@ -289,34 +294,55 @@ async function calculateFixturePoints(userId) {
       const actualHome = parseInt(fixture.home_score);
       const actualAway = parseInt(fixture.away_score);
 
-      console.log(`🔢 Parsed scores - Predicted: ${predictedHome}-${predictedAway}, Actual: ${actualHome}-${actualAway}`);
-
       if (isNaN(predictedHome) || isNaN(predictedAway) || isNaN(actualHome) || isNaN(actualAway)) {
-        console.log(`❌ Invalid scores - Predicted: ${predictedHome}-${predictedAway}, Actual: ${actualHome}-${actualAway}`);
         continue;
       }
 
-      // Calculate points (exact score = 3 points, correct result = 1 point)
-      let points = 0;
+      let isExact = false;
+      let isResult = false;
+
       if (predictedHome === actualHome && predictedAway === actualAway) {
-        points = 3; // Exact score
+        isExact = true;
         exactCount++;
-        console.log(`🎯 Exact score! ${predictedHome}-${predictedAway} vs ${actualHome}-${actualAway} = 3 points`);
-      } else if (
-        (predictedHome > predictedAway && actualHome > actualAway) ||
-        (predictedHome < predictedAway && actualHome < actualAway) ||
-        (predictedHome === predictedAway && actualHome === actualAway)
-      ) {
-        points = 1; // Correct result
-        resultCount++;
-        console.log(`✅ Correct result! ${predictedHome}-${predictedAway} vs ${actualHome}-${actualAway} = 1 point`);
+        console.log(`🎯 Exact score! ${predictedHome}-${predictedAway} vs ${actualHome}-${actualAway}`);
       } else {
-        console.log(`❌ Wrong prediction: ${predictedHome}-${predictedAway} vs ${actualHome}-${actualAway} = 0 points`);
+        const predictedResult = predictedHome > predictedAway ? 'home' : (predictedHome < predictedAway ? 'away' : 'draw');
+        const actualResult = actualHome > actualAway ? 'home' : (actualHome < actualAway ? 'away' : 'draw');
+        
+        if (predictedResult === actualResult) {
+          isResult = true;
+          resultCount++;
+          console.log(`✅ Correct result! ${predictedHome}-${predictedAway} vs ${actualHome}-${actualAway}`);
+        }
       }
 
-      totalPoints += points;
+      // Mark as calculated and update the prediction
+      updatedPredictions[fixture.id] = {
+        ...prediction,
+        calculated: true
+      };
+      hasUpdates = true;
     }
 
+    // Update the user's predictions if there were changes
+    if (hasUpdates) {
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ 
+          fixture_predictions: updatedPredictions,
+          exact_predictions: exactCount,
+          result_predictions: resultCount
+        })
+        .eq('id', userId);
+      
+      if (updateError) {
+        console.log(`❌ Error updating predictions for user ${userId}:`, updateError);
+      } else {
+        console.log(`✅ Updated predictions for user ${userId} - Exact: ${exactCount}, Result: ${resultCount}`);
+      }
+    }
+
+    const totalPoints = (resultCount * 1) + (exactCount * 3);
     console.log(`🏆 Total fixture points for user ${userId}: ${totalPoints} (${exactCount} exact, ${resultCount} results)`);
     return { data: { points: totalPoints, exact: exactCount, result: resultCount }, error: null };
   } catch (error) {
@@ -324,6 +350,108 @@ async function calculateFixturePoints(userId) {
     return { data: { points: 0, exact: 0, result: 0 }, error };
   }
 }
+
+// Migration endpoint to update existing users to new structure
+app.post('/api/migrate-user-predictions/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log(`🔄 Migrating user ${userId} to new prediction structure...`);
+    
+    // Get user's current predictions
+    const { data: userProfile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('fixture_predictions')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !userProfile) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    const predictions = userProfile.fixture_predictions || {};
+    const updatedPredictions = {};
+    let migratedCount = 0;
+
+    // Get current matchday to determine which fixtures should be calculated
+    const { data: standings, error: standingsError } = await supabase
+      .from('standings')
+      .select('played')
+      .eq('season', '2025')
+      .limit(1);
+
+    let currentMatchday = 1;
+    if (standings && standings.length > 0) {
+      const minPlayed = Math.min(...standings.map(team => team.played || 0));
+      const maxPlayed = Math.max(...standings.map(team => team.played || 0));
+      currentMatchday = maxPlayed === minPlayed ? minPlayed + 1 : minPlayed;
+    }
+
+    // Get fixture data to check matchdays and status
+    const { data: fixtures, error: fixturesError } = await supabase
+      .from('fixtures')
+      .select('id, matchday, status')
+      .eq('season', '2025');
+
+    if (fixturesError) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to fetch fixtures'
+      });
+    }
+
+    const fixtureMap = {};
+    fixtures.forEach(fixture => {
+      fixtureMap[fixture.id] = fixture;
+    });
+
+    // Migrate each prediction
+    for (const [fixtureId, prediction] of Object.entries(predictions)) {
+      const fixture = fixtureMap[fixtureId];
+      if (!fixture) continue;
+
+      // Determine if this fixture should be marked as calculated
+      const isPastFixture = fixture.matchday < currentMatchday || fixture.status === 'FINISHED';
+      
+      updatedPredictions[fixtureId] = {
+        home_score: prediction.home_score,
+        away_score: prediction.away_score,
+        calculated: isPastFixture
+      };
+      
+      migratedCount++;
+    }
+
+    // Update the user's predictions
+    const { error: updateError } = await supabase
+      .from('user_profiles')
+      .update({ fixture_predictions: updatedPredictions })
+      .eq('id', userId);
+
+    if (updateError) {
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update predictions'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Migrated ${migratedCount} predictions for user ${userId}`,
+      currentMatchday: currentMatchday,
+      migratedCount: migratedCount
+    });
+
+  } catch (error) {
+    console.error('Error migrating user predictions:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // Test fixture points calculation for specific user
 app.get('/api/test-fixture-points/:userId', async (req, res) => {
