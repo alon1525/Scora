@@ -515,11 +515,12 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
 
     const predictions = userProfile.fixture_predictions || {};
     
-    // Get all finished fixtures
+    // Get finished fixtures that haven't been calculated yet
     const { data: finishedFixtures, error: fixturesError } = await supabase
       .from('fixtures')
-      .select('id, home_score, away_score, status')
-      .eq('status', 'FINISHED');
+      .select('id, home_score, away_score, status, calculated')
+      .eq('status', 'FINISHED')
+      .eq('calculated', false);
 
     if (fixturesError) {
       return res.json({
@@ -531,6 +532,12 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
         }
       });
     }
+
+    // Also get all finished fixtures for debugging
+    const { data: allFinishedFixtures, error: allFinishedError } = await supabase
+      .from('fixtures')
+      .select('id, home_score, away_score, status, calculated')
+      .eq('status', 'FINISHED');
 
     // Calculate points
     let totalPoints = 0;
@@ -625,8 +632,12 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
       debug: {
         predictionCount: Object.keys(predictions).length,
         finishedFixtureCount: finishedFixtures.length,
+        allFinishedFixtureCount: allFinishedFixtures ? allFinishedFixtures.length : 0,
+        calculatedFalseCount: allFinishedFixtures ? allFinishedFixtures.filter(f => f.calculated === false).length : 0,
+        calculatedTrueCount: allFinishedFixtures ? allFinishedFixtures.filter(f => f.calculated === true).length : 0,
         predictions: predictions,
         finishedFixtures: finishedFixtures,
+        allFinishedFixtures: allFinishedFixtures || [],
         matches: matches,
         totalPoints: totalPoints,
         exactCount: exactCount,
