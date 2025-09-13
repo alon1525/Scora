@@ -219,6 +219,27 @@ app.post('/api/users/recalculate-scores', async (req, res) => {
       }
     }
 
+    // Mark all finished fixtures as calculated after all users have been processed
+    const { data: finishedFixtures, error: fixturesError } = await supabase
+      .from('fixtures')
+      .select('id')
+      .eq('status', 'FINISHED')
+      .eq('calculated', false);
+
+    if (!fixturesError && finishedFixtures && finishedFixtures.length > 0) {
+      const fixtureIds = finishedFixtures.map(f => f.id);
+      const { error: fixtureUpdateError } = await supabase
+        .from('fixtures')
+        .update({ calculated: true })
+        .in('id', fixtureIds);
+      
+      if (fixtureUpdateError) {
+        console.log(`❌ Error marking fixtures as calculated:`, fixtureUpdateError);
+      } else {
+        console.log(`✅ Marked ${fixtureIds.length} fixtures as calculated after processing all users`);
+      }
+    }
+
     res.json({
       success: true,
       message: `Score recalculation completed`,
@@ -243,11 +264,29 @@ async function calculateFixturePoints(userId) {
     console.log(`🔍 Calculating fixture points for user: ${userId}`);
     
     // Get user's fixture predictions and current counts
-    const { data: userProfile, error: profileError } = await supabase
+    // Try to find by internal id first, then by user_id
+    let { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
       .select('fixture_predictions, exact_predictions, result_predictions')
       .eq('id', userId)
       .single();
+
+    if (profileError || !userProfile) {
+      // Try by user_id if not found by id
+      const { data: userProfileByUserId, error: profileErrorByUserId } = await supabase
+        .from('user_profiles')
+        .select('fixture_predictions, exact_predictions, result_predictions')
+        .eq('user_id', userId)
+        .single();
+      
+      if (profileErrorByUserId || !userProfileByUserId) {
+        console.log(`❌ No user profile found for ${userId}`);
+        return { data: { points: 0, exact: 0, result: 0 }, error: null };
+      }
+      
+      userProfile = userProfileByUserId;
+      profileError = null;
+    }
 
     if (profileError || !userProfile) {
       console.log(`❌ No user profile found for ${userId}`);
@@ -287,29 +326,28 @@ async function calculateFixturePoints(userId) {
       return { data: { points: 0, exact: exactCount, result: resultCount }, error: null };
     }
 
-    // Also check all finished fixtures to see what we have
-    const { data: allFinishedFixtures, error: allFinishedError } = await supabase
-      .from('fixtures')
-      .select('id, home_score, away_score, status, calculated')
-      .eq('status', 'FINISHED');
+    // // Also check all finished fixtures to see what we have
+    // const { data: allFinishedFixtures, error: allFinishedError } = await supabase
+    //   .from('fixtures')
+    //   .select('id, home_score, away_score, status, calculated')
+    //   .eq('status', 'FINISHED');
 
-    if (!allFinishedError) {
-      console.log(`📊 Total finished fixtures: ${allFinishedFixtures.length}`);
-      console.log(`📊 Finished fixtures with calculated=false: ${allFinishedFixtures.filter(f => f.calculated === false).length}`);
-      console.log(`📊 Finished fixtures with calculated=true: ${allFinishedFixtures.filter(f => f.calculated === true).length}`);
-    }
+    // if (!allFinishedError) {
+    //   console.log(`📊 Total finished fixtures: ${allFinishedFixtures.length}`);
+    //   console.log(`📊 Finished fixtures with calculated=false: ${allFinishedFixtures.filter(f => f.calculated === false).length}`);
+    //   console.log(`📊 Finished fixtures with calculated=true: ${allFinishedFixtures.filter(f => f.calculated === true).length}`);
+    // }
 
     // Process only fixtures that haven't been calculated yet
     for (const fixture of finishedFixtures) {
       const prediction = predictions[fixture.id] || predictions[fixture.id.toString()];
-      
       console.log(`🔍 Processing fixture ${fixture.id}: prediction found = ${!!prediction}`);
       if (prediction) {
         console.log(`📋 Prediction for fixture ${fixture.id}:`, prediction);
       }
       
       // Process the fixture even if no prediction (mark as calculated)
-      if (!prediction || !prediction.home_score || !prediction.away_score) {
+      if (!prediction || prediction.home_score === null || prediction.home_score === undefined || prediction.away_score === null || prediction.away_score === undefined) {
         console.log(`⏭️ No prediction for fixture ${fixture.id} - marking as calculated`);
         hasUpdates = true; // Mark that we processed this fixture
         continue;
@@ -347,13 +385,17 @@ async function calculateFixturePoints(userId) {
 
     // Update the user's counts if there were changes
     if (hasUpdates) {
+      // Determine if we found the user by id or user_id
+      const isUserId = userId.includes('-'); // UUIDs contain dashes
+      const updateField = isUserId ? 'user_id' : 'id';
+      
       const { error: updateError } = await supabase
         .from('user_profiles')
         .update({ 
           exact_predictions: exactCount,
           result_predictions: resultCount
         })
-        .eq('id', userId);
+        .eq(updateField, userId);
       
       if (updateError) {
         console.log(`❌ Error updating counts for user ${userId}:`, updateError);
@@ -362,20 +404,8 @@ async function calculateFixturePoints(userId) {
       }
     }
 
-    // Mark all processed fixtures as calculated in the fixtures table
-    if (finishedFixtures.length > 0) {
-      const fixtureIds = finishedFixtures.map(f => f.id);
-      const { error: fixtureUpdateError } = await supabase
-        .from('fixtures')
-        .update({ calculated: true })
-        .in('id', fixtureIds);
-      
-      if (fixtureUpdateError) {
-        console.log(`❌ Error marking fixtures as calculated:`, fixtureUpdateError);
-      } else {
-        console.log(`✅ Marked ${fixtureIds.length} fixtures as calculated:`, fixtureIds);
-      }
-    }
+    // Don't mark fixtures as calculated here - let the recalculate-scores endpoint handle it
+    // This allows all users to process the same fixtures
 
     const totalPoints = (resultCount * 1) + (exactCount * 3);
     console.log(`🏆 Total fixture points for user ${userId}: ${totalPoints} (${exactCount} exact, ${resultCount} results)`);
@@ -566,7 +596,7 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
       // Try both string and number versions of the fixture ID
       const prediction = predictions[fixture.id] || predictions[fixture.id.toString()];
       console.log(`🔍 Fixture ${fixture.id} (type: ${typeof fixture.id}): prediction found = ${!!prediction}`);
-      if (!prediction || !prediction.home_score || !prediction.away_score) {
+      if (!prediction || prediction.home_score === null || prediction.home_score === undefined || prediction.away_score === null || prediction.away_score === undefined) {
         console.log(`⏭️ Skipping fixture ${fixture.id} - no prediction or empty scores`);
         continue;
       }
