@@ -276,6 +276,19 @@ async function calculateFixturePoints(userId) {
     }
 
     console.log(`⚽ Found ${finishedFixtures.length} finished fixtures that need calculation`);
+    console.log(`📋 Finished fixtures details:`, finishedFixtures.map(f => ({ id: f.id, status: f.status, calculated: f.calculated, score: `${f.home_score}-${f.away_score}` })));
+
+    // Also check all finished fixtures to see what we have
+    const { data: allFinishedFixtures, error: allFinishedError } = await supabase
+      .from('fixtures')
+      .select('id, home_score, away_score, status, calculated')
+      .eq('status', 'FINISHED');
+
+    if (!allFinishedError) {
+      console.log(`📊 Total finished fixtures: ${allFinishedFixtures.length}`);
+      console.log(`📊 Finished fixtures with calculated=false: ${allFinishedFixtures.filter(f => f.calculated === false).length}`);
+      console.log(`📊 Finished fixtures with calculated=true: ${allFinishedFixtures.filter(f => f.calculated === true).length}`);
+    }
 
     // Process only fixtures that haven't been calculated yet
     for (const fixture of finishedFixtures) {
