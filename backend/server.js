@@ -275,7 +275,10 @@ async function calculateFixturePoints(userId) {
     // Calculate points for each prediction
     for (const fixture of finishedFixtures) {
       const prediction = predictions[fixture.id];
+      console.log(`🔍 Checking fixture ${fixture.id}: prediction=${JSON.stringify(prediction)}, actual=${fixture.home_score}-${fixture.away_score}`);
+      
       if (!prediction || !prediction.home_score || !prediction.away_score) {
+        console.log(`⏭️ Skipping fixture ${fixture.id} - no prediction or empty scores`);
         continue;
       }
 
@@ -284,7 +287,10 @@ async function calculateFixturePoints(userId) {
       const actualHome = parseInt(fixture.home_score);
       const actualAway = parseInt(fixture.away_score);
 
+      console.log(`🔢 Parsed scores - Predicted: ${predictedHome}-${predictedAway}, Actual: ${actualHome}-${actualAway}`);
+
       if (isNaN(predictedHome) || isNaN(predictedAway) || isNaN(actualHome) || isNaN(actualAway)) {
+        console.log(`❌ Invalid scores - Predicted: ${predictedHome}-${predictedAway}, Actual: ${actualHome}-${actualAway}`);
         continue;
       }
 
