@@ -34,7 +34,9 @@ app.get('/api/test-env', (req, res) => {
     hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     hasPublishableKey: !!process.env.SUPABASE_PUBLISHABLE_KEY,
     hasLeagueApiKey: !!process.env.LEAGUE_STANDINGS_API_KEY,
-    supabaseUrl: process.env.SUPABASE_API_URL ? 'Set' : 'Missing'
+    supabaseUrl: process.env.SUPABASE_API_URL ? 'Set' : 'Missing',
+    leagueApiKeyLength: process.env.LEAGUE_STANDINGS_API_KEY ? process.env.LEAGUE_STANDINGS_API_KEY.length : 0,
+    leagueApiKeyStart: process.env.LEAGUE_STANDINGS_API_KEY ? process.env.LEAGUE_STANDINGS_API_KEY.substring(0, 8) + '...' : 'undefined'
   });
 });
 
@@ -205,6 +207,42 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
+});
+
+// Cron status endpoint - check last standings refresh
+app.get('/api/cron-status', async (req, res) => {
+  try {
+    const { data: standings, error } = await supabase
+      .from('standings')
+      .select('last_updated')
+      .eq('season', '2025')
+      .order('last_updated', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      throw error;
+    }
+
+    const lastUpdated = standings.length > 0 ? standings[0].last_updated : null;
+    const nextRun = new Date();
+    nextRun.setUTCHours(6, 0, 0, 0);
+    if (nextRun <= new Date()) {
+      nextRun.setDate(nextRun.getDate() + 1);
+    }
+
+    res.json({
+      success: true,
+      lastStandingsRefresh: lastUpdated,
+      nextScheduledRun: nextRun.toISOString(),
+      cronSchedule: 'Daily at 6:00 AM UTC',
+      status: lastUpdated ? 'Active' : 'No data yet'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 // Start server

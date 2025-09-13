@@ -182,32 +182,68 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
   try {
     const season = '2025'; // Hardcoded season
     
-    console.log(`🔄 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Fetching standings for season ${season}...`);
+    console.log(`🔄 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Starting complete refresh (standings + fixtures + scores)...`);
     console.log(`🔍 ${trigger.toUpperCase()} Environment check:`, {
       hasApiKey: !!process.env.LEAGUE_STANDINGS_API_KEY,
       hasSupabaseUrl: !!process.env.SUPABASE_API_URL,
       hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
     });
     
-    const standingsData = await fetchStandingsFromAPI(season);
+    // Step 1: Refresh fixtures first (get latest match results)
+    console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Step 1 - Refreshing fixtures...`);
+    const fixturesResponse = await fetch(`${req.protocol}://${req.get('host')}/api/fixtures/refresh`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    const fixturesResult = await fixturesResponse.json();
+    console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Fixtures refresh result:`, fixturesResult.success ? 'Success' : 'Failed');
     
-    console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Received ${standingsData.standings[0].table.length} teams from football-data.org`);
+    // Step 2: Refresh standings (based on completed matches)
+    console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Step 2 - Fetching standings...`);
+    const standingsData = await fetchStandingsFromAPI(season);
     const storedCount = await storeStandings(standingsData, season);
+    console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Refreshed ${storedCount} standings`);
+    
+    // Step 3: Recalculate all user scores (based on updated standings and fixtures)
+    console.log(`🧮 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Step 3 - Recalculating user scores...`);
+    const scoresResponse = await fetch(`${req.protocol}://${req.get('host')}/api/users/recalculate-scores`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    const scoresResult = await scoresResponse.json();
+    console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Scores recalculation result:`, scoresResult.success ? 'Success' : 'Failed');
     
     const duration = Date.now() - startTime;
-    console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Successfully refreshed ${storedCount} standings in ${duration}ms`);
+    console.log(`🎉 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Complete refresh finished in ${duration}ms`);
     
     res.json({
       success: true,
-      message: `Successfully refreshed ${storedCount} standings for season ${season}`,
-      count: storedCount,
+      message: `Complete refresh successful - Standings: ${storedCount} teams, Fixtures: ${fixturesResult.success ? 'Updated' : 'Failed'}, Scores: ${scoresResult.success ? 'Recalculated' : 'Failed'}`,
+      details: {
+        standings: {
+          count: storedCount,
+          success: true
+        },
+        fixtures: {
+          success: fixturesResult.success,
+          message: fixturesResult.message || 'Unknown'
+        },
+        scores: {
+          success: scoresResult.success,
+          results: scoresResult.results || 'Unknown'
+        }
+      },
       lastUpdated: new Date().toISOString(),
       duration: `${duration}ms`,
       triggeredBy: trigger
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Failed to refresh standings after ${duration}ms:`, error.message);
+    console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Failed complete refresh after ${duration}ms:`, error.message);
     res.status(500).json({
       success: false,
       error: error.message,
