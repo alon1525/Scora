@@ -406,25 +406,37 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
       const actualHome = parseInt(fixture.home_score);
       const actualAway = parseInt(fixture.away_score);
 
+      console.log(`🔢 Parsed scores - Predicted: ${predictedHome}-${predictedAway}, Actual: ${actualHome}-${actualAway}`);
+
       if (isNaN(predictedHome) || isNaN(predictedAway) || isNaN(actualHome) || isNaN(actualAway)) {
+        console.log(`❌ Invalid scores - Predicted: ${predictedHome}-${predictedAway}, Actual: ${actualHome}-${actualAway}`);
         continue;
       }
 
       let points = 0;
       let matchType = 'miss';
       
+      // Check for exact score
       if (predictedHome === actualHome && predictedAway === actualAway) {
         points = 3;
         exactCount++;
         matchType = 'exact';
-      } else if (
-        (predictedHome > predictedAway && actualHome > actualAway) ||
-        (predictedHome < predictedAway && actualHome < actualAway) ||
-        (predictedHome === predictedAway && actualHome === actualAway)
-      ) {
-        points = 1;
-        resultCount++;
-        matchType = 'result';
+        console.log(`🎯 Exact score! ${predictedHome}-${predictedAway} vs ${actualHome}-${actualAway} = 3 points`);
+      } else {
+        // Check for correct result
+        const predictedResult = predictedHome > predictedAway ? 'home' : (predictedHome < predictedAway ? 'away' : 'draw');
+        const actualResult = actualHome > actualAway ? 'home' : (actualHome < actualAway ? 'away' : 'draw');
+        
+        console.log(`🔍 Result check - Predicted: ${predictedResult}, Actual: ${actualResult}`);
+        
+        if (predictedResult === actualResult) {
+          points = 1;
+          resultCount++;
+          matchType = 'result';
+          console.log(`✅ Correct result! ${predictedHome}-${predictedAway} vs ${actualHome}-${actualAway} = 1 point`);
+        } else {
+          console.log(`❌ Wrong result: ${predictedHome}-${predictedAway} vs ${actualHome}-${actualAway} = 0 points`);
+        }
       }
 
       totalPoints += points;
