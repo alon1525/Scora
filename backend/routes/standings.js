@@ -48,6 +48,8 @@ async function fetchStandingsFromAPI(season = '2025') {
   const url = `https://api.football-data.org/v4/competitions/PL/standings?season=${season}`;
   
   console.log(`🔍 Fetching standings from: ${url}`);
+  console.log(`🔑 API Key present: ${!!API_KEY}, length: ${API_KEY ? API_KEY.length : 0}`);
+  console.log(`🔑 API Key starts with: ${API_KEY ? API_KEY.substring(0, 8) + '...' : 'undefined'}`);
   
   const response = await fetch(url, {
     headers: {
