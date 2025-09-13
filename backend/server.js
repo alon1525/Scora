@@ -130,15 +130,42 @@ app.post('/api/users/recalculate-scores', async (req, res) => {
 
     for (const user of users) {
       try {
-        const { data: result, error: calcError } = await supabase.rpc('calculate_user_points', {
+        // First calculate table points using the RPC function
+        const { data: tableResult, error: tableError } = await supabase.rpc('calculate_user_points', {
           p_user_id: user.user_id
         });
 
-        if (calcError) {
-          console.error(`❌ Error calculating points for user ${user.display_name}:`, calcError);
+        if (tableError) {
+          console.error(`❌ Error calculating table points for user ${user.display_name}:`, tableError);
+          errorCount++;
+          continue;
+        }
+
+        // Then calculate fixture points
+        const { data: fixtureResult, error: fixtureError } = await calculateFixturePoints(user.user_id);
+        
+        if (fixtureError) {
+          console.error(`❌ Error calculating fixture points for user ${user.display_name}:`, fixtureError);
+          errorCount++;
+          continue;
+        }
+
+        // Update total points
+        const totalPoints = (tableResult || 0) + (fixtureResult || 0);
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({ 
+            table_points: tableResult || 0,
+            fixture_points: fixtureResult || 0,
+            total_points: totalPoints
+          })
+          .eq('user_id', user.user_id);
+
+        if (updateError) {
+          console.error(`❌ Error updating points for user ${user.display_name}:`, updateError);
           errorCount++;
         } else {
-          console.log(`✅ Recalculated points for ${user.display_name}: ${result} points`);
+          console.log(`✅ Recalculated points for ${user.display_name}: Table=${tableResult || 0}, Fixture=${fixtureResult || 0}, Total=${totalPoints}`);
           successCount++;
         }
       } catch (error) {
@@ -164,6 +191,70 @@ app.post('/api/users/recalculate-scores', async (req, res) => {
     });
   }
 });
+
+// Helper function to calculate fixture points
+async function calculateFixturePoints(userId) {
+  try {
+    // Get user's fixture predictions
+    const { data: userProfile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('fixture_predictions')
+      .eq('user_id', userId)
+      .single();
+
+    if (profileError || !userProfile) {
+      return { data: 0, error: null };
+    }
+
+    const predictions = userProfile.fixture_predictions || {};
+    let totalPoints = 0;
+
+    // Get all finished fixtures
+    const { data: finishedFixtures, error: fixturesError } = await supabase
+      .from('fixtures')
+      .select('id, home_score, away_score, status')
+      .eq('status', 'FINISHED');
+
+    if (fixturesError) {
+      return { data: 0, error: fixturesError };
+    }
+
+    // Calculate points for each prediction
+    for (const fixture of finishedFixtures) {
+      const prediction = predictions[fixture.id];
+      if (!prediction || !prediction.home_score || !prediction.away_score) {
+        continue;
+      }
+
+      const predictedHome = parseInt(prediction.home_score);
+      const predictedAway = parseInt(prediction.away_score);
+      const actualHome = fixture.home_score;
+      const actualAway = fixture.away_score;
+
+      if (isNaN(predictedHome) || isNaN(predictedAway)) {
+        continue;
+      }
+
+      // Calculate points (exact score = 3 points, correct result = 1 point)
+      let points = 0;
+      if (predictedHome === actualHome && predictedAway === actualAway) {
+        points = 3; // Exact score
+      } else if (
+        (predictedHome > predictedAway && actualHome > actualAway) ||
+        (predictedHome < predictedAway && actualHome < actualAway) ||
+        (predictedHome === predictedAway && actualHome === actualAway)
+      ) {
+        points = 1; // Correct result
+      }
+
+      totalPoints += points;
+    }
+
+    return { data: totalPoints, error: null };
+  } catch (error) {
+    return { data: 0, error };
+  }
+}
 
 // Test cron endpoint - manually trigger standings refresh
 app.get('/api/test-cron', async (req, res) => {

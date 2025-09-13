@@ -593,7 +593,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     if (status === 'FINISHED') {
       return <Badge className="bg-gray-600 text-white">Finished</Badge>;
     } else if (status === 'IN_PLAY') {
-      return <Badge className="bg-blue-500">Live</Badge>;
+      return <Badge className="bg-gray-500">Live</Badge>;
     } else if (fixtureDate <= now) {
       return <Badge className="bg-gray-500">Started</Badge>;
     } else {
@@ -788,15 +788,19 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                         <Input
                           type="number"
                           min="0"
-                          max="20"
+                          max="9"
+                          maxLength="1"
                           value={prediction.home_score}
                           onChange={(e) => {
-                            const newPredictions = { ...predictions };
-                            if (!newPredictions[fixture.id]) {
-                              newPredictions[fixture.id] = { home_score: '', away_score: '' };
+                            const value = e.target.value;
+                            if (value.length <= 1 && value >= 0 && value <= 9) {
+                              const newPredictions = { ...predictions };
+                              if (!newPredictions[fixture.id]) {
+                                newPredictions[fixture.id] = { home_score: '', away_score: '' };
+                              }
+                              newPredictions[fixture.id].home_score = value;
+                              setPredictions(newPredictions);
                             }
-                            newPredictions[fixture.id].home_score = e.target.value;
-                            setPredictions(newPredictions);
                           }}
                           disabled={!canEdit}
                           className="score-input"
@@ -806,15 +810,19 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                         <Input
                           type="number"
                           min="0"
-                          max="20"
+                          max="9"
+                          maxLength="1"
                           value={prediction.away_score}
                           onChange={(e) => {
-                            const newPredictions = { ...predictions };
-                            if (!newPredictions[fixture.id]) {
-                              newPredictions[fixture.id] = { home_score: '', away_score: '' };
+                            const value = e.target.value;
+                            if (value.length <= 1 && value >= 0 && value <= 9) {
+                              const newPredictions = { ...predictions };
+                              if (!newPredictions[fixture.id]) {
+                                newPredictions[fixture.id] = { home_score: '', away_score: '' };
+                              }
+                              newPredictions[fixture.id].away_score = value;
+                              setPredictions(newPredictions);
                             }
-                            newPredictions[fixture.id].away_score = e.target.value;
-                            setPredictions(newPredictions);
                           }}
                           disabled={!canEdit}
                           className="score-input"
