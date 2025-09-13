@@ -323,6 +323,29 @@ async function calculateFixturePoints(userId) {
   }
 }
 
+// Test fixture points calculation for specific user
+app.get('/api/test-fixture-points/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log(`🧪 Testing fixture points calculation for user: ${userId}`);
+    
+    const result = await calculateFixturePoints(userId);
+    console.log(`📊 Result for user ${userId}:`, result);
+    
+    res.json({
+      success: true,
+      userId: userId,
+      result: result
+    });
+  } catch (error) {
+    console.error('Error testing fixture points:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Test cron endpoint - manually trigger standings refresh
 app.get('/api/test-cron', async (req, res) => {
   try {
