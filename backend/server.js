@@ -261,6 +261,7 @@ async function calculateFixturePoints(userId) {
     let hasUpdates = false;
 
     console.log(`📊 User has ${Object.keys(predictions).length} predictions`);
+    console.log(`📊 User prediction keys:`, Object.keys(predictions));
     console.log(`📊 Current counts - Exact: ${exactCount}, Result: ${resultCount}`);
 
     // Get finished fixtures that haven't been calculated yet
@@ -294,7 +295,13 @@ async function calculateFixturePoints(userId) {
     for (const fixture of finishedFixtures) {
       const prediction = predictions[fixture.id] || predictions[fixture.id.toString()];
       
+      console.log(`🔍 Processing fixture ${fixture.id}: prediction found = ${!!prediction}`);
+      if (prediction) {
+        console.log(`📋 Prediction for fixture ${fixture.id}:`, prediction);
+      }
+      
       if (!prediction || !prediction.home_score || !prediction.away_score) {
+        console.log(`⏭️ Skipping fixture ${fixture.id} - no prediction or empty scores`);
         continue;
       }
 
