@@ -269,7 +269,7 @@ const Index = () => {
             <TabsTrigger value="predictions">My Predictions</TabsTrigger>
             <TabsTrigger value="leagues">Leagues</TabsTrigger>
             <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-            <TabsTrigger value="matches">Match Predictions</TabsTrigger>
+            <TabsTrigger value="matches">Fixtures</TabsTrigger>
             <TabsTrigger value="standings">Live Standings</TabsTrigger>
           </TabsList>
 

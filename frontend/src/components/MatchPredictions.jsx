@@ -676,7 +676,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   return (
     <div className="prediction-section">
       <div className="prediction-header">
-        <h2 className="prediction-title">Match Predictions</h2>
         <p className="prediction-description">
           Predict the scores for Premier League matches
         </p>

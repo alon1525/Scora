@@ -2178,22 +2178,6 @@ a:hover {
   margin-bottom: var(--spacing-2xl);
 }
 
-.prediction-header {
-  text-align: center;
-  margin-bottom: var(--spacing-xl);
-}
-
-.prediction-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: var(--spacing-sm);
-  color: var(--text-primary);
-}
-
-.prediction-description {
-  color: var(--text-secondary);
-  font-size: 1rem;
-}
 
 .prediction-card {
   background: var(--bg-card);
@@ -2883,6 +2867,45 @@ a:hover {
 }
 
 /* ==============================================
+   LEAGUES SECTION RESPONSIVE STYLES
+   ============================================== */
+
+/* Mobile responsiveness for league action components */
+@media (max-width: 768px) {
+  .leagues-action-container {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  
+  .league-action-card {
+    min-width: 100% !important;
+    max-width: none !important;
+    padding: 10px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .league-action-card {
+    padding: 8px !important;
+    gap: 4px !important;
+  }
+  
+  .league-action-label {
+    font-size: 12px !important;
+  }
+  
+  .league-action-input {
+    padding: 5px 6px !important;
+    font-size: 12px !important;
+  }
+  
+  .league-action-button {
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* ==============================================
    USER SCORE SECTION STYLES
    ============================================== */
 
@@ -3288,10 +3311,6 @@ a:hover {
     padding: 12px;
   }
   
-  .prediction-header {
-    font-size: 0.875rem;
-    margin-bottom: 8px;
-  }
   
   .prediction-inputs {
     flex-direction: column;

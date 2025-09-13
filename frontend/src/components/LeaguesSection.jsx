@@ -222,38 +222,39 @@ export const LeaguesSection = ({ preloadedData }) => {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">Leagues</h2>
         <p className="text-muted-foreground">
           Create or join leagues to compete with friends
         </p>
       </div>
 
       {/* Action Buttons */}
-      <div style={{ 
+      <div className="leagues-action-container" style={{ 
         display: 'flex', 
         flexDirection: 'row', 
-        gap: '16px', 
+        gap: '12px', 
         alignItems: 'flex-start',
         justifyContent: 'center',
         flexWrap: 'wrap'
       }}>
-        <div style={{ 
+        <div className="league-action-card" style={{ 
           display: 'flex', 
           flexDirection: 'column', 
-          gap: '8px', 
-          padding: '16px', 
+          gap: '6px', 
+          padding: '12px', 
           backgroundColor: 'var(--bg-card)', 
           border: '1px solid var(--border-light)', 
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: '0 4px 12px var(--shadow-light)',
-          minWidth: '280px'
+          borderRadius: 'var(--radius-md)',
+          boxShadow: '0 2px 8px var(--shadow-light)',
+          flex: '1',
+          minWidth: '200px',
+          maxWidth: '300px'
         }}>
-          <label style={{ 
+          <label className="league-action-label" style={{ 
             display: 'block', 
-            fontSize: '14px', 
+            fontSize: '13px', 
             fontWeight: '500', 
             color: 'var(--text-primary)', 
-            marginBottom: '4px' 
+            marginBottom: '3px' 
           }}>
             Join League
           </label>
@@ -261,38 +262,40 @@ export const LeaguesSection = ({ preloadedData }) => {
             type="text"
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-            placeholder="Enter 8-character code"
+            placeholder="8-char code"
             maxLength={8}
-            className="form-input"
-            style={{ fontFamily: 'monospace', textAlign: 'center', padding: '8px 12px' }}
+            className="form-input league-action-input"
+            style={{ fontFamily: 'monospace', textAlign: 'center', padding: '6px 8px', fontSize: '13px' }}
           />
           <button 
             onClick={joinLeague}
             disabled={loading || !joinCode || joinCode.length !== 8}
-            className="btn btn-outline"
-            style={{ padding: '8px 16px', fontSize: '14px' }}
+            className="btn btn-outline league-action-button"
+            style={{ padding: '6px 12px', fontSize: '13px' }}
           >
-            {loading ? 'Joining...' : 'Join League'}
+            {loading ? 'Joining...' : 'Join'}
           </button>
         </div>
         
-        <div style={{ 
+        <div className="league-action-card" style={{ 
           display: 'flex', 
           flexDirection: 'column', 
-          gap: '8px', 
-          padding: '16px', 
+          gap: '6px', 
+          padding: '12px', 
           backgroundColor: 'var(--bg-card)', 
           border: '1px solid var(--border-light)', 
-          borderRadius: 'var(--radius-lg)',
-          boxShadow: '0 4px 12px var(--shadow-light)',
-          minWidth: '280px'
+          borderRadius: 'var(--radius-md)',
+          boxShadow: '0 2px 8px var(--shadow-light)',
+          flex: '1',
+          minWidth: '200px',
+          maxWidth: '300px'
         }}>
-          <label style={{ 
+          <label className="league-action-label" style={{ 
             display: 'block', 
-            fontSize: '14px', 
+            fontSize: '13px', 
             fontWeight: '500', 
             color: 'var(--text-primary)', 
-            marginBottom: '4px' 
+            marginBottom: '3px' 
           }}>
             Create League
           </label>
@@ -300,17 +303,17 @@ export const LeaguesSection = ({ preloadedData }) => {
             type="text"
             value={newLeague.name}
             onChange={(e) => setNewLeague({ name: e.target.value })}
-            placeholder="Enter league name"
-            className="form-input"
-            style={{ padding: '8px 12px' }}
+            placeholder="League name"
+            className="form-input league-action-input"
+            style={{ padding: '6px 8px', fontSize: '13px' }}
           />
           <button 
             onClick={createLeague}
             disabled={loading || !newLeague.name.trim()}
-            className="btn btn-primary"
-            style={{ padding: '8px 16px', fontSize: '14px' }}
+            className="btn btn-primary league-action-button"
+            style={{ padding: '6px 12px', fontSize: '13px' }}
           >
-            {loading ? 'Creating...' : 'Create League'}
+            {loading ? 'Creating...' : 'Create'}
           </button>
         </div>
       </div>

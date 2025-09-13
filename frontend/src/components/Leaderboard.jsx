@@ -84,14 +84,6 @@ const Leaderboard = ({ preloadedData }) => {
 
   return (
     <div className="prediction-section">
-      <div className="prediction-header">
-        <h2 className="prediction-title">Leaderboard</h2>
-        <p className="prediction-description">
-          {user ? 'See how you rank against other players' : 'View the top players and their scores'}
-        </p>
-      </div>
-
-
       {/* Leaderboard */}
       <div className="leaderboard-full-width">
         <div className="leaderboard-header">

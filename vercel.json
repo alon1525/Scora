@@ -4,12 +4,34 @@
     {
       "src": "backend/server.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/cron/refresh-standings.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/test-cron.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
       "dest": "backend/server.js"
+    },
+    {
+      "src": "/api/cron/refresh-standings",
+      "dest": "api/cron/refresh-standings.js"
+    },
+    {
+      "src": "/api/test-cron",
+      "dest": "api/test-cron.js"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/refresh-standings",
+      "schedule": "0 6 * * *"
     }
   ],
   "env": {
