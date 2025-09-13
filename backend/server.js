@@ -192,14 +192,16 @@ app.post('/api/users/recalculate-scores', async (req, res) => {
           continue;
         }
 
-        // Update total points
-        const totalPoints = (tableResult || 0) + (fixtureResult || 0);
+        // Update total points and counts
+        const totalPoints = (tableResult || 0) + (fixtureResult.points || 0);
         const { error: updateError } = await supabase
           .from('user_profiles')
           .update({ 
             table_points: tableResult || 0,
-            fixture_points: fixtureResult || 0,
-            total_points: totalPoints
+            fixture_points: fixtureResult.points || 0,
+            total_points: totalPoints,
+            exact_predictions: fixtureResult.exact || 0,
+            result_predictions: fixtureResult.result || 0
           })
           .eq('user_id', user.user_id);
 
@@ -207,7 +209,7 @@ app.post('/api/users/recalculate-scores', async (req, res) => {
           console.error(`❌ Error updating points for user ${user.display_name}:`, updateError);
           errorCount++;
         } else {
-          console.log(`✅ Recalculated points for ${user.display_name}: Table=${tableResult || 0}, Fixture=${fixtureResult || 0}, Total=${totalPoints}`);
+          console.log(`✅ Recalculated points for ${user.display_name}: Table=${tableResult || 0}, Fixture=${fixtureResult.points || 0}, Total=${totalPoints}, Exact=${fixtureResult.exact || 0}, Result=${fixtureResult.result || 0}`);
           successCount++;
         }
       } catch (error) {
@@ -248,12 +250,14 @@ async function calculateFixturePoints(userId) {
 
     if (profileError || !userProfile) {
       console.log(`❌ No user profile found for ${userId}`);
-      return { data: 0, error: null };
+      return { data: { points: 0, exact: 0, result: 0 }, error: null };
     }
 
     const predictions = userProfile.fixture_predictions || {};
     console.log(`📊 User has ${Object.keys(predictions).length} predictions`);
     let totalPoints = 0;
+    let exactCount = 0;
+    let resultCount = 0;
 
     // Get all finished fixtures
     const { data: finishedFixtures, error: fixturesError } = await supabase
@@ -263,7 +267,7 @@ async function calculateFixturePoints(userId) {
 
     if (fixturesError) {
       console.log(`❌ Error fetching finished fixtures:`, fixturesError);
-      return { data: 0, error: fixturesError };
+      return { data: { points: 0, exact: 0, result: 0 }, error: fixturesError };
     }
 
     console.log(`⚽ Found ${finishedFixtures.length} finished fixtures`);
@@ -277,10 +281,10 @@ async function calculateFixturePoints(userId) {
 
       const predictedHome = parseInt(prediction.home_score);
       const predictedAway = parseInt(prediction.away_score);
-      const actualHome = fixture.home_score;
-      const actualAway = fixture.away_score;
+      const actualHome = parseInt(fixture.home_score);
+      const actualAway = parseInt(fixture.away_score);
 
-      if (isNaN(predictedHome) || isNaN(predictedAway)) {
+      if (isNaN(predictedHome) || isNaN(predictedAway) || isNaN(actualHome) || isNaN(actualAway)) {
         continue;
       }
 
@@ -288,6 +292,7 @@ async function calculateFixturePoints(userId) {
       let points = 0;
       if (predictedHome === actualHome && predictedAway === actualAway) {
         points = 3; // Exact score
+        exactCount++;
         console.log(`🎯 Exact score! ${predictedHome}-${predictedAway} vs ${actualHome}-${actualAway} = 3 points`);
       } else if (
         (predictedHome > predictedAway && actualHome > actualAway) ||
@@ -295,6 +300,7 @@ async function calculateFixturePoints(userId) {
         (predictedHome === predictedAway && actualHome === actualAway)
       ) {
         points = 1; // Correct result
+        resultCount++;
         console.log(`✅ Correct result! ${predictedHome}-${predictedAway} vs ${actualHome}-${actualAway} = 1 point`);
       } else {
         console.log(`❌ Wrong prediction: ${predictedHome}-${predictedAway} vs ${actualHome}-${actualAway} = 0 points`);
@@ -303,11 +309,11 @@ async function calculateFixturePoints(userId) {
       totalPoints += points;
     }
 
-    console.log(`🏆 Total fixture points for user ${userId}: ${totalPoints}`);
-    return { data: totalPoints, error: null };
+    console.log(`🏆 Total fixture points for user ${userId}: ${totalPoints} (${exactCount} exact, ${resultCount} results)`);
+    return { data: { points: totalPoints, exact: exactCount, result: resultCount }, error: null };
   } catch (error) {
     console.log(`❌ Error calculating fixture points for ${userId}:`, error);
-    return { data: 0, error };
+    return { data: { points: 0, exact: 0, result: 0 }, error };
   }
 }
 

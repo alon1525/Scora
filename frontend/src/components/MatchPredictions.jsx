@@ -609,8 +609,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
 
   const calculateMatchdayPoints = () => {
     let totalPoints = 0;
-    let gamesWithPredictions = 0;
-    let finishedGames = 0;
     
     // Calculate points for each fixture in current matchday
     fixtures.forEach(fixture => {
@@ -620,11 +618,8 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         return;
       }
       
-      gamesWithPredictions++;
-      
       // Only calculate points for finished games
       if (fixture.status === 'FINISHED' && fixture.home_score !== null && fixture.away_score !== null) {
-        finishedGames++;
         const predictedHome = parseInt(prediction.home_score);
         const predictedAway = parseInt(prediction.away_score);
         const actualHome = fixture.home_score;
@@ -647,8 +642,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         }
       }
     });
-    
-    // Removed repeated console log
     
     return totalPoints;
   };
