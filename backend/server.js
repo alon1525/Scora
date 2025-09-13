@@ -331,11 +331,27 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
     const { userId } = req.params;
     console.log(`🧪 Testing fixture points calculation for user: ${userId}`);
     
-    // Get user's fixture predictions
+    // First, let's get all user IDs to see what's available
+    const { data: allUsers, error: usersError } = await supabase
+      .from('user_profiles')
+      .select('id, user_id, fixture_predictions');
+    
+    if (usersError) {
+      return res.json({
+        success: true,
+        userId: userId,
+        debug: {
+          usersError: usersError,
+          message: 'Error fetching users'
+        }
+      });
+    }
+    
+    // Get user's fixture predictions using the internal id field
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
       .select('fixture_predictions')
-      .eq('user_id', userId)
+      .eq('id', userId)
       .single();
 
     if (profileError || !userProfile) {
@@ -345,7 +361,8 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
         debug: {
           userProfile: userProfile,
           profileError: profileError,
-          message: 'No user profile found'
+          message: 'No user profile found',
+          availableUsers: allUsers.map(u => ({ id: u.id, user_id: u.user_id }))
         }
       });
     }
@@ -376,8 +393,11 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
     const matches = [];
 
     for (const fixture of finishedFixtures) {
-      const prediction = predictions[fixture.id];
+      // Try both string and number versions of the fixture ID
+      const prediction = predictions[fixture.id] || predictions[fixture.id.toString()];
+      console.log(`🔍 Fixture ${fixture.id} (type: ${typeof fixture.id}): prediction found = ${!!prediction}`);
       if (!prediction || !prediction.home_score || !prediction.away_score) {
+        console.log(`⏭️ Skipping fixture ${fixture.id} - no prediction or empty scores`);
         continue;
       }
 
@@ -411,10 +431,12 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
       
       matches.push({
         fixtureId: fixture.id,
+        fixtureIdString: fixture.id.toString(),
         predicted: `${predictedHome}-${predictedAway}`,
         actual: `${actualHome}-${actualAway}`,
         points: points,
-        type: matchType
+        type: matchType,
+        predictionFound: !!prediction
       });
     }
 
