@@ -448,7 +448,9 @@ app.get('/api/test-fixture-points/:userId', async (req, res) => {
         actual: `${actualHome}-${actualAway}`,
         points: points,
         type: matchType,
-        predictionFound: !!prediction
+        predictionFound: !!prediction,
+        predictedResult: predictedHome > predictedAway ? 'home' : (predictedHome < predictedAway ? 'away' : 'draw'),
+        actualResult: actualHome > actualAway ? 'home' : (actualHome < actualAway ? 'away' : 'draw')
       });
     }
 
