@@ -25,7 +25,9 @@ const Index = () => {
   const [lastUpdated, setLastUpdated] = useState("");
   const [scoreRefreshTrigger, setScoreRefreshTrigger] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [activeTab, setActiveTab] = useState("leaderboard");
   const standingsLoaded = useRef(false);
+  const tabsListRef = useRef(null);
   
   // Preloaded data for all tabs
   const [preloadedData, setPreloadedData] = useState({
@@ -195,6 +197,40 @@ const Index = () => {
     }
   };
 
+  // Function to center the active tab on mobile
+  const centerActiveTab = (tabValue) => {
+    if (!tabsListRef.current) return;
+    
+    const tabsList = tabsListRef.current;
+    const activeTabElement = tabsList.querySelector(`[data-value="${tabValue}"]`);
+    
+    if (activeTabElement) {
+      const tabsListRect = tabsList.getBoundingClientRect();
+      const activeTabRect = activeTabElement.getBoundingClientRect();
+      
+      const scrollLeft = activeTabElement.offsetLeft - (tabsListRect.width / 2) + (activeTabRect.width / 2);
+      
+      tabsList.scrollTo({
+        left: scrollLeft,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Handle tab change
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+    // Center the tab on mobile after a short delay to ensure DOM is updated
+    setTimeout(() => centerActiveTab(value), 100);
+  };
+
+  // Center the initial tab on mobile
+  useEffect(() => {
+    if (tabsListRef.current) {
+      setTimeout(() => centerActiveTab(activeTab), 200);
+    }
+  }, []);
+
 
   const triggerScoreRefresh = () => {
     setScoreRefreshTrigger(prev => prev + 1);
@@ -263,8 +299,8 @@ const Index = () => {
         </header>
 
 
-        <Tabs defaultValue="leaderboard" className="dashboard-tabs">
-          <TabsList className="dashboard-tabs-list">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="dashboard-tabs">
+          <TabsList ref={tabsListRef} className="dashboard-tabs-list">
             <TabsTrigger value="predictions">My Predictions</TabsTrigger>
             <TabsTrigger value="leagues">Leagues</TabsTrigger>
             <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>

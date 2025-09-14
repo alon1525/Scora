@@ -2831,12 +2831,12 @@ a:hover {
   .dashboard-tabs-list {
     flex-direction: row;
     gap: 8px;
-    padding: 8px 16px;
+    padding: 8px 20px;
     overflow-x: auto;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scroll-snap-type: x mandatory;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
   }
   
@@ -2906,6 +2906,35 @@ a:hover {
     max-width: none !important;
     padding: 10px !important;
   }
+  
+  /* Fix white space issue on mobile for leagues tab */
+  .dashboard-tabs-content {
+    min-height: calc(100vh - 200px);
+    padding-bottom: 2rem;
+  }
+  
+  /* Ensure proper spacing for leagues content */
+  .space-y-6 > * + * {
+    margin-top: 1rem;
+  }
+  
+  /* Fix modal height on mobile */
+  .fixed.inset-0 {
+    padding: 1rem;
+    z-index: 9999;
+  }
+  
+  .fixed.inset-0 .max-h-\[80vh\] {
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Prevent body scroll when modal is open */
+  body.modal-open {
+    overflow: hidden;
+    height: 100vh;
+  }
 }
 
 @media (max-width: 480px) {
@@ -2926,6 +2955,23 @@ a:hover {
   .league-action-button {
     padding: 5px 10px !important;
     font-size: 12px !important;
+  }
+  
+  /* Additional mobile fixes for leagues */
+  .dashboard-tabs-content {
+    min-height: calc(100vh - 150px);
+    padding-bottom: 3rem;
+  }
+  
+  /* Fix table overflow on mobile */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Ensure cards don't extend beyond viewport */
+  .card {
+    max-width: 100%;
+    overflow: hidden;
   }
 }
 
