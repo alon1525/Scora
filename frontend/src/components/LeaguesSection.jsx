@@ -220,7 +220,7 @@ export const LeaguesSection = ({ preloadedData }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="leagues-section space-y-6">
       <div className="text-center space-y-2">
         <p className="text-muted-foreground">
           Create or join leagues to compete with friends

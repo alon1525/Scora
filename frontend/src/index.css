@@ -2966,12 +2966,80 @@ a:hover {
   /* Fix table overflow on mobile */
   .overflow-x-auto {
     -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Mobile table fixes */
+  .standings-table {
+    min-width: 600px; /* Ensure table has minimum width for scrolling */
+    width: max-content;
+  }
+  
+  .standings-table thead th {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+  
+  .standings-table tbody td {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+  
+  /* Specific fixes for leagues table on mobile */
+  .leagues-section .standings-table {
+    min-width: 500px;
+    font-size: 0.8rem;
+  }
+  
+  .leagues-section .standings-table thead th {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.7rem;
+  }
+  
+  .leagues-section .standings-table tbody td {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.7rem;
+  }
+  
+  /* Make badges smaller on mobile */
+  .leagues-section .badge {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.4rem;
   }
   
   /* Ensure cards don't extend beyond viewport */
   .card {
     max-width: 100%;
     overflow: hidden;
+  }
+  
+  /* Fix card content overflow */
+  .card .overflow-x-auto {
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+  
+  /* Additional mobile fixes for leagues table on smaller screens */
+  .leagues-section .standings-table {
+    min-width: 450px;
+  }
+  
+  .leagues-section .standings-table thead th {
+    padding: 0.3rem 0.1rem;
+    font-size: 0.65rem;
+  }
+  
+  .leagues-section .standings-table tbody td {
+    padding: 0.3rem 0.1rem;
+    font-size: 0.65rem;
+  }
+  
+  .leagues-section .badge {
+    font-size: 0.55rem;
+    padding: 0.1rem 0.3rem;
   }
 }
 
