@@ -3911,6 +3911,16 @@ a:hover {
   min-height: 100vh;
 }
 
+/* Mobile: Use scroll attachment instead of fixed for better performance */
+@media (max-width: 768px) {
+  .dashboard-page {
+    background-attachment: scroll;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: auto;
+  }
+}
+
 .dashboard-page::before {
   content: '';
   position: fixed;
@@ -3921,6 +3931,14 @@ a:hover {
   background: rgba(0, 0, 0, 0.3);
   z-index: 1;
   pointer-events: none;
+}
+
+/* Mobile: Use absolute positioning for better performance */
+@media (max-width: 768px) {
+  .dashboard-page::before {
+    position: absolute;
+    height: 100%;
+  }
 }
 
 .dashboard-page > * {
