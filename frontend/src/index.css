@@ -2462,9 +2462,15 @@ a:hover {
   transform: rotate(0.3deg) scale(1.005);
   z-index: 1000;
   border: 2px solid var(--primary-green);
-  opacity: 0.95;
+  opacity: 1;
   transition: none;
 }
+
+/* Simple drag visibility fix */
+.draggable-row.dragging {
+  opacity: 1;
+}
+
 
 /* Smooth settling after drag ends */
 .draggable-row:not(.dragging) {
@@ -3314,6 +3320,54 @@ a:hover {
     min-height: 60px;
   }
 
+  /* Prediction Table - More Compact on Mobile */
+  .prediction-table {
+    font-size: 0.875rem;
+  }
+  
+  .prediction-table th,
+  .prediction-table td {
+    padding: 8px 4px;
+  }
+  
+  .prediction-table .team-name {
+    font-size: 0.8rem;
+    max-width: 80px;
+  }
+  
+  .prediction-table .draggable-row {
+    min-height: 50px;
+  }
+  
+  /* Better drag visibility on mobile */
+  .draggable-row.dragging {
+    opacity: 1;
+    z-index: 9999;
+  }
+  
+  /* Simple mobile drag visibility */
+  .draggable-row.dragging {
+    opacity: 1;
+  }
+  
+  /* @dnd-kit mobile touch behavior */
+  .draggable-row {
+    touch-action: none !important;
+  }
+  
+  /* Prevent mobile scroll and selection during drag */
+  .prediction-table {
+    touch-action: pan-y !important;
+  }
+  
+  .draggable-row {
+    touch-action: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-touch-callout: none !important;
+  }
+  
+
   /* Main Layout */
   .app {
     padding: 8px;
@@ -3903,6 +3957,37 @@ a:hover {
   .team-jersey {
     min-height: 50px;
   }
+
+  /* Ultra Compact Prediction Table */
+  .prediction-table {
+    font-size: 0.75rem;
+  }
+  
+  .prediction-table th,
+  .prediction-table td {
+    padding: 6px 2px;
+  }
+  
+  .prediction-table .team-name {
+    font-size: 0.7rem;
+    max-width: 60px;
+  }
+  
+  .prediction-table .draggable-row {
+    min-height: 40px;
+  }
+  
+  /* Even better drag visibility on small mobile */
+  .draggable-row.dragging {
+    opacity: 1;
+    z-index: 9999;
+  }
+  
+  /* @dnd-kit small mobile touch behavior */
+  .draggable-row {
+    touch-action: none !important;
+  }
+  
 
   .app {
     padding: 4px;
