@@ -1363,7 +1363,6 @@ a:hover {
 .score-input {
   width: 48px;
   height: 48px;
-  text-align: center;
   font-size: 18px;
   font-weight: 700;
   border: 2px solid #e2e8f0;
@@ -1371,9 +1370,19 @@ a:hover {
   background: var(--bg-card);
   color: white;
   transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  text-align: center;
+  padding: 0;
+  margin: 0;
+}
+
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.score-input[type=number] {
+  -moz-appearance: textfield;
 }
 
 .score-input:focus {
@@ -3532,12 +3541,14 @@ a:hover {
   .score-input {
     width: 50px;
     height: 36px;
-    text-align: center;
     font-size: 1rem;
     font-weight: 600;
     border: 2px solid #e2e8f0;
     border-radius: 6px;
     color: white;
+    text-align: center;
+    padding: 0;
+    margin: 0;
   }
   
   .score-input:disabled {
@@ -3635,6 +3646,7 @@ a:hover {
     width: 100%;
     padding: 8px 12px;
     font-size: 1rem;
+    text-align: center;
   }
   
   .prediction-buttons {
@@ -3931,6 +3943,7 @@ a:hover {
   .prediction-input {
     padding: 10px 12px;
     font-size: 1.1rem;
+    text-align: center;
   }
   
   .result-score {
@@ -3983,6 +3996,7 @@ a:hover {
     width: 50px;
     height: 36px;
     font-size: 1rem;
+    text-align: center;
   }
   
   .action-button {
@@ -4009,6 +4023,9 @@ a:hover {
     width: 45px;
     height: 32px;
     font-size: 0.9rem;
+    text-align: center;
+    padding: 0;
+    margin: 0;
   }
   
   .score-inputs {
@@ -4131,6 +4148,9 @@ a:hover {
     width: 35px;
     height: 24px;
     font-size: 0.8rem;
+    text-align: center;
+    padding: 0;
+    margin: 0;
   }
   
   .score-inputs {
