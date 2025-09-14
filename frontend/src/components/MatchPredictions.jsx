@@ -668,11 +668,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
 
   return (
     <div className="prediction-section">
-      <div className="prediction-header">
-        <p className="prediction-description">
-          Predict the scores for Premier League matches
-        </p>
-      </div>
 
       <div className="prediction-card">
         {/* Round Navigation */}

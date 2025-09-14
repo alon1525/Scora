@@ -15,6 +15,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import axios from "axios";
 import { API_ENDPOINTS } from "../config/api";
+import backgroundImage from "../assets/background-picture.webp";
+import signOutIcon from "../assets/sign-out.png";
 
 const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -240,24 +242,21 @@ const Index = () => {
     <main className="dashboard-page">
       {/* Sign Out Button - Top Right Corner */}
       <div className={`top-right-signout ${isScrolled ? 'hidden' : ''}`}>
-        <Button variant="outline" size="sm" onClick={handleSignOut}>
-          Sign Out
+        <Button variant="outline" size="sm" onClick={handleSignOut} className="signout-btn" title="Sign Out">
+          <img src={signOutIcon} alt="Sign Out" width="16" height="16" />
         </Button>
       </div>
 
       <section className="container">
-        {/* Header with user info */}
-        <header className="dashboard-header">
-          <div className="dashboard-header-content">
-            <div className="dashboard-title-section">
-              <h1 className="dashboard-title">
-                Scora
+        {/* Compact Dashboard Header */}
+        <header className="compact-dashboard-header">
+          <div className="header-content">
+            <div className="user-greeting">
+              <h1 className="scora-title">
+                SCORA
               </h1>
-              <p className="dashboard-subtitle">
-                Welcome back! Create your predictions and compete with friends.
-              </p>
             </div>
-            <div className="dashboard-user-section">
+            <div className="user-stats-compact">
               <UserStatsCompact refreshTrigger={scoreRefreshTrigger} />
             </div>
           </div>

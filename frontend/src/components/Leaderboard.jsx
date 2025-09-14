@@ -108,7 +108,8 @@ const Leaderboard = ({ preloadedData }) => {
                   <tr>
                     <th>#</th>
                     <th>Player</th>
-                    <th>Fixture</th>
+                    <th>Exacts</th>
+                    <th>Results</th>
                     <th>Table</th>
                     <th>Total</th>
                   </tr>
@@ -142,8 +143,11 @@ const Leaderboard = ({ preloadedData }) => {
                             {displayName}
                           </span>
                         </td>
-                        <td className="leaderboard-fixture">
-                          {entry.fixture_points || 0}
+                        <td className="leaderboard-exacts">
+                          <span className="exact-badge">{entry.exact_predictions || 0}</span>
+                        </td>
+                        <td className="leaderboard-results">
+                          <span className="result-badge">{entry.result_predictions || 0}</span>
                         </td>
                         <td className="leaderboard-table">
                           {entry.table_points || 0}

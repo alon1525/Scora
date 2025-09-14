@@ -41,7 +41,6 @@ const UserStatsCompact = ({ refreshTrigger }) => {
         <div className="user-stats-content-compact">
           <div className="user-name-small">Loading...</div>
           <div className="stats-row-compact">
-            <span>PLAYED: 0</span>
             <span>EXACT: 0</span>
             <span>RESULT: 0</span>
             <span className="points-compact">POINTS: 0</span>
@@ -64,7 +63,6 @@ const UserStatsCompact = ({ refreshTrigger }) => {
           {userStats.display_name || userStats.email?.split('@')[0] || 'Anonymous User'}
         </div>
         <div className="stats-row-compact">
-          <span>PLAYED: {userStats.total_predictions || 0}</span>
           <span>EXACT: {userStats.exact_predictions || 0}</span>
           <span>RESULT: {userStats.result_predictions || 0}</span>
           <span className="points-compact">POINTS: {userStats.total_points || 0}</span>

@@ -88,6 +88,11 @@ const Auth = () => {
       return;
     }
 
+    if (signUpData.username.length < 4 || signUpData.username.length > 12) {
+      toast.error('Username must be between 4-12 characters');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -187,8 +192,16 @@ const Auth = () => {
                     onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
                     placeholder=" "
                     className="auth-input"
+                    maxLength={12}
+                    minLength={4}
                   />
-                  <Label htmlFor="signup-username" className="auth-label">Username</Label>
+                  <Label htmlFor="signup-username" className="auth-label">
+                    Username {signUpData.username && (
+                      <span className={`username-length ${signUpData.username.length < 4 || signUpData.username.length > 12 ? 'invalid' : 'valid'}`}>
+                        ({signUpData.username.length}/12)
+                      </span>
+                    )}
+                  </Label>
                 </div>
                 <div className="auth-form-group">
                   <Input
