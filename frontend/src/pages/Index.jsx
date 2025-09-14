@@ -197,21 +197,39 @@ const Index = () => {
     }
   };
 
-  // Function to center the active tab on mobile
+  // Function to center the active tab
   const centerActiveTab = (tabValue) => {
     if (!tabsListRef.current) return;
     
     const tabsList = tabsListRef.current;
-    const activeTabElement = tabsList.querySelector(`[data-value="${tabValue}"]`);
+    const tabButtons = tabsList.querySelectorAll('.tab-button');
+    
+    // Create a mapping of tab values to their text content
+    const tabTextMap = {
+      'predictions': 'My Predictions',
+      'leagues': 'Leagues', 
+      'leaderboard': 'Leaderboard',
+      'matches': 'Fixtures',
+      'standings': 'Live Standings'
+    };
+    
+    // Find the active tab button by looking for the active class
+    let activeTabElement = null;
+    tabButtons.forEach(button => {
+      if (button.classList.contains('active-tab')) {
+        activeTabElement = button;
+      }
+    });
     
     if (activeTabElement) {
       const tabsListRect = tabsList.getBoundingClientRect();
       const activeTabRect = activeTabElement.getBoundingClientRect();
       
+      // Calculate scroll position to center the tab
       const scrollLeft = activeTabElement.offsetLeft - (tabsListRect.width / 2) + (activeTabRect.width / 2);
       
       tabsList.scrollTo({
-        left: scrollLeft,
+        left: Math.max(0, scrollLeft),
         behavior: 'smooth'
       });
     }
@@ -220,16 +238,26 @@ const Index = () => {
   // Handle tab change
   const handleTabChange = (value) => {
     setActiveTab(value);
-    // Center the tab on mobile after a short delay to ensure DOM is updated
+    // Center the tab after a short delay to ensure DOM is updated
     setTimeout(() => centerActiveTab(value), 100);
   };
 
-  // Center the initial tab on mobile
+  // Center the initial tab on load
   useEffect(() => {
     if (tabsListRef.current) {
       setTimeout(() => centerActiveTab(activeTab), 200);
     }
   }, []);
+
+  // Re-center tab on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setTimeout(() => centerActiveTab(activeTab), 100);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeTab]);
 
 
   const triggerScoreRefresh = () => {
@@ -276,58 +304,118 @@ const Index = () => {
 
   return (
     <main className="dashboard-page">
-      {/* Sign Out Button - Top Right Corner */}
-      <div className={`top-right-signout ${isScrolled ? 'hidden' : ''}`}>
-        <Button variant="outline" size="sm" onClick={handleSignOut} className="signout-btn" title="Sign Out">
-          <img src={signOutIcon} alt="Sign Out" width="16" height="16" />
-        </Button>
-      </div>
-
-      <section className="container">
-        {/* Compact Dashboard Header */}
-        <header className="compact-dashboard-header">
-          <div className="header-content">
-            <div className="user-greeting">
-              <h1 className="scora-title">
-                SCORA
-              </h1>
+      {/* Navigation Bar */}
+      <nav className="nav-bar">
+        <div className="nav-container">
+            <div className="nav-left">
+              <div className="nav-logo">
+                <span className="material-symbols-outlined nav-icon">emoji_events</span>
+                <span className="nav-title">SCORA</span>
+              </div>
             </div>
-            <div className="user-stats-compact">
+          <div className="nav-right">
+            <div className="nav-user">
+              <div className="nav-avatar">
+                {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'}
+              </div>
+              <span className="nav-username">
+                {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player'}
+              </span>
+            </div>
+            <button className="nav-signout" onClick={handleSignOut} title="Sign Out">
+              <img src={signOutIcon} alt="Sign Out" width="16" height="16" />
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Dashboard Header */}
+      <header className="dashboard-header-section">
+        <div className="header-container">
+          <div className="header-content">
+            <div className="header-text">
+              <h1 className="header-title">
+                Welcome back, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player'}!
+              </h1>
+              <p className="header-subtitle">
+                Make your predictions and climb the leaderboard
+              </p>
+            </div>
+            <div className="header-stats">
               <UserStatsCompact refreshTrigger={scoreRefreshTrigger} />
             </div>
           </div>
-        </header>
+        </div>
+      </header>
+
+      <section className="container">
 
 
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="dashboard-tabs">
-          <TabsList ref={tabsListRef} className="dashboard-tabs-list">
-            <TabsTrigger value="predictions">My Predictions</TabsTrigger>
-            <TabsTrigger value="leagues">Leagues</TabsTrigger>
-            <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-            <TabsTrigger value="matches">Fixtures</TabsTrigger>
-            <TabsTrigger value="standings">Live Standings</TabsTrigger>
-          </TabsList>
+        {/* Tab Navigation */}
+        <div className="tab-navigation">
+          <nav className="tab-nav" ref={tabsListRef}>
+            <button 
+              onClick={() => handleTabChange('predictions')} 
+              className={`tab-button ${activeTab === 'predictions' ? 'active-tab' : ''}`}
+            >
+              <span className="material-symbols-outlined tab-icon">assignment</span> My Predictions
+            </button>
+            <button 
+              onClick={() => handleTabChange('leagues')} 
+              className={`tab-button ${activeTab === 'leagues' ? 'active-tab' : ''}`}
+            >
+              <span className="material-symbols-outlined tab-icon">groups</span> Leagues
+            </button>
+            <button 
+              onClick={() => handleTabChange('leaderboard')} 
+              className={`tab-button ${activeTab === 'leaderboard' ? 'active-tab' : ''}`}
+            >
+              <span className="material-symbols-outlined tab-icon">emoji_events</span> Leaderboard
+            </button>
+            <button 
+              onClick={() => handleTabChange('matches')} 
+              className={`tab-button ${activeTab === 'matches' ? 'active-tab' : ''}`}
+            >
+              <span className="material-symbols-outlined tab-icon">event</span> Fixtures
+            </button>
+            <button 
+              onClick={() => handleTabChange('standings')} 
+              className={`tab-button ${activeTab === 'standings' ? 'active-tab' : ''}`}
+            >
+              <span className="material-symbols-outlined tab-icon">bar_chart</span> Live Standings
+            </button>
+          </nav>
+        </div>
 
-          <TabsContent value="predictions" className="dashboard-tabs-content">
-            <UserTablePredictions onPredictionSaved={triggerScoreRefresh} />
-          </TabsContent>
-
-          <TabsContent value="leagues" className="dashboard-tabs-content">
-            <LeaguesSection preloadedData={preloadedData} />
-          </TabsContent>
-
-          <TabsContent value="leaderboard" className="dashboard-tabs-content">
-            <Leaderboard preloadedData={preloadedData} />
-          </TabsContent>
-
-          <TabsContent value="matches" className="dashboard-tabs-content">
+        {/* Tab Content */}
+        <div className="tab-content">
+          {activeTab === 'predictions' && (
+            <div className="dashboard-tabs-content">
+              <UserTablePredictions onPredictionSaved={triggerScoreRefresh} />
+            </div>
+          )}
+          
+          {activeTab === 'leagues' && (
+            <div className="dashboard-tabs-content">
+              <LeaguesSection preloadedData={preloadedData} />
+            </div>
+          )}
+          
+          {activeTab === 'leaderboard' && (
+            <div className="dashboard-tabs-content">
+              <Leaderboard preloadedData={preloadedData} />
+            </div>
+          )}
+          
+          {activeTab === 'matches' && (
             <div className="dashboard-tabs-content">
               <MatchPredictions onPredictionSaved={triggerScoreRefresh} preloadedData={preloadedData} />
             </div>
-          </TabsContent>
-
-          <TabsContent value="standings" className="dashboard-tabs-content">
-            <div className="standings-card">
+          )}
+          
+          {activeTab === 'standings' && (
+            <div className="dashboard-tabs-content">
+              <div className="standings-card">
               <div className="standings-header">
                 <h3 className="standings-title">Live Premier League Standings</h3>
                 {lastUpdated && (
@@ -400,9 +488,10 @@ const Index = () => {
                   </tbody>
                 </table>
               </div>
+              </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
 
         <footer className="dashboard-footer">
           Your predictions are saved securely in the cloud. Compete with friends in leagues!

@@ -1626,17 +1626,104 @@ a:hover {
   height: auto !important;
 }
 
-/* Dashboard Tabs Styles */
-.dashboard-tabs-list {
+/* Tab Navigation Styles */
+.tab-navigation {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 1.5rem;
+  border-radius: 0.75rem 0.75rem 0 0;
+  padding: 0.5rem 1rem 0 1rem;
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.tab-nav {
   display: flex;
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 6px;
-  margin-bottom: var(--spacing-xl);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
-  gap: 6px;
+  gap: 0.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0;
+  width: 100%;
+  scroll-padding: 0 1rem;
+  justify-content: space-between;
+}
+
+.tab-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-button {
+  display: flex;
   align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem 0.5rem 0 0;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  scroll-snap-align: start;
+  position: relative;
+  flex: 1;
+  justify-content: center;
+  min-width: 120px;
+}
+
+.tab-button:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-button.active-tab {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  font-weight: 600;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tab-button.active-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: #64748b;
+  border-radius: 50%;
+}
+
+.tab-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  opacity: 0.8;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.tab-button.active-tab .tab-icon {
+  opacity: 1;
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Large screens - full width spread */
+@media (min-width: 1024px) {
+  .tab-nav {
+    justify-content: space-between;
+  }
+  
+  .tab-button {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .dashboard-tabs-trigger {
@@ -1916,20 +2003,18 @@ a:hover {
   color: var(--text-primary);
 }
 
-/* Compact User Stats for Header */
+/* Header Stats Component */
 .user-stats-compact {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.75rem;
+  padding: 1rem;
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  background: linear-gradient(135deg, rgba(30, 58, 138, 0.9) 0%, rgba(59, 130, 246, 0.9) 100%);
-  backdrop-filter: blur(15px);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  position: relative;
-  overflow: hidden;
-  max-width: 280px;
+  gap: 1.5rem;
+  width: 100%;
+  justify-content: center;
+  backdrop-filter: blur(10px);
 }
 
 /* Removed ::before pseudo-element to fix visual issues */
@@ -1939,64 +2024,65 @@ a:hover {
 }
 
 .avatar-initial-small {
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(135deg, #64748b, #475569);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 14px;
-  font-weight: 600;
-  box-shadow: var(--shadow-sm);
+  font-size: 18px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.5);
 }
 
 .user-stats-content-compact {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  gap: 2rem;
+  align-items: center;
   flex: 1;
-  position: relative;
-  z-index: 1;
 }
 
 .user-name-small {
-  font-size: 12px;
-  font-weight: 600;
-  color: white;
-  margin: 0;
+  display: none; /* Hide username in header stats */
 }
 
 .stats-row-compact {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  font-size: 10px;
-  font-weight: 600;
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  gap: 2rem;
+  align-items: center;
 }
 
 .stats-row-compact span {
-  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-width: 60px;
+}
+
+.stats-row-compact span::before {
+  content: attr(data-label);
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.stats-row-compact span::after {
+  content: attr(data-value);
+  font-size: 1.25rem;
+  font-weight: 700;
 }
 
 .points-compact {
   color: #ffd700 !important;
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .global-rank-compact {
-  font-size: 10px;
-  font-weight: 600;
-  color: white;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  display: none; /* Hide global rank in header stats */
 }
 
 /* Leaderboard Table Styles */
@@ -2828,16 +2914,22 @@ a:hover {
     align-items: flex-start;
   }
   
-  .dashboard-tabs-list {
-    flex-direction: row;
-    gap: 8px;
-    padding: 8px 20px;
-    overflow-x: auto;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
-    justify-content: center;
-    align-items: center;
+  .tab-nav {
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+    justify-content: flex-start;
+  }
+  
+  .tab-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    min-width: 100px;
+    flex: none;
+  }
+  
+  .tab-icon {
+    font-size: 0.8rem;
   }
   
   .dashboard-tabs-list::-webkit-scrollbar {
@@ -2897,13 +2989,14 @@ a:hover {
 /* Mobile responsiveness for league action components */
 @media (max-width: 768px) {
   .leagues-action-container {
-    flex-direction: column !important;
+    flex-direction: row !important;
     gap: 8px !important;
+    justify-content: center !important;
   }
   
   .league-action-card {
-    min-width: 100% !important;
-    max-width: none !important;
+    min-width: 45% !important;
+    max-width: 45% !important;
     padding: 10px !important;
   }
   
@@ -2988,20 +3081,57 @@ a:hover {
     white-space: nowrap;
   }
   
-  /* Specific fixes for leagues table on mobile */
+  /* Specific fixes for leagues table on mobile - make it fit screen width */
   .leagues-section .standings-table {
-    min-width: 500px;
+    width: 100%;
+    min-width: auto;
     font-size: 0.8rem;
+    table-layout: fixed;
   }
   
   .leagues-section .standings-table thead th {
     padding: 0.4rem 0.2rem;
     font-size: 0.7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   
   .leagues-section .standings-table tbody td {
     padding: 0.4rem 0.2rem;
     font-size: 0.7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Set specific column widths for leagues table */
+  .leagues-section .standings-table th:nth-child(1),
+  .leagues-section .standings-table td:nth-child(1) {
+    width: 8%;
+  }
+  
+  .leagues-section .standings-table th:nth-child(2),
+  .leagues-section .standings-table td:nth-child(2) {
+    width: 20%;
+  }
+  
+  .leagues-section .standings-table th:nth-child(3),
+  .leagues-section .standings-table td:nth-child(3) {
+    width: 25%;
+  }
+  
+  .leagues-section .standings-table th:nth-child(4),
+  .leagues-section .standings-table td:nth-child(4) {
+    width: 12%;
+  }
+  
+  .leagues-section .standings-table th:nth-child(5),
+  .leagues-section .standings-table td:nth-child(5) {
+    width: 20%;
+  }
+  
+  .leagues-section .standings-table th:nth-child(6),
+  .leagues-section .standings-table td:nth-child(6) {
+    width: 15%;
   }
   
   /* Make badges smaller on mobile */
@@ -3024,7 +3154,9 @@ a:hover {
   
   /* Additional mobile fixes for leagues table on smaller screens */
   .leagues-section .standings-table {
-    min-width: 450px;
+    width: 100%;
+    min-width: auto;
+    font-size: 0.7rem;
   }
   
   .leagues-section .standings-table thead th {
@@ -3040,6 +3172,18 @@ a:hover {
   .leagues-section .badge {
     font-size: 0.55rem;
     padding: 0.1rem 0.3rem;
+  }
+  
+  /* Keep action cards horizontal on smaller screens too */
+  .leagues-action-container {
+    flex-direction: row !important;
+    gap: 6px !important;
+  }
+  
+  .league-action-card {
+    min-width: 48% !important;
+    max-width: 48% !important;
+    padding: 8px !important;
   }
 }
 
@@ -4210,66 +4354,136 @@ a:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Compact Dashboard Header Styles */
-.compact-dashboard-header {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  border-radius: 12px;
-  padding: 1rem 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+/* Navigation Bar */
+.nav-bar {
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: static;
+  z-index: 1000;
 }
 
-.header-content {
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  height: 4rem;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-icon {
+  font-size: 1.25rem;
+  color: #64748b;
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+}
+
+.nav-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.nav-right {
+  display: flex;
   align-items: center;
   gap: 1rem;
 }
 
-.user-greeting {
-  flex: 1;
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.scora-title {
-  font-size: 2rem;
-  font-weight: 800;
+.nav-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: #3b82f6;
   color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.nav-username {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.nav-signout {
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.nav-signout:hover {
+  background: #f3f4f6;
+}
+
+/* Dashboard Header Section */
+.dashboard-header-section {
+  background: linear-gradient(135deg, #1e293b, #334155);
+  color: white;
+  padding: 2rem 0;
+  border-bottom: 1px solid #475569;
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.header-content {
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
+}
+
+.header-subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
   margin: 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 50%, #e0f2fe 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  position: relative;
-  animation: scoraGlow 3s ease-in-out infinite alternate;
 }
 
-@keyframes scoraGlow {
-  0% {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-  }
-  100% {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 20px rgba(59, 130, 246, 0.3);
-  }
-}
-
-.scora-title::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, #3b82f6, #06b6d4, #8b5cf6);
-  border-radius: 1px;
-}
-
-.user-stats-compact {
+.header-stats {
   flex-shrink: 0;
+  max-width: 400px;
+  min-width: 0;
 }
 
 /* Legacy Dashboard Header Styles (keeping for reference) */
@@ -4414,41 +4628,205 @@ a:hover {
     justify-content: space-between;
   }
   
-  .scora-title {
-    font-size: 1.3rem;
+  .nav-container {
+    padding: 0 0.5rem;
   }
   
-  .user-greeting {
+  .nav-title {
+    font-size: 1.125rem;
+  }
+  
+  .nav-username {
+    display: none;
+  }
+  
+  .dashboard-header-section {
+    padding: 1.5rem 0;
+  }
+  
+  .header-content {
+    gap: 1rem;
+    width: 100%;
+  }
+  
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 0.75rem;
+  }
+  
+  .tab-navigation {
+    padding: 0.5rem 0.75rem 0 0.75rem;
+    margin-left: 0;
+    margin-right: 0;
+    max-width: 100%;
+  }
+  
+  .header-title {
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+  
+  .header-subtitle {
+    font-size: 0.8rem;
+    line-height: 1.3;
+  }
+  
+  .user-stats-compact {
+    gap: 0.75rem;
+    padding: 0.5rem;
+    max-width: 280px;
+    flex-shrink: 1;
+  }
+  
+  .stats-row-compact {
+    gap: 0.75rem;
+  }
+  
+  .stats-row-compact span::before {
+    font-size: 0.6rem;
+  }
+  
+  .stats-row-compact span::after {
+    font-size: 0.9rem;
+  }
+  
+  .stats-row-compact span {
+    min-width: 50px;
+  }
+  
+  .header-text {
     flex: 1;
     min-width: 0;
   }
   
-  .user-stats-compact {
-    max-width: 180px;
+  .header-stats {
+    flex-shrink: 1;
+    max-width: 250px;
+  }
+  
+  .stats-row-compact span::after {
+    font-size: 1rem;
+  }
+}
+
+/* Small screens (490-500px range) */
+@media (max-width: 500px) {
+  .tab-nav {
+    gap: 0.2rem;
+    padding: 0 0.375rem;
+    justify-content: flex-start;
+  }
+  
+  .tab-button {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.72rem;
     flex-shrink: 0;
-    padding: 0.4rem 0.6rem;
+    min-width: 90px;
+    flex: none;
+  }
+  
+  .tab-icon {
+    font-size: 0.8rem;
+  }
+}
+
+/* Very small screens (below 480px) */
+@media (max-width: 480px) {
+  .nav-container {
+    padding: 0 0.25rem;
+  }
+  
+  .nav-title {
+    font-size: 1rem;
+  }
+  
+  .nav-icon {
+    font-size: 1rem;
+  }
+  
+  .dashboard-header-section {
+    padding: 1rem 0;
+  }
+  
+  .header-content {
+    gap: 0.5rem;
+    width: 100%;
+  }
+  
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 0.5rem;
+  }
+  
+  .tab-navigation {
+    padding: 0.5rem 0.5rem 0 0.5rem;
+    margin-left: 0;
     margin-right: 0;
+    max-width: 100%;
+  }
+  
+  .header-title {
+    font-size: 1.1rem;
+    line-height: 1.1;
+  }
+  
+  .header-subtitle {
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+  
+  .user-stats-compact {
+    gap: 0.5rem;
+    padding: 0.375rem;
+    max-width: 220px;
   }
   
   .avatar-initial-small {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     font-size: 12px;
   }
   
-  .user-name-small {
-    font-size: 11px;
-  }
-  
   .stats-row-compact {
-    font-size: 9px;
-    gap: 4px;
+    gap: 0.5rem;
   }
   
-  .global-rank-compact {
-    font-size: 9px;
+  .stats-row-compact span {
+    min-width: 40px;
   }
   
+  .stats-row-compact span::before {
+    font-size: 0.55rem;
+  }
+  
+  .stats-row-compact span::after {
+    font-size: 0.8rem;
+  }
+  
+  .header-stats {
+    max-width: 200px;
+  }
+  
+  .container {
+    padding: 0 0.5rem;
+  }
+}
+
+.user-name-small {
+  font-size: 11px;
+}
+
+.stats-row-compact {
+  font-size: 9px;
+  gap: 4px;
+}
+
+.global-rank-compact {
+  font-size: 9px;
+}
+
   .welcome-section {
     flex-direction: column;
     text-align: center;
@@ -4532,11 +4910,10 @@ a:hover {
     height: 20px;
     font-size: 0.7rem;
     padding: 0 4px;
-  }
 }
 
 /* Extra small screens */
-@media (max-width: 480px) {
+@media (max-width: 360px) {
   .leaderboard-table thead th {
     font-size: 0.65rem;
     padding: 0.3rem 0.1rem;
@@ -4621,22 +4998,63 @@ a:hover {
     margin-right: 0;
   }
   
-  .scora-title {
-    font-size: 1.1rem;
+  .nav-container {
+    padding: 0 0.25rem;
   }
   
-  .header-content {
-    gap: 0.3rem;
+  .nav-title {
+    font-size: 1rem;
   }
   
-  .user-greeting {
-    flex: 1;
-    min-width: 0;
+  .dashboard-header-section {
+    padding: 1rem 0;
+  }
+  
+  .header-title {
+    font-size: 1.25rem;
+  }
+  
+  .header-subtitle {
+    font-size: 0.8rem;
   }
   
   .user-stats-compact {
-    max-width: 140px;
-    padding: 0.3rem 0.4rem;
+    gap: 0.75rem;
+    padding: 0.5rem;
+  }
+  
+  .stats-row-compact {
+    gap: 0.75rem;
+  }
+  
+  .stats-row-compact span {
+    min-width: 45px;
+  }
+  
+  .stats-row-compact span::before {
+    font-size: 0.65rem;
+  }
+  
+  .stats-row-compact span::after {
+    font-size: 0.875rem;
+  }
+  
+  .tab-nav {
+    gap: 0.125rem;
+    padding: 0 0.25rem;
+    justify-content: flex-start;
+  }
+  
+  .tab-button {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+    min-width: 80px;
+    flex: none;
+  }
+  
+  .tab-icon {
+    font-size: 0.75rem;
   }
   
   .avatar-initial-small {
