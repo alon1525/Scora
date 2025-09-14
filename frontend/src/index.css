@@ -12,8 +12,8 @@ html {
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   line-height: 1.6;
-  color: #1a1a1a;
-  background-color: #ffffff;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
 }
 
 /* CSS Variables */
@@ -25,26 +25,26 @@ body {
   --accent-gold-dark: #f59e0b;
   
   /* Background Colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-card: #ffffff;
-  --bg-muted: #f1f5f9;
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-card: #1e293b;
+  --bg-muted: #334155;
   
   /* Text Colors */
-  --text-primary: #1a1a1a;
-  --text-secondary: #64748b;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --text-white: #ffffff;
   
   /* Border Colors */
-  --border-light: #e2e8f0;
-  --border-medium: #cbd5e1;
+  --border-light: #334155;
+  --border-medium: #475569;
   --border-dark: #94a3b8;
   
   /* Shadow Colors */
-  --shadow-light: rgba(0, 0, 0, 0.1);
-  --shadow-medium: rgba(0, 0, 0, 0.15);
-  --shadow-dark: rgba(0, 0, 0, 0.25);
+  --shadow-light: rgba(0, 0, 0, 0.3);
+  --shadow-medium: rgba(0, 0, 0, 0.4);
+  --shadow-dark: rgba(0, 0, 0, 0.6);
   
   /* Radix UI Variables */
   --primary: #3b82f6;
@@ -60,14 +60,14 @@ body {
   --border: #e2e8f0;
   --input: #e2e8f0;
   --ring: #3b82f6;
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --background: var(--bg-primary);
+  --foreground: var(--text-primary);
+  --card: var(--bg-card);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-card);
+  --popover-foreground: var(--text-primary);
   --radius: 0.5rem;
-  --ring-offset-background: #ffffff;
+  --ring-offset-background: var(--bg-primary);
   
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -457,7 +457,7 @@ a:hover {
 }
 
 .landing-nav-link {
-  color: #333;
+  color: var(--text-primary);
   font-weight: 500;
   transition: color var(--transition-normal);
   position: relative;
@@ -470,7 +470,7 @@ a:hover {
 /* Remove hover effects on touch devices */
 @media (hover: none) and (pointer: coarse) {
   .landing-nav-link:hover {
-    color: #333;
+    color: var(--text-primary);
   }
   
   .landing-nav-link:active {
@@ -1004,13 +1004,13 @@ a:hover {
 /* Dashboard Styles */
 .dashboard-page {
   min-height: 100vh;
-  background: #f8fafc;
+  background: var(--bg-muted);
   padding: var(--spacing-lg);
   position: relative;
 }
 
 .dashboard-header {
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: 12px;
   padding: var(--spacing-xl);
   margin-bottom: var(--spacing-xl);
@@ -1061,7 +1061,7 @@ a:hover {
 .dashboard-title {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0;
   letter-spacing: -0.01em;
   display: flex;
@@ -1105,10 +1105,10 @@ a:hover {
 
 .user-email {
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 500;
   padding: var(--spacing-sm) var(--spacing-md);
-  background: #f1f5f9;
+  background: var(--bg-muted);
   border-radius: 8px;
   border: 1px solid #e2e8f0;
 }
@@ -1148,8 +1148,8 @@ a:hover {
 
 /* Modern Match Cards */
 .modern-match-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-muted) 100%);
+  border: 1px solid var(--border-light);
   border-radius: 16px;
   padding: 0;
   margin-bottom: 24px;
@@ -1218,8 +1218,8 @@ a:hover {
   align-items: center;
   gap: 12px;
   padding: 12px 20px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--bg-muted);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .stadium-icon {
@@ -1235,12 +1235,12 @@ a:hover {
 .stadium-name {
   font-weight: 600;
   font-size: 14px;
-  color: #374151;
+  color: var(--text-primary);
 }
 
 .stadium-stats {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .prediction-description{
@@ -1297,7 +1297,7 @@ a:hover {
 .team-name {
   font-weight: 700;
   font-size: 18px;
-  color: #1a1a1a;
+  color: var(--text-primary);
   white-space: normal;
   word-wrap: break-word;
   line-height: 1.2;
@@ -1305,7 +1305,7 @@ a:hover {
 
 .team-stats {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -1340,7 +1340,7 @@ a:hover {
 
 .form-result.empty {
   background: #e5e7eb;
-  color: #9ca3af;
+  color: var(--text-secondary);
 }
 
 /* Score Prediction */
@@ -1368,7 +1368,8 @@ a:hover {
   font-weight: 700;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
-  background: white;
+  background: var(--bg-card);
+  color: white;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -1381,10 +1382,15 @@ a:hover {
   outline: none;
 }
 
+.score-input:disabled {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
 .score-separator {
   font-size: 20px;
   font-weight: 700;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .save-prediction-btn {
@@ -1406,7 +1412,7 @@ a:hover {
 .actual-result {
   margin-top: 16px;
   padding: 16px 20px;
-  background: #f1f5f9;
+  background: var(--bg-muted);
   border-top: 1px solid #e2e8f0;
 }
 
@@ -1419,7 +1425,7 @@ a:hover {
 
 .result-label {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -1432,7 +1438,7 @@ a:hover {
 
 .result-label {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -1446,8 +1452,8 @@ a:hover {
 .result-score .score {
   font-size: 18px;
   font-weight: 700;
-  color: #1a1a1a;
-  background: white;
+  color: var(--text-primary);
+  background: var(--bg-card);
   padding: 6px 16px;
   border-radius: 6px;
   border: 1px solid #e2e8f0;
@@ -1485,13 +1491,31 @@ a:hover {
   color: white;
 }
 
+.prediction-results-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.actual-result-inline {
+  margin-top: 4px;
+}
+
+.actual-result-inline .actual-score {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  opacity: 0.8;
+}
+
 /* Team Kit Images */
 .kit-image {
   width: 60px;
   height: 60px;
   object-fit: contain;
   border-radius: 8px;
-  background: white;
+  background: var(--bg-card);
   padding: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease;
@@ -1516,7 +1540,7 @@ a:hover {
   justify-content: center;
   gap: 16px;
   padding: 20px;
-  background: #f8fafc;
+  background: var(--bg-muted);
   border-radius: 12px;
   margin-bottom: 24px;
 }
@@ -1590,12 +1614,12 @@ a:hover {
 .round-item.disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: #f1f5f9;
-  color: #94a3b8;
+  background: var(--bg-muted);
+  color: var(--text-secondary);
 }
 
 .round-item.disabled:hover {
-  background: #f1f5f9;
+  background: var(--bg-muted);
   transform: none;
 }
 
@@ -1616,7 +1640,7 @@ a:hover {
 
 .dashboard-tabs-list {
   display: flex !important;
-  background: #ffffff !important;
+  background: var(--bg-card) !important;
   border-radius: 12px !important;
   padding: 6px !important;
   margin-bottom: var(--spacing-xl) !important;
@@ -1628,9 +1652,9 @@ a:hover {
 
 /* Tab Navigation Styles */
 .tab-navigation {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(30, 41, 59, 0.8);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(71, 85, 105, 0.3);
   margin-bottom: 1.5rem;
   border-radius: 0.75rem 0.75rem 0 0;
   padding: 0.5rem 1rem 0 1rem;
@@ -1638,6 +1662,7 @@ a:hover {
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .tab-nav {
@@ -1665,7 +1690,7 @@ a:hover {
   border-radius: 0.5rem 0.5rem 0 0;
   font-weight: 500;
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(148, 163, 184, 0.8);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1679,15 +1704,16 @@ a:hover {
 }
 
 .tab-button:hover {
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(71, 85, 105, 0.2);
 }
 
 .tab-button.active-tab {
   color: white;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(71, 85, 105, 0.4);
   font-weight: 600;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
+  border-bottom: 2px solid rgba(148, 163, 184, 0.6);
 }
 
 .tab-button.active-tab::after {
@@ -1698,15 +1724,16 @@ a:hover {
   transform: translateX(-50%);
   width: 4px;
   height: 4px;
-  background: #64748b;
+  background: rgba(148, 163, 184, 0.8);
   border-radius: 50%;
 }
 
 .tab-icon {
   font-size: 1.25rem;
   line-height: 1;
-  opacity: 0.8;
+  opacity: 0.7;
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  color: inherit;
 }
 
 .tab-button.active-tab .tab-icon {
@@ -1732,7 +1759,7 @@ a:hover {
   border-radius: 8px;
   font-weight: 500;
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--text-secondary);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1748,8 +1775,8 @@ a:hover {
 }
 
 .dashboard-tabs-trigger:hover {
-  color: #1e293b;
-  background: #f1f5f9;
+  color: var(--text-primary);
+  background: var(--bg-muted);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
@@ -1973,7 +2000,7 @@ a:hover {
 }
 
 .stat-item.points .stat-value {
-  color: #1a1a1a;
+  color: var(--text-primary);
   font-weight: 800;
   text-decoration: underline;
   text-decoration-color: rgba(26, 26, 26, 0.3);
@@ -2614,7 +2641,7 @@ a:hover {
 }
 
 .text-gray-400 {
-  color: #9ca3af;
+  color: var(--text-secondary);
 }
 
 .text-orange-500 {
@@ -2634,7 +2661,7 @@ a:hover {
 }
 
 .text-gray-600 {
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 /* Responsive Design */
@@ -2681,7 +2708,7 @@ a:hover {
   
   .landing-nav-link {
     font-size: 0.8rem;
-    color: #333;
+    color: var(--text-primary);
     transition: color var(--transition-normal);
     padding: var(--spacing-xs);
   }
@@ -2693,7 +2720,7 @@ a:hover {
   /* Remove hover effects on touch devices */
   @media (hover: none) and (pointer: coarse) {
     .landing-nav-link:hover {
-      color: #333;
+      color: var(--text-primary);
     }
     
     .landing-nav-link:active {
@@ -2816,7 +2843,7 @@ a:hover {
   
   .landing-nav-link {
     font-size: 0.75rem;
-    color: #333;
+    color: var(--text-primary);
     transition: color var(--transition-normal);
     padding: var(--spacing-xs);
   }
@@ -2958,8 +2985,8 @@ a:hover {
   }
   
   .dashboard-tabs-trigger:not([data-state="active"]) {
-    background: #f1f5f9;
-    color: #64748b;
+    background: var(--bg-muted);
+    color: var(--text-secondary);
     opacity: 0.8;
   }
 }
@@ -3196,21 +3223,21 @@ a:hover {
 }
 
 .user-score-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   overflow: hidden;
 }
 
 .user-score-card .card-header {
-  background: #f8fafc;
+  background: var(--bg-muted);
   border-bottom: 1px solid #e2e8f0;
   padding: var(--spacing-lg);
 }
 
 .user-score-card .card-title {
-  color: #1e293b;
+  color: var(--text-primary);
   font-size: 1.25rem;
   font-weight: 600;
 }
@@ -3246,7 +3273,7 @@ a:hover {
 
 .user-score-card .text-sm {
   font-size: 0.875rem;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -3491,8 +3518,7 @@ a:hover {
     flex-direction: column;
     align-items: center;
     padding: 12px 16px;
-    background: #f8fafc;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--border-light);
     margin-top: 12px;
   }
   
@@ -3511,12 +3537,18 @@ a:hover {
     font-weight: 600;
     border: 2px solid #e2e8f0;
     border-radius: 6px;
+    color: white;
+  }
+  
+  .score-input:disabled {
+    color: var(--text-secondary);
+    opacity: 0.6;
   }
   
   .score-separator {
     font-size: 1.125rem;
     font-weight: 600;
-    color: #64748b;
+    color: var(--text-secondary);
   }
   
   .save-prediction-btn {
@@ -3554,7 +3586,7 @@ a:hover {
   
   .stadium-stats {
     font-size: 0.75rem;
-    color: #64748b;
+    color: var(--text-secondary);
   }
   
   .prediction-prompt {
@@ -3567,13 +3599,13 @@ a:hover {
     padding: 12px 16px;
     margin-top: 0;
     text-align: center;
-    background: #f1f5f9;
+    background: var(--bg-muted);
     border-top: 1px solid #e2e8f0;
   }
   
   .result-label {
     font-size: 0.75rem;
-    color: #64748b;
+    color: var(--text-secondary);
     margin-bottom: 4px;
   }
   
@@ -3620,7 +3652,7 @@ a:hover {
   /* Modern Prediction Layout - Mobile */
   .prediction-container {
     padding: 16px;
-    background: #f8fafc;
+    background: var(--bg-muted);
     border-top: 1px solid #e2e8f0;
   }
   
@@ -3662,7 +3694,7 @@ a:hover {
   .prediction-label {
     font-size: 0.75rem;
     font-weight: 500;
-    color: #64748b;
+    color: var(--text-secondary);
   }
   
   /* Results */
@@ -3727,8 +3759,8 @@ a:hover {
   }
   
   .reset-button {
-    background: #f1f5f9;
-    color: #64748b;
+    background: var(--bg-muted);
+    color: var(--text-secondary);
     border: 1px solid #e2e8f0;
   }
   
@@ -4356,7 +4388,7 @@ a:hover {
 
 /* Navigation Bar */
 .nav-bar {
-  background: white;
+  background: var(--bg-card);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   position: static;
   z-index: 1000;
@@ -4385,14 +4417,14 @@ a:hover {
 
 .nav-icon {
   font-size: 1.25rem;
-  color: #64748b;
+  color: white;
   font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
 }
 
 .nav-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
+  color: white;
 }
 
 .nav-right {
@@ -4423,7 +4455,7 @@ a:hover {
 .nav-username {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #374151;
+  color: white;
 }
 
 .nav-signout {
@@ -4544,12 +4576,12 @@ a:hover {
   display: flex;
   align-items: center;
   padding: 1.5rem;
-  background: white;
+  background: var(--bg-card);
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
   cursor: pointer;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-light);
 }
 
 .action-card:hover {

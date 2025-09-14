@@ -837,10 +837,20 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                           if (!result) return null;
                           
                           return (
-                            <div className={`prediction-result ${result.type}`}>
-                              <span className="result-badge">
-                                {result.text} ({result.points} pts)
-                              </span>
+                            <div className="prediction-results-container">
+                              <div className={`prediction-result ${result.type}`}>
+                                <span className="result-badge">
+                                  {result.text} ({result.points} pts)
+                                </span>
+                              </div>
+                              {/* Actual Result displayed below prediction result */}
+                              {fixture.home_score !== null && (
+                                <div className="actual-result-inline">
+                                  <span className="actual-score">
+                                    Actual: {fixture.home_score} - {fixture.away_score}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           );
                         })()
@@ -874,17 +884,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                     </div>
                   </div>
 
-                  {/* Actual Result */}
-                  {fixture.status === 'FINISHED' && fixture.home_score !== null && (
-                    <div className="actual-result">
-                      <div className="actual-result-content">
-                        <span className="result-label">Actual Result:</span>
-                        <div className="result-score">
-                          <span className="score">{fixture.home_score} - {fixture.away_score}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </Card>
               );
             })}
