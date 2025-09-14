@@ -112,10 +112,70 @@ export const UserTablePredictions = ({ onPredictionSaved }) => {
     setUserOrder((prev) => reorder(prev, source.index, destination.index));
   };
 
+  const moveTeam = (teamId, direction) => {
+    setUserOrder((prev) => {
+      const currentIndex = prev.indexOf(teamId);
+      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      
+      if (newIndex < 0 || newIndex >= prev.length) return prev;
+      
+      const newOrder = [...prev];
+      [newOrder[currentIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[currentIndex]];
+      return newOrder;
+    });
+  };
+
   const renderItem = (teamId, index) => {
     const team = TEAMS.find((t) => t.id === teamId);
     if (!team) return null;
 
+    // Check if we're on mobile (you can adjust this breakpoint)
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+      // Mobile: No drag, just buttons
+      return (
+        <tr className="draggable-row">
+          <td className="prediction-position">{index + 1}</td>
+          <td>
+            <div className="prediction-team">
+              <img
+                src={team.logo}
+                alt={`${team.name} official badge`}
+                loading="lazy"
+                className="prediction-team-logo"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+              <span className="prediction-team-name">{team.name}</span>
+            </div>
+          </td>
+          <td>
+            <div className="drag-handle">
+              <div className="mobile-controls">
+                <button 
+                  className="move-btn up-btn"
+                  onClick={() => moveTeam(teamId, 'up')}
+                  disabled={index === 0}
+                >
+                  ↑
+                </button>
+                <button 
+                  className="move-btn down-btn"
+                  onClick={() => moveTeam(teamId, 'down')}
+                  disabled={index === userOrder.length - 1}
+                >
+                  ↓
+                </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      );
+    }
+
+    // Desktop: Full drag functionality
     return (
       <Draggable key={teamId} draggableId={teamId} index={index}>
         {(provided, snapshot) => (
@@ -142,7 +202,9 @@ export const UserTablePredictions = ({ onPredictionSaved }) => {
             </td>
             <td>
               <div className="drag-handle">
-                ⋮⋮
+                <div className="desktop-drag-handle">
+                  ⋮⋮
+                </div>
               </div>
             </td>
           </tr>

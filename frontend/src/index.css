@@ -3350,9 +3350,106 @@ a:hover {
     opacity: 1;
   }
   
-  /* @dnd-kit mobile touch behavior */
-  .draggable-row {
-    touch-action: none !important;
+  /* Mobile controls - show up/down buttons on mobile and tablet */
+  .mobile-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .desktop-drag-handle {
+    display: none;
+  }
+  
+  
+  .move-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    min-width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .move-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  
+  .move-btn:hover:not(:disabled) {
+    background: var(--bg-muted);
+  }
+}
+
+/* Very small screens - show arrows and fix table overflow */
+@media (max-width: 400px) {
+  .mobile-controls {
+    display: flex !important;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .desktop-drag-handle {
+    display: none !important;
+  }
+  
+  /* Make table fit on very small screens */
+  .prediction-table {
+    font-size: 0.7rem;
+    width: 100%;
+    table-layout: fixed;
+  }
+  
+  .prediction-table th,
+  .prediction-table td {
+    padding: 4px 2px;
+  }
+  
+  .prediction-table .team-name {
+    font-size: 0.65rem;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .prediction-table .prediction-team-logo {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .move-btn {
+    padding: 2px 4px;
+    font-size: 10px;
+    min-width: 20px;
+    height: 20px;
+  }
+}
+
+/* Desktop - show drag handle, hide mobile controls */
+@media (min-width: 769px) {
+  .mobile-controls {
+    display: none;
+  }
+  
+  .desktop-drag-handle {
+    display: block;
+    cursor: grab;
+    color: var(--text-muted);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    text-align: center;
+  }
+  
+  .desktop-drag-handle:hover {
+    background: var(--bg-muted);
+    color: var(--text-primary);
   }
   
   /* Prevent mobile scroll and selection during drag */
