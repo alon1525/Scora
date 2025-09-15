@@ -10,6 +10,7 @@ import { Badge } from './ui/badge';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import RoundNavigation from './RoundNavigation';
+import PredictionBar from './PredictionBar';
 
 // Import team kit images
 import Arsenal from '../assets/Teams_Kits/Arsenal.png';
@@ -342,17 +343,16 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const [maxMatchweek, setMaxMatchweek] = useState(38); // Premier League has 38 matchweeks
   const [predictions, setPredictions] = useState({});
   const [loading, setLoading] = useState(false);
+  const [matchPredictions, setMatchPredictions] = useState({}); // Store all user predictions for each match
   // Hardcoded season - no need for state
 
   // Simple function to get current matchweek from preloaded data
   const getCurrentMatchweek = () => {
     // Check if we have currentMatchday directly in preloaded data
     if (preloadedData?.currentMatchday) {
-      console.log(`🎯 Found current matchweek from preloaded data: ${preloadedData.currentMatchday}`);
       return preloadedData.currentMatchday;
     }
     
-    console.log('❌ No currentMatchweek found in preloaded data, using fallback 1');
     return 1; // Fallback
   };
 
@@ -360,7 +360,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   useEffect(() => {
     if (preloadedData?.fixtures && Object.keys(preloadedData.fixtures).length > 0) {
       const currentMatchweek = getCurrentMatchweek();
-      console.log(`🎯 Setting current matchweek to: ${currentMatchweek}`);
       setCurrentMatchweek(currentMatchweek);
     }
   }, [preloadedData?.fixtures]);
@@ -388,10 +387,8 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     if (user && currentMatchweek !== null) {
       // Check if we have preloaded fixtures for this matchweek
       if (preloadedData?.fixtures?.[currentMatchweek]) {
-        console.log(`✅ Using preloaded fixtures for matchweek ${currentMatchweek}`);
         setFixtures(preloadedData.fixtures[currentMatchweek]);
       } else {
-        console.log(`🔄 Fetching fixtures for matchweek ${currentMatchweek} from API`);
         fetchFixtures();
       }
     }
@@ -400,10 +397,16 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   // Fetch user predictions for current matchweek
   useEffect(() => {
     if (user && fixtures.length > 0 && currentMatchweek !== null) {
-      console.log(`🔍 Fetching predictions for matchweek ${currentMatchweek} with ${fixtures.length} fixtures`);
       fetchPredictions();
     }
   }, [user, fixtures, currentMatchweek]);
+
+  // Load match predictions for prediction bars
+  useEffect(() => {
+    if (user && fixtures.length > 0) {
+      loadMatchPredictions();
+    }
+  }, [user, fixtures]);
 
   // Force re-render when fixtures or predictions change to update matchday points
   useEffect(() => {
@@ -473,7 +476,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       
       // Check if we have preloaded fixtures for this matchweek
       if (preloadedData?.fixtures?.[currentMatchweek]) {
-        console.log(`✅ Using preloaded fixtures for matchweek ${currentMatchweek}`);
         setFixtures(preloadedData.fixtures[currentMatchweek]);
         setLoading(false);
         return;
@@ -485,12 +487,10 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       
       if (data.success) {
         setFixtures(data.fixtures);
-        console.log(`✅ Loaded ${data.fixtures?.length || 0} fixtures for matchweek ${currentMatchweek}`);
       } else {
         toast.error('Failed to fetch fixtures');
       }
     } catch (error) {
-      console.error('Error fetching fixtures:', error);
       toast.error('Error fetching fixtures');
     } finally {
       setLoading(false);
@@ -499,7 +499,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
 
   const fetchPredictions = async () => {
     try {
-      console.log(`🔍 Fetching predictions for matchweek ${currentMatchweek}`);
       const token = (await supabase.auth.getSession()).data.session?.access_token;
       const response = await axios.get(`${API_ENDPOINTS.FIXTURE_PREDICTIONS}?matchday=${currentMatchweek}`, {
         headers: {
@@ -524,7 +523,47 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         setPredictions(predictionsMap);
       }
     } catch (error) {
-      console.error('Error fetching predictions:', error);
+      // Silent error handling
+    }
+  };
+
+  const loadMatchPredictions = async () => {
+    try {
+      const predictions = {};
+
+      // Get auth token
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!token) {
+        return;
+      }
+
+      for (const fixture of fixtures) {
+        try {
+          const response = await axios.get(`${API_ENDPOINTS.MATCH_PREDICTIONS}/${fixture.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.data.success) {
+            // Transform the data to match PredictionBar expected format
+            const matchPredictions = response.data.data.map(pred => ({
+              home_score: pred.home_score,
+              away_score: pred.away_score
+            }));
+            predictions[fixture.id] = matchPredictions;
+          } else {
+            predictions[fixture.id] = [];
+          }
+        } catch (error) {
+          predictions[fixture.id] = [];
+        }
+      }
+
+      setMatchPredictions(predictions);
+    } catch (error) {
+      // Silent error handling
     }
   };
 
@@ -568,9 +607,9 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
             }
           });
           
-          console.log('✅ Scores recalculated after fixture prediction save');
+          // Scores recalculated after fixture prediction save
         } catch (scoreError) {
-          console.error('❌ Error recalculating scores:', scoreError);
+          // Silent error handling
         }
         
         // Trigger score refresh in parent component
@@ -581,7 +620,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         toast.error(data.error || 'Failed to save prediction');
       }
     } catch (error) {
-      console.error('Error saving prediction:', error);
       toast.error('Error saving prediction');
     }
   };
@@ -593,9 +631,9 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     if (status === 'FINISHED') {
       return <Badge className="bg-gray-600 text-white">Finished</Badge>;
     } else if (status === 'IN_PLAY') {
-      return <Badge className="bg-gray-500">Live</Badge>;
+      return <Badge className="bg-gray-500 text-white">Live</Badge>;
     } else if (fixtureDate <= now) {
-      return <Badge className="bg-gray-500">Started</Badge>;
+      return <Badge className="bg-gray-500 text-white">Started</Badge>;
     } else {
       return <Badge className="bg-gray-400 text-gray-700">Not Started</Badge>;
     }
@@ -883,6 +921,15 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Prediction Bar for all games except NOT_STARTED */}
+                  {fixture.status !== 'NOT_STARTED' && (
+                    <PredictionBar 
+                      predictions={matchPredictions[fixture.id] || []}
+                      homeTeam={getCleanTeamName(fixture.home_team_name)}
+                      awayTeam={getCleanTeamName(fixture.away_team_name)}
+                    />
+                  )}
 
                 </Card>
               );

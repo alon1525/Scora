@@ -3132,14 +3132,14 @@ a:hover {
   }
   
   .leagues-section .standings-table thead th {
-    padding: 0.4rem 0.2rem;
+    padding: 0.5rem 0.4rem;
     font-size: 0.7rem;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   
   .leagues-section .standings-table tbody td {
-    padding: 0.4rem 0.2rem;
+    padding: 0.5rem 0.4rem;
     font-size: 0.7rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3148,22 +3148,22 @@ a:hover {
   /* Set specific column widths for leagues table */
   .leagues-section .standings-table th:nth-child(1),
   .leagues-section .standings-table td:nth-child(1) {
-    width: 8%;
+    width: 10%;
   }
   
   .leagues-section .standings-table th:nth-child(2),
   .leagues-section .standings-table td:nth-child(2) {
-    width: 20%;
+    width: 18%;
   }
   
   .leagues-section .standings-table th:nth-child(3),
   .leagues-section .standings-table td:nth-child(3) {
-    width: 25%;
+    width: 22%;
   }
   
   .leagues-section .standings-table th:nth-child(4),
   .leagues-section .standings-table td:nth-child(4) {
-    width: 12%;
+    width: 15%;
   }
   
   .leagues-section .standings-table th:nth-child(5),
@@ -3202,12 +3202,12 @@ a:hover {
   }
   
   .leagues-section .standings-table thead th {
-    padding: 0.3rem 0.1rem;
+    padding: 0.4rem 0.3rem;
     font-size: 0.65rem;
   }
   
   .leagues-section .standings-table tbody td {
-    padding: 0.3rem 0.1rem;
+    padding: 0.4rem 0.3rem;
     font-size: 0.65rem;
   }
   

@@ -152,7 +152,6 @@ router.post('/table', authenticateUser, async (req, res) => {
     }
 
     // Skip prediction lock check for now (function doesn't exist)
-    console.log('Skipping prediction lock check...');
 
     // Validate team IDs
     const validTeamIds = [
@@ -203,13 +202,10 @@ router.post('/table', authenticateUser, async (req, res) => {
       });
 
       if (calcError) {
-        console.error('Error calculating table points after prediction update:', calcError);
         // Don't fail the request, just log the error
-      } else {
-        console.log(`✅ Recalculated table points after prediction update: ${calcResult} points`);
       }
     } catch (calcError) {
-      console.error('Exception calculating table points after prediction update:', calcError);
+      // Silent error handling
     }
 
     res.json({
@@ -519,7 +515,7 @@ router.post('/recalculate-user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     
-    console.log(`🔄 Recalculating scores for user: ${userId}`);
+    // Recalculating scores for user
 
     // Get current standings
     const { data: standings, error: standingsError } = await supabase
@@ -569,7 +565,7 @@ router.post('/recalculate-user/:userId', async (req, res) => {
 
     const totalPoints = profile.fixture_points + tablePoints;
 
-    console.log(`📊 Calculated - Table: ${tablePoints}, Fixture: ${profile.fixture_points}, Total: ${totalPoints}`);
+    // Calculated table and total points
 
     // Update user profile
     const { error: updateError } = await supabase
@@ -710,7 +706,7 @@ router.post('/fixtures', async (req, res) => {
 // POST /api/predictions/update-all-scores - Update fixture points for all users
 router.post('/update-all-scores', async (req, res) => {
   try {
-    console.log('🔄 Updating fixture scores for all users...');
+    // Updating fixture scores for all users
     
     // Get all users with predictions
     const { data: users, error: usersError } = await supabase
@@ -817,6 +813,60 @@ router.post('/update-all-scores', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message
+    });
+  }
+});
+
+// Get all user predictions for a specific fixture
+router.get('/match/:fixtureId', async (req, res) => {
+  try {
+    const { fixtureId } = req.params;
+    
+    // Get all user profiles with their fixture predictions
+    const { data: userProfiles, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select('user_id, display_name, email, fixture_predictions');
+    
+    if (profilesError) {
+      console.error('Error fetching user profiles:', profilesError);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch user profiles' 
+      });
+    }
+    
+    // Extract predictions for this specific fixture
+    const predictions = [];
+    
+    userProfiles.forEach(profile => {
+      if (profile.fixture_predictions) {
+        if (profile.fixture_predictions[fixtureId]) {
+          const prediction = profile.fixture_predictions[fixtureId];
+          
+          // Only include predictions with actual scores (not null)
+          if (prediction.home_score !== null && prediction.away_score !== null) {
+            predictions.push({
+              user_id: profile.user_id,
+              display_name: profile.display_name,
+              email: profile.email,
+              home_score: prediction.home_score,
+              away_score: prediction.away_score
+            });
+          }
+        }
+      }
+    });
+    
+    res.json({
+      success: true,
+      data: predictions
+    });
+    
+  } catch (error) {
+    console.error('Error fetching match predictions:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
     });
   }
 });

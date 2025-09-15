@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 
 export const LeaguesSection = ({ preloadedData }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [myLeagues, setMyLeagues] = useState([]);
   const [newLeague, setNewLeague] = useState({ name: '' });
   const [joinCode, setJoinCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedLeague, setSelectedLeague] = useState(null);
   const [userPositions, setUserPositions] = useState({});
 
   const getOrdinalSuffix = (num) => {
@@ -200,23 +202,8 @@ export const LeaguesSection = ({ preloadedData }) => {
     }
   };
 
-  const viewLeagueDetails = async (leagueId) => {
-    try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const response = await axios.get(`${API_ENDPOINTS.LEAGUES_DETAILS}/${leagueId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.data.success) {
-        setSelectedLeague(response.data.data);
-      }
-    } catch (error) {
-      console.error('Error loading league details:', error);
-      toast.error('Failed to load league details');
-    }
+  const viewLeagueDetails = (leagueId) => {
+    navigate(`/league/${leagueId}`);
   };
 
   return (
@@ -373,91 +360,6 @@ export const LeaguesSection = ({ preloadedData }) => {
         </CardContent>
       </Card>
 
-      {/* League Details Modal */}
-      {selectedLeague && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-xl">{selectedLeague.league.name}</CardTitle>
-                  <CardDescription>Code: {selectedLeague.league.code}</CardDescription>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setSelectedLeague(null)}
-                >
-                  Close
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* League Info */}
-              <div>
-                <h3 className="font-semibold mb-2">League Information</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Members:</span>
-                    <span className="ml-2 font-medium">{selectedLeague.members.length}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Max Members:</span>
-                    <span className="ml-2 font-medium">{selectedLeague.league.max_members}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Created:</span>
-                    <span className="ml-2 font-medium">
-                      {new Date(selectedLeague.league.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Your Role:</span>
-                    <span className="ml-2 font-medium capitalize">{selectedLeague.membership.role}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Standings */}
-              <div>
-                <h3 className="font-semibold mb-3">League Standings</h3>
-                <div className="space-y-2">
-                  {selectedLeague.standings.map((member, index) => (
-                    <div 
-                      key={member.user_id}
-                      className={`flex items-center justify-between p-3 rounded-lg border ${
-                        member.user_id === user?.id ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold">
-                          {member.rank}
-                        </div>
-                        <div>
-                          <div className="font-medium">
-                            {member.user?.display_name || member.user?.email?.split('@')[0] || 'Unknown User'}
-                            {member.user_id === user?.id && ' (You)'}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="text-center">
-                          <div className="font-bold text-lg">{member.total_points || 0}</div>
-                          <div className="text-muted-foreground">Points</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-bold text-lg">{member.exact_predictions || 0}</div>
-                          <div className="text-muted-foreground">Exact</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 };

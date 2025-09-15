@@ -30,7 +30,11 @@ export const API_ENDPOINTS = {
   LEAGUES_CREATE: `${API_BASE_URL}/api/leagues/create`,
   LEAGUES_JOIN: `${API_BASE_URL}/api/leagues/join`,
   LEAGUES_MY_LEAGUES: `${API_BASE_URL}/api/leagues/my-leagues`,
-  LEAGUES_DETAILS: `${API_BASE_URL}/api/leagues`
+  LEAGUES_DETAILS: `${API_BASE_URL}/api/leagues`,
+  
+  // Match Predictions
+  MATCH_PREDICTIONS: `${API_BASE_URL}/api/predictions/match`,
+  USER_PREDICTIONS: `${API_BASE_URL}/api/predictions/user`
 };
 
 export default API_BASE_URL;
