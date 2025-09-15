@@ -790,7 +790,6 @@ router.post('/update-all-scores', async (req, res) => {
           exact_predictions: exactPredictions,
           result_predictions: resultPredictions,
           close_predictions: missPredictions, // Store miss predictions in close_predictions field
-          total_predictions: totalPredictions,
           total_points: userTotalPoints + (user.table_points || 0),
           updated_at: new Date().toISOString()
         })

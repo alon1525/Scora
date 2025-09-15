@@ -83,7 +83,7 @@ const RoundNavigation = ({ currentMatchday, maxMatchday, onMatchdayChange }) => 
             onClick={() => round.isAvailable && onMatchdayChange(round.number)}
             disabled={!round.isAvailable}
           >
-            <div className="round-number">Matchweek {round.number}</div>
+            <div className="round-number">Week {round.number}</div>
             <div className="round-dates">{formatRoundDates(round)}</div>
           </button>
         ))}

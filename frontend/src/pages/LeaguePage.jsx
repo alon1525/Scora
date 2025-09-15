@@ -15,8 +15,6 @@ const LeaguePage = () => {
   const { user } = useAuth();
   const [league, setLeague] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedParticipant, setSelectedParticipant] = useState(null);
-  const [participantPredictions, setParticipantPredictions] = useState([]);
   const [fixtures, setFixtures] = useState([]);
   const [matchPredictions, setMatchPredictions] = useState({});
 
@@ -30,17 +28,46 @@ const LeaguePage = () => {
   const loadLeagueDetails = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_ENDPOINTS.LEAGUES_DETAILS}/${id}`);
+      
+      // Get authentication token
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        toast.error('Authentication error. Please sign in again.');
+        return;
+      }
+      
+      if (!session) {
+        console.error('No session found');
+        toast.error('Please sign in to view league details');
+        return;
+      }
+      
+      const token = session.access_token;
+      
+      const response = await axios.get(`${API_ENDPOINTS.LEAGUES_DETAILS}/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (response.data.success) {
         setLeague(response.data.data);
       } else {
-        // Fallback to mock data for development
+        toast.error(response.data.error || 'Failed to load league details');
         setLeague(createMockLeagueData());
       }
     } catch (error) {
       console.error('Error loading league details:', error);
-      // Fallback to mock data for development
+      if (error.response?.status === 401) {
+        toast.error('Authentication expired. Please sign in again.');
+      } else if (error.response?.status === 403) {
+        toast.error('You are not a member of this league');
+      } else {
+        toast.error('Failed to load league details');
+      }
       setLeague(createMockLeagueData());
     } finally {
       setLoading(false);
@@ -53,18 +80,18 @@ const LeaguePage = () => {
       name: "Premier League Predictions",
       code: "PL",
       members: [
-        { id: 1, display_name: "John Doe", email: "john@example.com", points: 45, exact_predictions: 8, hits: 12, accuracy: 75 },
-        { id: 2, display_name: "Jane Smith", email: "jane@example.com", points: 42, exact_predictions: 7, hits: 11, accuracy: 68 },
-        { id: 3, display_name: "Mike Johnson", email: "mike@example.com", points: 38, exact_predictions: 6, hits: 10, accuracy: 65 },
-        { id: 4, display_name: "Sarah Wilson", email: "sarah@example.com", points: 35, exact_predictions: 5, hits: 9, accuracy: 60 },
-        { id: 5, display_name: "David Brown", email: "david@example.com", points: 32, exact_predictions: 4, hits: 8, accuracy: 55 }
+        { id: 1, display_name: "John Doe", email: "john@example.com", points: 45, exact_predictions: 8, result_predictions: 12, accuracy: 75 },
+        { id: 2, display_name: "Jane Smith", email: "jane@example.com", points: 42, exact_predictions: 7, result_predictions: 11, accuracy: 68 },
+        { id: 3, display_name: "Mike Johnson", email: "mike@example.com", points: 38, exact_predictions: 6, result_predictions: 10, accuracy: 65 },
+        { id: 4, display_name: "Sarah Wilson", email: "sarah@example.com", points: 35, exact_predictions: 5, result_predictions: 9, accuracy: 60 },
+        { id: 5, display_name: "David Brown", email: "david@example.com", points: 32, exact_predictions: 4, result_predictions: 8, accuracy: 55 }
       ],
       standings: [
-        { rank: 1, user_id: 1, display_name: "John Doe", points: 45, exact_predictions: 8, hits: 12, accuracy: 75 },
-        { rank: 2, user_id: 2, display_name: "Jane Smith", points: 42, exact_predictions: 7, hits: 11, accuracy: 68 },
-        { rank: 3, user_id: 3, display_name: "Mike Johnson", points: 38, exact_predictions: 6, hits: 10, accuracy: 65 },
-        { rank: 4, user_id: 4, display_name: "Sarah Wilson", points: 35, exact_predictions: 5, hits: 9, accuracy: 60 },
-        { rank: 5, user_id: 5, display_name: "David Brown", points: 32, exact_predictions: 4, hits: 8, accuracy: 55 }
+        { rank: 1, user_id: 1, display_name: "John Doe", points: 45, exact_predictions: 8, result_predictions: 12, accuracy: 75 },
+        { rank: 2, user_id: 2, display_name: "Jane Smith", points: 42, exact_predictions: 7, result_predictions: 11, accuracy: 68 },
+        { rank: 3, user_id: 3, display_name: "Mike Johnson", points: 38, exact_predictions: 6, result_predictions: 10, accuracy: 65 },
+        { rank: 4, user_id: 4, display_name: "Sarah Wilson", points: 35, exact_predictions: 5, result_predictions: 9, accuracy: 60 },
+        { rank: 5, user_id: 5, display_name: "David Brown", points: 32, exact_predictions: 4, result_predictions: 8, accuracy: 55 }
       ]
     };
   };
@@ -135,36 +162,9 @@ const LeaguePage = () => {
     setMatchPredictions(predictions);
   };
 
-  const loadParticipantPredictions = async (participantId) => {
-    try {
-      const response = await axios.get(`${API_ENDPOINTS.USER_PREDICTIONS}/${participantId}`);
-      
-      if (response.data.success) {
-        setParticipantPredictions(response.data.data);
-      } else {
-        // Fallback to mock data
-        setParticipantPredictions(createMockUserPredictions());
-      }
-    } catch (error) {
-      console.error('Error loading participant predictions:', error);
-      // Fallback to mock data
-      setParticipantPredictions(createMockUserPredictions());
-    }
-  };
-
-  const createMockUserPredictions = () => {
-    return [
-      { fixture_id: 1, home_team: 'Arsenal', away_team: 'Chelsea', home_score: 2, away_score: 1, points: 3 },
-      { fixture_id: 2, home_team: 'Liverpool', away_team: 'Manchester City', home_score: 1, away_score: 1, points: 1 },
-      { fixture_id: 3, home_team: 'Tottenham', away_team: 'Newcastle', home_score: 3, away_score: 0, points: 3 },
-      { fixture_id: 4, home_team: 'Brighton', away_team: 'Manchester United', home_score: 0, away_score: 2, points: 1 },
-      { fixture_id: 5, home_team: 'Arsenal', away_team: 'Liverpool', home_score: 1, away_score: 2, points: 0 }
-    ];
-  };
 
   const handleParticipantClick = (participant) => {
-    setSelectedParticipant(participant);
-    loadParticipantPredictions(participant.id);
+    navigate(`/user/${participant.user_id}`);
   };
 
   if (loading) {
@@ -190,61 +190,114 @@ const LeaguePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{league.name}</h1>
-              <p className="text-gray-600">Code: {league.code} • {league.members?.length || 0} members</p>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xl">{league.name?.charAt(0) || 'L'}</span>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">{league.name}</h1>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <span className="flex items-center">
+                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                    Code: <span className="font-mono font-semibold ml-1">{league.code}</span>
+                  </span>
+                  <span className="flex items-center">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                    {league.standings?.length || 0} members
+                  </span>
+                </div>
+              </div>
             </div>
-            <Button onClick={() => navigate('/')} variant="outline">
-              Back to Dashboard
+            <Button onClick={() => navigate('/dashboard')} variant="outline" className="flex items-center space-x-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Back to Dashboard</span>
             </Button>
           </div>
         </div>
 
         {/* Standings Table */}
-        <Card className="mb-8">
+        <Card className="mb-8 shadow-lg border-0">
           <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">League Standings</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">League Standings</h2>
+              <div className="text-sm text-gray-500">
+                Click on a player to view their predictions
+              </div>
+            </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full standings-table">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Rank</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Player</th>
-                    <th className="text-center py-3 px-4 font-medium text-gray-700">Points</th>
-                    <th className="text-center py-3 px-4 font-medium text-gray-700">Exact</th>
-                    <th className="text-center py-3 px-4 font-medium text-gray-700">Hits</th>
-                    <th className="text-center py-3 px-4 font-medium text-gray-700">Accuracy</th>
+                  <tr className="border-b-2 border-gray-200">
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Rank</th>
+                    <th className="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Player</th>
+                    <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Total Points</th>
+                    <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Exact</th>
+                    <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Results</th>
+                    <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Accuracy</th>
                   </tr>
                 </thead>
                 <tbody>
                   {league.standings?.map((participant, index) => (
                     <tr 
                       key={participant.user_id} 
-                      className="border-b hover:bg-gray-50 cursor-pointer"
+                      className="border-b border-gray-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer transition-all duration-200"
                       onClick={() => handleParticipantClick(participant)}
                     >
-                      <td className="py-3 px-4">
-                        <Badge 
-                          variant={participant.rank <= 3 ? "default" : "secondary"}
-                          className={
-                            participant.rank === 1 ? "bg-yellow-500" :
-                            participant.rank === 2 ? "bg-gray-400" :
-                            participant.rank === 3 ? "bg-orange-500" : ""
-                          }
-                        >
-                          {participant.rank}
-                        </Badge>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center">
+                          {participant.rank <= 3 ? (
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                              participant.rank === 1 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" :
+                              participant.rank === 2 ? "bg-gradient-to-r from-gray-400 to-gray-600" :
+                              "bg-gradient-to-r from-orange-400 to-orange-600"
+                            }`}>
+                              {participant.rank}
+                            </div>
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm">
+                              {participant.rank}
+                            </div>
+                          )}
+                        </div>
                       </td>
-                      <td className="py-3 px-4 font-medium">{participant.display_name}</td>
-                      <td className="py-3 px-4 text-center font-semibold">{participant.points}</td>
-                      <td className="py-3 px-4 text-center">{participant.exact_predictions}</td>
-                      <td className="py-3 px-4 text-center">{participant.hits}</td>
-                      <td className="py-3 px-4 text-center">{participant.accuracy}%</td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <span className="text-white font-semibold text-sm">
+                              {participant.display_name?.charAt(0) || 'U'}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-900">{participant.display_name}</div>
+                            <div className="text-sm text-gray-500">{participant.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <span className="text-2xl font-bold text-gray-900">{participant.total_points || participant.points || 0}</span>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                          {participant.exact_predictions || 0}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                          {participant.result_predictions || 0}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                          {participant.accuracy || 0}%
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -253,40 +306,6 @@ const LeaguePage = () => {
           </div>
         </Card>
 
-        {/* Participant Details Modal */}
-        {selectedParticipant && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-semibold">{selectedParticipant.display_name}'s Predictions</h3>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setSelectedParticipant(null)}
-                  >
-                    Close
-                  </Button>
-                </div>
-                
-                <div className="space-y-4">
-                  {participantPredictions.map((prediction, index) => (
-                    <div key={index} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="font-medium">{prediction.home_team} vs {prediction.away_team}</span>
-                        <Badge variant={prediction.points > 0 ? "default" : "secondary"}>
-                          {prediction.points} pts
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Prediction: {prediction.home_score} - {prediction.away_score}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-          </div>
-        )}
       </div>
     </div>
   );

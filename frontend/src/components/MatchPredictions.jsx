@@ -316,9 +316,9 @@ const getPredictionResult = (fixture, prediction) => {
   const actualHome = fixture.home_score;
   const actualAway = fixture.away_score;
 
-  // Exact score match = HIT
+  // Exact score match = EXACT
   if (predictedHome === actualHome && predictedAway === actualAway) {
-    return { type: 'hit', text: 'HIT', points: 3 };
+    return { type: 'hit', text: 'EXACT', points: 3 };
   }
 
   // Correct result (win/draw/loss) = RESULT
@@ -897,6 +897,13 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
 
                     {/* Away Team */}
                     <div className="team-section away-team">
+                      <div className="team-jersey">
+                        <img 
+                          src={getTeamKit(fixture.away_team_name)} 
+                          alt={`${fixture.away_team_name} kit`}
+                          className="kit-image"
+                        />
+                      </div>
                       <div className="team-info">
                         <div className="team-name">{getCleanTeamName(fixture.away_team_name)}</div>
                         <div className="team-stats">Recent Form</div>
@@ -911,13 +918,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                             <span key={`empty-${index}`} className="form-result empty">-</span>
                           ))}
                         </div>
-                      </div>
-                      <div className="team-jersey">
-                        <img 
-                          src={getTeamKit(fixture.away_team_name)} 
-                          alt={`${fixture.away_team_name} kit`}
-                          className="kit-image"
-                        />
                       </div>
                     </div>
                   </div>

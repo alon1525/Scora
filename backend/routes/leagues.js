@@ -48,6 +48,21 @@ router.post('/create', authenticateUser, async (req, res) => {
       return res.status(400).json({ success: false, error: 'League name is required' });
     }
 
+    // Check if user has reached the maximum number of leagues (5)
+    const { data: userLeagues, error: userLeaguesError } = await supabase
+      .from('league_memberships')
+      .select('*')
+      .eq('user_id', req.user.id);
+
+    if (userLeaguesError) {
+      console.error('Error checking user leagues:', userLeaguesError);
+      return res.status(500).json({ success: false, error: 'Failed to check league limit' });
+    }
+
+    if (userLeagues && userLeagues.length >= 5) {
+      return res.status(400).json({ success: false, error: 'You can only be a member of 5 leagues maximum' });
+    }
+
     // Generate unique league code
     const { data: codeData, error: codeError } = await supabase.rpc('generate_league_code');
     if (codeError) {
@@ -95,6 +110,21 @@ router.post('/join', authenticateUser, async (req, res) => {
 
     if (!code || code.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'League code is required' });
+    }
+
+    // Check if user has reached the maximum number of leagues (5)
+    const { data: userLeagues, error: userLeaguesError } = await supabase
+      .from('league_memberships')
+      .select('*')
+      .eq('user_id', req.user.id);
+
+    if (userLeaguesError) {
+      console.error('Error checking user leagues:', userLeaguesError);
+      return res.status(500).json({ success: false, error: 'Failed to check league limit' });
+    }
+
+    if (userLeagues && userLeagues.length >= 5) {
+      return res.status(400).json({ success: false, error: 'You can only be a member of 5 leagues maximum' });
     }
 
     // Find the league by code

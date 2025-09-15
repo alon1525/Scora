@@ -485,7 +485,6 @@ router.post('/refresh-and-recalculate', async (req, res) => {
               fixture_points: fixturePoints,
               exact_predictions: exactPredictions,
               result_predictions: resultPredictions,
-              total_predictions: totalPredictions,
               total_points: totalPoints,
               updated_at: new Date().toISOString()
             })

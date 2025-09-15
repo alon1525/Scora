@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -8,6 +9,7 @@ import { API_ENDPOINTS } from '../config/api';
 
 const Leaderboard = ({ preloadedData }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState([]);
   const [userScores, setUserScores] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -139,7 +141,10 @@ const Leaderboard = ({ preloadedData }) => {
                           </span>
                         </td>
                         <td className="leaderboard-player">
-                          <span className={`player-name ${isCurrentUser ? 'current-user' : ''}`}>
+                          <span 
+                            className={`player-name ${isCurrentUser ? 'current-user' : ''} cursor-pointer hover:text-blue-600 transition-colors`}
+                            onClick={() => navigate(`/user/${entry.user_id}`)}
+                          >
                             {displayName}
                           </span>
                         </td>

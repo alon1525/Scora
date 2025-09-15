@@ -209,9 +209,13 @@ export const LeaguesSection = ({ preloadedData }) => {
   return (
     <div className="leagues-section space-y-6">
       <div className="text-center space-y-2">
+        <h2 className="text-2xl font-bold text-gray-900">Leagues</h2>
         <p className="text-muted-foreground">
           Create or join leagues to compete with friends
         </p>
+        <div className="text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg inline-block">
+          <span className="font-semibold">Limit:</span> Maximum 5 leagues per user
+        </div>
       </div>
 
       {/* Action Buttons */}
@@ -306,48 +310,85 @@ export const LeaguesSection = ({ preloadedData }) => {
       </div>
 
       {/* Leagues Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>My Leagues</CardTitle>
+      <Card className="shadow-lg border-0">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
+          <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
+            <svg className="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            My Leagues ({myLeagues.length}/5)
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="standings-table">
+            <table className="w-full standings-table">
               <thead>
-                <tr>
-                  <th>#</th>
-                  <th>League Code</th>
-                  <th>League Name</th>
-                  <th>Members</th>
-                  <th>Your Position</th>
-                  <th>Role</th>
+                <tr className="border-b-2 border-gray-200 bg-gray-50">
+                  <th className="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">#</th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">League Code</th>
+                  <th className="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">League Name</th>
+                  <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Members</th>
+                  <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Your Position</th>
+                  <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Role</th>
                 </tr>
               </thead>
               <tbody>
                 {myLeagues.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="text-center text-muted-foreground py-8">
-                      You haven't joined any leagues yet. Create one or join a league with a code!
+                    <td colSpan="6" className="text-center text-gray-500 py-12">
+                      <div className="flex flex-col items-center space-y-3">
+                        <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <div>
+                          <p className="text-lg font-medium text-gray-900">No leagues yet</p>
+                          <p className="text-sm text-gray-500">Create one or join a league with a code!</p>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ) : (
                   myLeagues.map((membership, index) => (
                     <tr 
                       key={membership.league.id} 
-                      className="hover:bg-gray-50 cursor-pointer"
+                      className="border-b border-gray-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer transition-all duration-200"
                       onClick={() => viewLeagueDetails(membership.league.id)}
                     >
-                      <td>{index + 1}</td>
-                      <td className="font-mono text-sm">{membership.league.code}</td>
-                      <td className="font-medium">{membership.league.name}</td>
-                      <td>{membership.league.member_count}</td>
-                      <td>
-                        <Badge variant="outline">
+                      <td className="py-4 px-4">
+                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm">
+                          {index + 1}
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="font-mono text-sm bg-gray-100 px-3 py-1 rounded-lg font-semibold text-gray-700">
+                          {membership.league.code}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">
+                              {membership.league.name?.charAt(0) || 'L'}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-900">{membership.league.name}</div>
+                            <div className="text-sm text-gray-500">Click to view details</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                          {membership.league.member_count || 0}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        <Badge variant="outline" className="text-sm font-semibold">
                           {userPositions[membership.league.id] ? `${userPositions[membership.league.id]}${getOrdinalSuffix(userPositions[membership.league.id])}` : 'Loading...'}
                         </Badge>
                       </td>
-                      <td>
-                        <Badge variant={membership.role === 'owner' ? 'default' : 'secondary'}>
+                      <td className="py-4 px-4 text-center">
+                        <Badge variant={membership.role === 'owner' ? 'default' : 'secondary'} className="text-sm font-semibold">
                           {membership.role === 'owner' ? 'Owner' : 'Member'}
                         </Badge>
                       </td>

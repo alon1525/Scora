@@ -92,7 +92,7 @@ const UserScore = ({ refreshTrigger }) => {
             </div>
             <div>
               <div className="text-2xl font-bold text-purple-500">{userScores.total_points}</div>
-              <div className="text-sm text-gray-600">Total Points</div>
+              <div className="text-sm text-gray-600">Points</div>
             </div>
           </div>
         </CardContent>

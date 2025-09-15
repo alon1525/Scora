@@ -41,9 +41,9 @@ const UserStatsCompact = ({ refreshTrigger }) => {
         <div className="user-stats-content-compact">
           <div className="user-name-small">Loading...</div>
           <div className="stats-row-compact">
-            <span data-label="Current Rank" data-value="#-"></span>
-            <span data-label="Hits" data-value="0"></span>
-            <span data-label="Total Points" data-value="0" className="points-compact"></span>
+            <span data-label="Rank" data-value="#-"></span>
+            <span data-label="Exacts" data-value="0"></span>
+            <span data-label="Points" data-value="0" className="points-compact"></span>
           </div>
           <div className="global-rank-compact">🌍 - / 0</div>
         </div>
@@ -63,9 +63,9 @@ const UserStatsCompact = ({ refreshTrigger }) => {
           {userStats.display_name || userStats.email?.split('@')[0] || 'Anonymous User'}
         </div>
         <div className="stats-row-compact">
-          <span data-label="Current Rank" data-value={`#${userStats.globalRank || '-'}`}></span>
-          <span data-label="Hits" data-value={userStats.result_predictions || 0}></span>
-          <span data-label="Total Points" data-value={userStats.total_points || 0} className="points-compact"></span>
+          <span data-label="Rank" data-value={`#${userStats.globalRank || '-'}`}></span>
+          <span data-label="Exacts" data-value={userStats.exact_predictions || 0}></span>
+          <span data-label="Points" data-value={userStats.total_points || 0} className="points-compact"></span>
         </div>
         <div className="global-rank-compact">
           🌍 {userStats.globalRank ? `${userStats.globalRank} / ${userStats.totalUsers || 0}` : '- / 0'}
