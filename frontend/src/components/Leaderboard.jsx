@@ -134,6 +134,7 @@ const Leaderboard = ({ preloadedData }) => {
                               ? 'top-three-row' 
                               : ''
                         }`}
+                        onClick={() => navigate(`/user/${entry.user_id}`)}
                       >
                         <td className="leaderboard-position">
                           <span className={`position-icon ${getRankColor(position)}`}>
@@ -142,8 +143,7 @@ const Leaderboard = ({ preloadedData }) => {
                         </td>
                         <td className="leaderboard-player">
                           <span 
-                            className={`player-name ${isCurrentUser ? 'current-user' : ''} cursor-pointer hover:text-blue-600 transition-colors`}
-                            onClick={() => navigate(`/user/${entry.user_id}`)}
+                            className={`player-name ${isCurrentUser ? 'current-user' : ''}`}
                           >
                             {displayName}
                           </span>

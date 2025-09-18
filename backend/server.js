@@ -19,6 +19,22 @@ app.use(express.json());
 // Supabase client
 const supabaseUrl = process.env.SUPABASE_API_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+
+if (!supabaseUrl) {
+  console.error('❌ SUPABASE_API_URL environment variable is required');
+  console.error('Please create a .env file in the backend directory with:');
+  console.error('SUPABASE_API_URL=your_supabase_url_here');
+  console.error('SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here');
+  process.exit(1);
+}
+
+if (!supabaseKey) {
+  console.error('❌ SUPABASE_SERVICE_ROLE_KEY or SUPABASE_PUBLISHABLE_KEY environment variable is required');
+  console.error('Please create a .env file in the backend directory with:');
+  console.error('SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here');
+  process.exit(1);
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Routes

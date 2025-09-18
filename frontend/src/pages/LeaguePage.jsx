@@ -9,6 +9,102 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 
+// Function to clean team names to short names (same as UserProfile)
+const getCleanTeamName = (teamName) => {
+  const nameMapping = {
+    // Brighton variations
+    'Brighton & Hove Albion': 'Brighton',
+    'Brighton & Hove Albion FC': 'Brighton',
+    'Brighton': 'Brighton',
+    
+    // Wolves variations
+    'Wolverhampton Wanderers': 'Wolves',
+    'Wolverhampton Wanderers FC': 'Wolves',
+    'Wolves': 'Wolves',
+    'Wolverhampton': 'Wolves',
+    
+    // AFC Bournemouth
+    'AFC Bournemouth': 'Bournemouth',
+    'Bournemouth': 'Bournemouth',
+    
+    // Arsenal
+    'Arsenal FC': 'Arsenal',
+    'Arsenal': 'Arsenal',
+    
+    // Aston Villa
+    'Aston Villa FC': 'Aston Villa',
+    'Aston Villa': 'Aston Villa',
+    
+    // Brentford
+    'Brentford FC': 'Brentford',
+    'Brentford': 'Brentford',
+    
+    // Burnley
+    'Burnley FC': 'Burnley',
+    'Burnley': 'Burnley',
+    
+    // Chelsea
+    'Chelsea FC': 'Chelsea',
+    'Chelsea': 'Chelsea',
+    
+    // Crystal Palace
+    'Crystal Palace FC': 'Crystal Palace',
+    'Crystal Palace': 'Crystal Palace',
+    
+    // Everton
+    'Everton FC': 'Everton',
+    'Everton': 'Everton',
+    
+    // Fulham
+    'Fulham FC': 'Fulham',
+    'Fulham': 'Fulham',
+    
+    // Leeds
+    'Leeds United': 'Leeds',
+    'Leeds United FC': 'Leeds',
+    'Leeds': 'Leeds',
+    
+    // Liverpool
+    'Liverpool FC': 'Liverpool',
+    'Liverpool': 'Liverpool',
+    
+    // Manchester City
+    'Manchester City FC': 'Manchester City',
+    'Manchester City': 'Manchester City',
+    
+    // Manchester United
+    'Manchester United FC': 'Manchester United',
+    'Manchester United': 'Manchester United',
+    
+    // Newcastle
+    'Newcastle United': 'Newcastle',
+    'Newcastle United FC': 'Newcastle',
+    'Newcastle': 'Newcastle',
+    
+    // Nottingham Forest
+    'Nottingham Forest FC': 'Nottingham Forest',
+    'Nottingham Forest': 'Nottingham Forest',
+    'Nottingham': 'Nottingham Forest',
+    
+    // Sunderland
+    'Sunderland AFC': 'Sunderland',
+    'Sunderland FC': 'Sunderland',
+    'Sunderland': 'Sunderland',
+    
+    // Tottenham
+    'Tottenham Hotspur': 'Tottenham',
+    'Tottenham Hotspur FC': 'Tottenham',
+    'Tottenham': 'Tottenham',
+    
+    // West Ham
+    'West Ham United': 'West Ham',
+    'West Ham United FC': 'West Ham',
+    'West Ham': 'West Ham'
+  };
+  
+  return nameMapping[teamName] || teamName;
+};
+
 const LeaguePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -190,64 +286,68 @@ const LeaguePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">{league.name?.charAt(0) || 'L'}</span>
+            <div className="flex items-center space-x-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-2xl">{league.name?.charAt(0) || 'L'}</span>
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{league.name}</h1>
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  <span className="flex items-center">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                    Code: <span className="font-mono font-semibold ml-1">{league.code}</span>
+                <h1 className="text-4xl font-bold text-white mb-2">{league.name}</h1>
+                <div className="flex items-center space-x-6 text-sm">
+                  <span className="flex items-center text-slate-300">
+                    <span className="w-3 h-3 bg-green-500 rounded-full mr-3 shadow-lg"></span>
+                    <span className="font-mono font-semibold text-green-400 bg-slate-800 px-3 py-1 rounded-lg">{league.code}</span>
                   </span>
-                  <span className="flex items-center">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                    {league.standings?.length || 0} members
+                  <span className="flex items-center text-slate-300">
+                    <span className="w-3 h-3 bg-blue-500 rounded-full mr-3 shadow-lg"></span>
+                    <span className="font-semibold">{league.standings?.length || 0} members</span>
                   </span>
                 </div>
               </div>
             </div>
-            <Button onClick={() => navigate('/dashboard')} variant="outline" className="flex items-center space-x-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
+            <Button 
+              onClick={() => navigate('/dashboard')} 
+              className="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 text-white border-slate-600"
+            >
+              <span className="material-symbols-outlined text-lg">arrow_back</span>
               <span>Back to Dashboard</span>
             </Button>
           </div>
         </div>
 
         {/* Standings Table */}
-        <Card className="mb-8 shadow-lg border-0">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">League Standings</h2>
-              <div className="text-sm text-gray-500">
+        <Card className="mb-8 shadow-2xl border-0 bg-gradient-to-br from-slate-800 to-slate-900">
+          <div className="p-8">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-3">
+                <span className="material-symbols-outlined text-3xl text-blue-400">emoji_events</span>
+                <h2 className="text-3xl font-bold text-white">League Standings</h2>
+              </div>
+              <div className="text-sm text-slate-400 bg-slate-700 px-4 py-2 rounded-lg">
                 Click on a player to view their predictions
               </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full standings-table">
                 <thead>
-                  <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Rank</th>
-                    <th className="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Player</th>
-                    <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Total Points</th>
-                    <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Exact</th>
-                    <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Results</th>
-                    <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Accuracy</th>
+                  <tr className="border-b-2 border-slate-600">
+                    <th className="text-left py-6 px-4 font-semibold text-slate-300 text-sm uppercase tracking-wider">Rank</th>
+                    <th className="text-left py-6 px-4 font-semibold text-slate-300 text-sm uppercase tracking-wider">Player</th>
+                    <th className="text-center py-6 px-4 font-semibold text-slate-300 text-sm uppercase tracking-wider">Total Points</th>
+                    <th className="text-center py-6 px-4 font-semibold text-slate-300 text-sm uppercase tracking-wider">Exact</th>
+                    <th className="text-center py-6 px-4 font-semibold text-slate-300 text-sm uppercase tracking-wider">Results</th>
+                    <th className="text-center py-6 px-4 font-semibold text-slate-300 text-sm uppercase tracking-wider">Accuracy</th>
                   </tr>
                 </thead>
                 <tbody>
                   {league.standings?.map((participant, index) => (
                     <tr 
                       key={participant.user_id} 
-                      className="border-b border-gray-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer transition-all duration-200"
+                      className="border-b border-slate-700 hover:bg-gradient-to-r hover:from-slate-700 hover:to-slate-600 cursor-pointer transition-all duration-200"
                       onClick={() => handleParticipantClick(participant)}
                     >
                       <td className="py-4 px-4">
@@ -267,34 +367,34 @@ const LeaguePage = () => {
                           )}
                         </div>
                       </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                            <span className="text-white font-semibold text-sm">
+                      <td className="py-6 px-4">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <span className="text-white font-bold text-lg">
                               {participant.display_name?.charAt(0) || 'U'}
                             </span>
                           </div>
                           <div>
-                            <div className="font-semibold text-gray-900">{participant.display_name}</div>
-                            <div className="text-sm text-gray-500">{participant.email}</div>
+                            <div className="font-bold text-white text-lg">{participant.display_name}</div>
+                            <div className="text-sm text-slate-400">{participant.email}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-center">
-                        <span className="text-2xl font-bold text-gray-900">{participant.total_points || participant.points || 0}</span>
+                      <td className="py-6 px-4 text-center">
+                        <span className="text-3xl font-bold text-white bg-slate-700 px-4 py-2 rounded-lg">{participant.total_points || participant.points || 0}</span>
                       </td>
-                      <td className="py-4 px-4 text-center">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                      <td className="py-6 px-4 text-center">
+                        <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-green-600 text-white shadow-lg">
                           {participant.exact_predictions || 0}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-center">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                      <td className="py-6 px-4 text-center">
+                        <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-blue-600 text-white shadow-lg">
                           {participant.result_predictions || 0}
                         </span>
                       </td>
-                      <td className="py-4 px-4 text-center">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                      <td className="py-6 px-4 text-center">
+                        <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-purple-600 text-white shadow-lg">
                           {participant.accuracy || 0}%
                         </span>
                       </td>

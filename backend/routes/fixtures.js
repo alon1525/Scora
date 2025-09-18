@@ -7,6 +7,12 @@ const router = express.Router();
 // Supabase client
 const supabaseUrl = process.env.SUPABASE_API_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Supabase environment variables are not configured');
+  console.error('Please ensure SUPABASE_API_URL and SUPABASE_SERVICE_ROLE_KEY are set');
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Map football-data team names to our internal IDs

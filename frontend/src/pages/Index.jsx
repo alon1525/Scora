@@ -18,6 +18,102 @@ import { API_ENDPOINTS } from "../config/api";
 import backgroundImage from "../assets/background-picture.webp";
 import signOutIcon from "../assets/sign-out.png";
 
+// Function to clean team names to short names (same as UserProfile)
+const getCleanTeamName = (teamName) => {
+  const nameMapping = {
+    // Brighton variations
+    'Brighton & Hove Albion': 'Brighton',
+    'Brighton & Hove Albion FC': 'Brighton',
+    'Brighton': 'Brighton',
+    
+    // Wolves variations
+    'Wolverhampton Wanderers': 'Wolves',
+    'Wolverhampton Wanderers FC': 'Wolves',
+    'Wolves': 'Wolves',
+    'Wolverhampton': 'Wolves',
+    
+    // AFC Bournemouth
+    'AFC Bournemouth': 'Bournemouth',
+    'Bournemouth': 'Bournemouth',
+    
+    // Arsenal
+    'Arsenal FC': 'Arsenal',
+    'Arsenal': 'Arsenal',
+    
+    // Aston Villa
+    'Aston Villa FC': 'Aston Villa',
+    'Aston Villa': 'Aston Villa',
+    
+    // Brentford
+    'Brentford FC': 'Brentford',
+    'Brentford': 'Brentford',
+    
+    // Burnley
+    'Burnley FC': 'Burnley',
+    'Burnley': 'Burnley',
+    
+    // Chelsea
+    'Chelsea FC': 'Chelsea',
+    'Chelsea': 'Chelsea',
+    
+    // Crystal Palace
+    'Crystal Palace FC': 'Crystal Palace',
+    'Crystal Palace': 'Crystal Palace',
+    
+    // Everton
+    'Everton FC': 'Everton',
+    'Everton': 'Everton',
+    
+    // Fulham
+    'Fulham FC': 'Fulham',
+    'Fulham': 'Fulham',
+    
+    // Leeds
+    'Leeds United': 'Leeds',
+    'Leeds United FC': 'Leeds',
+    'Leeds': 'Leeds',
+    
+    // Liverpool
+    'Liverpool FC': 'Liverpool',
+    'Liverpool': 'Liverpool',
+    
+    // Manchester City
+    'Manchester City FC': 'Manchester City',
+    'Manchester City': 'Manchester City',
+    
+    // Manchester United
+    'Manchester United FC': 'Manchester United',
+    'Manchester United': 'Manchester United',
+    
+    // Newcastle
+    'Newcastle United': 'Newcastle',
+    'Newcastle United FC': 'Newcastle',
+    'Newcastle': 'Newcastle',
+    
+    // Nottingham Forest
+    'Nottingham Forest FC': 'Nottingham Forest',
+    'Nottingham Forest': 'Nottingham Forest',
+    'Nottingham': 'Nottingham Forest',
+    
+    // Sunderland
+    'Sunderland AFC': 'Sunderland',
+    'Sunderland FC': 'Sunderland',
+    'Sunderland': 'Sunderland',
+    
+    // Tottenham
+    'Tottenham Hotspur': 'Tottenham',
+    'Tottenham Hotspur FC': 'Tottenham',
+    'Tottenham': 'Tottenham',
+    
+    // West Ham
+    'West Ham United': 'West Ham',
+    'West Ham United FC': 'West Ham',
+    'West Ham': 'West Ham'
+  };
+  
+  return nameMapping[teamName] || teamName;
+};
+
 const Index = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -461,7 +557,7 @@ const Index = () => {
                                     e.currentTarget.style.display = "none";
                                   }}
                                 />
-                                <span className="standings-team-name">{team.team_name || team.name}</span>
+                                <span className="standings-team-name">{getCleanTeamName(team.team_name || team.name)}</span>
                               </div>
                             </td>
                             <td className="standings-stats">{team.played || 0}</td>

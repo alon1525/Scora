@@ -14,11 +14,12 @@
   ],
   "crons": [
     {
-      "path": "/api/standings/refresh",
-      "schedule": "0 6 * * *"
+      "path": "/api/test-cron",
+      "schedule": "0 */6 * * *"
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "CRON_SECRET": "your-secret-key-here"
   }
 }

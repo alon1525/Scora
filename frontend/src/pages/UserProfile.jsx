@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Trophy, Target, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
+import "./UserProfile.css";
 
 // Team kit imports
 import Arsenal from "../assets/Teams_Kits/Arsenal.png";
@@ -25,79 +27,64 @@ import LeedsUnited from "../assets/Teams_Kits/Leeds_United.png";
 import ManchesterUnited from "../assets/Teams_Kits/Manchester_United.png";
 import Sunderland from "../assets/Teams_Kits/Sunderland.png";
 
-// Utility function for merging classes
-function cn(...classes) {
-  return classes.filter(Boolean).join(' ');
-}
+// Mock data interfaces and data
+const mockPlayers = [
+  { id: "1", name: "Alex Johnson", points: 1247, accuracy: 68, predictions: 156, streak: 4 },
+  { id: "2", name: "Sarah Chen", points: 1156, accuracy: 71, predictions: 143, streak: 2 },
+  { id: "3", name: "Mike Rodriguez", points: 1098, accuracy: 64, predictions: 178, streak: 1 },
+  { id: "4", name: "Emma Thompson", points: 1034, accuracy: 69, predictions: 134, streak: 3 },
+  { id: "5", name: "David Kim", points: 987, accuracy: 62, predictions: 167, streak: 0 },
+];
 
-// Inline Card Components
-const Card = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)} {...props} />
-));
-Card.displayName = "Card";
-
-const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />
-));
-CardHeader.displayName = "CardHeader";
-
-const CardTitle = React.forwardRef(({ className, ...props }, ref) => (
-  <h3 ref={ref} className={cn("text-2xl font-semibold leading-none tracking-tight", className)} {...props} />
-));
-CardTitle.displayName = "CardTitle";
-
-const CardContent = React.forwardRef(({ className, ...props }, ref) => 
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
-);
-CardContent.displayName = "CardContent";
-
-// Inline Button Component
-const Button = React.forwardRef(({ className, variant = 'default', size = 'default', ...props }, ref) => {
-  const baseClasses = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-micro focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0";
-  
-  const variantClasses = {
-    default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary hover:shadow-elevated transition-smooth",
-    destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-lg",
-    outline: "border border-input bg-background/50 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground transition-smooth",
-    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-lg",
-    ghost: "hover:bg-accent/10 hover:text-accent-foreground transition-smooth",
-    link: "text-primary underline-offset-4 hover:underline transition-micro",
-    primary: "bg-gradient-primary text-primary-foreground hover:shadow-elevated transition-spring shadow-primary",
-    accent: "bg-gradient-accent text-accent-foreground hover:shadow-elevated transition-spring shadow-accent"
-  };
-  
-  const sizeClasses = {
-    default: "h-11 px-6 py-2.5",
-    sm: "h-9 rounded-lg px-4 text-xs",
-    lg: "h-12 rounded-xl px-8 text-base",
-    icon: "h-11 w-11"
-  };
-  
-  return (
-    <button
-      className={cn(baseClasses, variantClasses[variant], sizeClasses[size], className)}
-      ref={ref}
-      {...props}
-    />
-  );
-});
-Button.displayName = "Button";
-
-// Inline Badge Component
-function Badge({ className, variant = 'default', ...props }) {
-  const baseClasses = "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2";
-  
-  const variantClasses = {
-    default: "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
-    secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-    destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
-    outline: "text-foreground"
-  };
-  
-  return (
-    <div className={cn(baseClasses, variantClasses[variant], className)} {...props} />
-  );
-}
+const mockPredictions = [
+  {
+    id: "1",
+    playerId: "1",
+    homeTeam: "Arsenal",
+    awayTeam: "Chelsea",
+    predictedScore: "2-1",
+    actualScore: "2-1",
+    matchDate: "2024-03-15",
+    correct: true,
+    result: "2-1",
+    points: 5
+  },
+  {
+    id: "2",
+    playerId: "1", 
+    homeTeam: "Manchester City",
+    awayTeam: "Liverpool",
+    predictedScore: "3-2",
+    actualScore: "1-1",
+    matchDate: "2024-03-12",
+    correct: false,
+    result: "1-1",
+    points: 0
+  },
+  {
+    id: "3",
+    playerId: "1",
+    homeTeam: "Tottenham",
+    awayTeam: "Newcastle", 
+    predictedScore: "2-0",
+    matchDate: "2024-03-20",
+    correct: undefined,
+    result: undefined,
+    points: 0
+  },
+  {
+    id: "4",
+    playerId: "1",
+    homeTeam: "Brighton",
+    awayTeam: "West Ham",
+    predictedScore: "1-2",
+    actualScore: "1-2",
+    matchDate: "2024-03-08",
+    correct: true,
+    result: "1-2", 
+    points: 5
+  }
+];
 
 const UserProfile = () => {
   const navigate = useNavigate();
@@ -106,6 +93,8 @@ const UserProfile = () => {
   const [predictions, setPredictions] = useState([]);
   const [fixtures, setFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedWeek, setSelectedWeek] = useState('all');
+  const [availableWeeks, setAvailableWeeks] = useState([]);
 
   useEffect(() => {
     if (userId) {
@@ -131,28 +120,161 @@ const UserProfile = () => {
         return;
       }
 
-      setPlayer(profileData);
+      // Transform the data to match our component structure
+      const transformedPlayer = {
+        id: profileData.user_id,
+        name: profileData.display_name || 'Unknown Player',
+        points: profileData.total_points || 0,
+        accuracy: profileData.exact_predictions && profileData.result_predictions 
+          ? Math.round((profileData.exact_predictions / (profileData.exact_predictions + profileData.result_predictions)) * 100)
+          : 0,
+        predictions: (profileData.exact_predictions || 0) + (profileData.result_predictions || 0),
+        streak: 0 // We'll calculate this later if needed
+      };
+
+      setPlayer(transformedPlayer);
       
-      // Convert fixture_predictions to array format
-      if (profileData.fixture_predictions) {
-        const predictionsArray = Object.entries(profileData.fixture_predictions).map(([fixtureId, prediction]) => ({
-          id: fixtureId,
-          playerId: userId,
-          homeTeam: prediction.home_team || 'Unknown',
-          awayTeam: prediction.away_team || 'Unknown',
-          predictedScore: `${prediction.home_score}-${prediction.away_score}`,
-          points: prediction.points_earned || 0,
-          correct: prediction.points_earned > 0,
-          result: prediction.points_earned !== undefined
-        }));
-        setPredictions(predictionsArray);
-      }
+      // Load finished fixtures and match with player predictions
+      await loadPlayerPredictions(profileData.fixture_predictions);
       
     } catch (error) {
       console.error('Error loading user profile:', error);
       toast.error('Failed to load user profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPlayerPredictions = async (fixturePredictions) => {
+    try {
+      // Get all finished fixtures with matchday information
+      const { data: fixturesData, error: fixturesError } = await supabase
+        .from('fixtures')
+        .select('id, home_team_name, away_team_name, home_team_logo, away_team_logo, home_score, away_score, status, scheduled_date, matchday')
+        .eq('status', 'FINISHED')
+        .order('matchday', { ascending: false })
+        .order('scheduled_date', { ascending: false })
+        .limit(100); // Get more fixtures to find predictions
+
+      if (fixturesError) {
+        console.error('Error loading fixtures:', fixturesError);
+        return;
+      }
+
+      if (!fixturesData || fixturesData.length === 0) {
+        console.log('No finished fixtures found');
+        return;
+      }
+
+      // Group fixtures by matchday
+      const fixturesByMatchday = {};
+      fixturesData.forEach(fixture => {
+        const matchday = fixture.matchday || 'Unknown Matchday';
+        if (!fixturesByMatchday[matchday]) {
+          fixturesByMatchday[matchday] = [];
+        }
+        fixturesByMatchday[matchday].push(fixture);
+      });
+
+      // Create cards for all finished fixtures, with or without predictions
+      const predictionsArray = [];
+      
+      // Process each matchday
+      Object.keys(fixturesByMatchday).sort((a, b) => parseInt(b) - parseInt(a)).forEach(matchday => {
+        fixturesByMatchday[matchday].forEach(fixture => {
+          // Try both string and number keys for fixture ID
+          const prediction = fixturePredictions ? 
+            (fixturePredictions[fixture.id.toString()] || fixturePredictions[fixture.id]) : null;
+          const actualScore = `${fixture.home_score}-${fixture.away_score}`;
+          
+          // Debug logging for user ID 1
+          if (userId === '1' && fixture.id <= 5) {
+            console.log(`Fixture ${fixture.id}:`, {
+              fixtureId: fixture.id,
+              fixtureIdString: fixture.id.toString(),
+              hasPrediction: !!prediction,
+              prediction: prediction,
+              fixturePredictionsKeys: fixturePredictions ? Object.keys(fixturePredictions) : 'null'
+            });
+          }
+          
+          if (prediction) {
+            // Player made a prediction
+            const predictedScore = `${prediction.home_score}-${prediction.away_score}`;
+            
+            // Determine if it's exact or result prediction
+            const isExact = predictedScore === actualScore;
+            const isResult = !isExact && (
+              (prediction.home_score > prediction.away_score && fixture.home_score > fixture.away_score) ||
+              (prediction.home_score < prediction.away_score && fixture.home_score < fixture.away_score) ||
+              (prediction.home_score === prediction.away_score && fixture.home_score === fixture.away_score)
+            );
+            
+            // Calculate points (exact = 3, result = 1)
+            let points = 0;
+            if (isExact) {
+              points = 3; // Exact prediction points
+            } else if (isResult) {
+              points = 1; // Result prediction points
+            }
+
+            predictionsArray.push({
+              id: fixture.id,
+              playerId: userId,
+              homeTeam: fixture.home_team_name,
+              awayTeam: fixture.away_team_name,
+              predictedScore: predictedScore,
+              actualScore: actualScore,
+              points: points,
+              correct: isExact || isResult,
+              isExact: isExact,
+              isResult: isResult,
+              matchDate: fixture.scheduled_date,
+              week: matchday,
+              result: actualScore,
+              hasPrediction: true
+            });
+          } else {
+            // Player didn't make a prediction
+            predictionsArray.push({
+              id: fixture.id,
+              playerId: userId,
+              homeTeam: fixture.home_team_name,
+              awayTeam: fixture.away_team_name,
+              predictedScore: "",
+              actualScore: actualScore,
+              points: 0,
+              correct: false,
+              isExact: false,
+              isResult: false,
+              matchDate: fixture.scheduled_date,
+              week: matchday,
+              result: actualScore,
+              hasPrediction: false
+            });
+          }
+        });
+      });
+
+      setPredictions(predictionsArray);
+      
+      // Extract available matchdays for filtering
+      const matchdays = [...new Set(predictionsArray.map(p => p.week))].sort((a, b) => parseInt(b) - parseInt(a));
+      setAvailableWeeks(matchdays);
+      
+      // Set default to current/latest matchweek
+      if (matchdays.length > 0) {
+        setSelectedWeek(matchdays[0]); // First matchday (most recent)
+      }
+      
+      // Debug: Log team names to see what we're getting from database
+      const uniqueTeams = [...new Set(predictionsArray.flatMap(p => [p.homeTeam, p.awayTeam]))];
+      console.log('Team names from database:', uniqueTeams);
+      
+      console.log(`Loaded ${predictionsArray.length} fixtures for player ${userId} (${predictionsArray.filter(p => p.hasPrediction).length} with predictions)`);
+      
+    } catch (error) {
+      console.error('Error loading player predictions:', error);
     }
   };
 
@@ -171,13 +293,131 @@ const UserProfile = () => {
       }
 
       setFixtures(fixturesData || []);
+      
+      // Update predictions with team names from fixtures
+      if (fixturesData && predictions.length > 0) {
+        const updatedPredictions = predictions.map(prediction => {
+          const fixture = fixturesData.find(f => f.id === prediction.id);
+          if (fixture) {
+            return {
+              ...prediction,
+              homeTeam: fixture.home_team_name,
+              awayTeam: fixture.away_team_name,
+              actualScore: `${fixture.home_score}-${fixture.away_score}`,
+              correct: prediction.predictedScore === `${fixture.home_score}-${fixture.away_score}`
+            };
+          }
+          return prediction;
+        });
+        setPredictions(updatedPredictions);
+      }
     } catch (error) {
       console.error('Error loading fixtures:', error);
     }
   };
 
   const getTeamLogo = (teamName) => {
-    const logos = {
+    // First clean the team name to get the short name (same as fixtures tab)
+    const getCleanTeamName = (teamName) => {
+      const nameMapping = {
+        // Brighton variations
+        'Brighton & Hove Albion': 'Brighton',
+        'Brighton & Hove Albion FC': 'Brighton',
+        'Brighton': 'Brighton',
+        
+        // Wolves variations
+        'Wolverhampton Wanderers': 'Wolves',
+        'Wolverhampton Wanderers FC': 'Wolves',
+        'Wolves': 'Wolves',
+        'Wolverhampton': 'Wolves',
+        
+        // AFC Bournemouth
+        'AFC Bournemouth': 'Bournemouth',
+        'Bournemouth': 'Bournemouth',
+        
+        // Arsenal
+        'Arsenal FC': 'Arsenal',
+        'Arsenal': 'Arsenal',
+        
+        // Aston Villa
+        'Aston Villa FC': 'Aston Villa',
+        'Aston Villa': 'Aston Villa',
+        
+        // Brentford
+        'Brentford FC': 'Brentford',
+        'Brentford': 'Brentford',
+        
+        // Burnley
+        'Burnley FC': 'Burnley',
+        'Burnley': 'Burnley',
+        
+        // Chelsea
+        'Chelsea FC': 'Chelsea',
+        'Chelsea': 'Chelsea',
+        
+        // Crystal Palace
+        'Crystal Palace FC': 'Crystal Palace',
+        'Crystal Palace': 'Crystal Palace',
+        
+        // Everton
+        'Everton FC': 'Everton',
+        'Everton': 'Everton',
+        
+        // Fulham
+        'Fulham FC': 'Fulham',
+        'Fulham': 'Fulham',
+        
+        // Leeds
+        'Leeds United': 'Leeds',
+        'Leeds United FC': 'Leeds',
+        'Leeds': 'Leeds',
+        
+        // Liverpool
+        'Liverpool FC': 'Liverpool',
+        'Liverpool': 'Liverpool',
+        
+        // Manchester City
+        'Manchester City FC': 'Manchester City',
+        'Manchester City': 'Manchester City',
+        
+        // Manchester United
+        'Manchester United FC': 'Manchester United',
+        'Manchester United': 'Manchester United',
+        
+        // Newcastle
+        'Newcastle United': 'Newcastle',
+        'Newcastle United FC': 'Newcastle',
+        'Newcastle': 'Newcastle',
+        
+        // Nottingham Forest
+        'Nottingham Forest FC': 'Nottingham Forest',
+        'Nottingham Forest': 'Nottingham Forest',
+        'Nottingham': 'Nottingham Forest',
+        
+        // Sunderland
+        'Sunderland AFC': 'Sunderland',
+        'Sunderland FC': 'Sunderland',
+        'Sunderland': 'Sunderland',
+        
+        // Tottenham
+        'Tottenham Hotspur': 'Tottenham',
+        'Tottenham Hotspur FC': 'Tottenham',
+        'Tottenham': 'Tottenham',
+        
+        // West Ham
+        'West Ham United': 'West Ham',
+        'West Ham United FC': 'West Ham',
+        'West Ham': 'West Ham'
+      };
+      
+      return nameMapping[teamName] || teamName;
+    };
+
+    // Get the clean short name
+    const cleanTeamName = getCleanTeamName(teamName);
+    
+    // Map clean team names to imported kit files
+    const teamLogoMap = {
       "Arsenal": Arsenal,
       "Chelsea": Chelsea,
       "Manchester City": ManchesterCity,
@@ -195,203 +435,257 @@ const UserProfile = () => {
       "Wolves": Wolves,
       "Burnley": Burnley,
       "Bournemouth": Bournemouth,
-      "Leeds United": LeedsUnited,
+      "Leeds": LeedsUnited,
       "Manchester United": ManchesterUnited,
       "Sunderland": Sunderland
     };
-    return logos[teamName] || Arsenal;
+    
+    return teamLogoMap[cleanTeamName] || Arsenal;
   };
 
-  const correctPredictions = predictions.filter(p => p.correct);
+  // Use real data from database
+  const currentPlayer = player;
+  
+  // Filter predictions by selected week
+  const currentPredictions = selectedWeek === 'all' 
+    ? predictions.filter(p => availableWeeks.slice(0, Math.min(3, availableWeeks.length)).includes(p.week)) // Up to 3 matchdays, or all if less than 3
+    : predictions.filter(p => p.week === selectedWeek);
+
+  const correctPredictions = currentPredictions.filter(p => p.correct);
   const totalPoints = correctPredictions.reduce((sum, p) => sum + p.points, 0);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading user profile...</p>
-        </div>
+      <div className="user-profile-loading">
+        <div className="loading-spinner"></div>
+        <p className="loading-text">Loading user profile...</p>
       </div>
     );
   }
 
-  if (!player) {
+  if (!currentPlayer) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-destructive">Player not found</h1>
-          <Button onClick={() => navigate("/dashboard")} className="mt-4">
+      <div className="user-profile-error">
+        <h1 className="error-title">Player not found</h1>
+        <button onClick={() => navigate("/dashboard")} className="back-button">
             Go back
-          </Button>
-        </div>
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="user-profile-container">
+      <div className="user-profile-content">
         {/* Header */}
-        <div className="flex items-center gap-6 mb-12">
-          <Button 
-            variant="ghost" 
+        <div className="user-profile-header">
+          <button 
+            className="back-button-ghost"
             onClick={() => navigate("/dashboard")}
-            className="hover:bg-muted/50 p-3 rounded-xl"
           >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-4xl md:text-5xl font-black bg-gradient-primary bg-clip-text text-transparent tracking-tight">
-              {player.display_name}
+            <ArrowLeft className="back-icon" />
+          </button>
+          <div className="header-content">
+            <h1 className="player-name">
+              {currentPlayer.name}
             </h1>
-            <p className="text-muted-foreground text-lg font-light mt-2">
+            <p className="player-subtitle">
               Player Profile & Statistics
             </p>
           </div>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-3 gap-6 mb-12">
-          <Card className="bg-gradient-card shadow-elevated border-border/50 backdrop-blur-sm">
-            <CardContent className="p-8 text-center">
-              <div className="text-4xl font-black text-accent mb-2">{player.total_points || 0}</div>
-              <div className="text-muted-foreground flex items-center justify-center gap-2 font-medium">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                </svg>
+        <div className="stats-grid">
+          <div className="stat-card stat-card-points">
+            <div className="stat-content">
+              <div className="stat-value">{currentPlayer.points}</div>
+              <div className="stat-label">
+                <Trophy className="stat-icon" />
                 Total Points
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
           
-          <Card className="bg-gradient-card shadow-elevated border-border/50 backdrop-blur-sm">
-            <CardContent className="p-8 text-center">
-              <div className="text-4xl font-black text-primary mb-2">
-                {player.exact_predictions && player.result_predictions 
-                  ? Math.round((player.exact_predictions / (player.exact_predictions + player.result_predictions)) * 100) 
-                  : 0}%
-              </div>
-              <div className="text-muted-foreground flex items-center justify-center gap-2 font-medium">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                </svg>
+          <div className="stat-card stat-card-accuracy">
+            <div className="stat-content">
+              <div className="stat-value">{currentPlayer.accuracy}%</div>
+              <div className="stat-label">
+                <Target className="stat-icon" />
                 Accuracy
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
           
-          <Card className="bg-gradient-card shadow-elevated border-border/50 backdrop-blur-sm">
-            <CardContent className="p-8 text-center">
-              <div className="text-4xl font-black text-foreground mb-2">
-                {(player.exact_predictions || 0) + (player.result_predictions || 0)}
-              </div>
-              <div className="text-muted-foreground flex items-center justify-center gap-2 font-medium">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+          <div className="stat-card stat-card-predictions">
+            <div className="stat-content">
+              <div className="stat-value">{currentPlayer.predictions}</div>
+              <div className="stat-label">
+                <Calendar className="stat-icon" />
                 Predictions
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Predictions History */}
-        <Card className="bg-gradient-card shadow-elevated border-border/50 backdrop-blur-sm">
-          <CardHeader className="pb-8">
-            <CardTitle className="flex items-center gap-3 text-primary text-2xl font-bold">
-              <div className="p-2 bg-primary/10 rounded-xl">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+        <div className="predictions-card">
+          <div className="predictions-header">
+            <div className="predictions-title">
+              <div className="title-icon">
+                <Calendar className="calendar-icon" />
               </div>
               Recent Predictions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {predictions.map((prediction) => (
+            </div>
+            <div className="week-selector">
+              <label htmlFor="week-select" className="week-label">Week:</label>
+              <select 
+                id="week-select"
+                value={selectedWeek} 
+                onChange={(e) => setSelectedWeek(e.target.value)}
+                className="week-dropdown"
+              >
+                <option value="all">All Matchdays</option>
+                {availableWeeks.map(week => (
+                  <option key={week} value={week}>Matchday {week}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="predictions-content">
+            <div className="predictions-list">
+              {currentPredictions.map((prediction, index) => (
                 <div
                   key={prediction.id}
-                  className="flex items-center justify-between p-6 rounded-2xl bg-muted/30 hover:bg-muted/50 transition-smooth border border-border/30"
+                  className="prediction-item"
+                  style={{ animationDelay: `${0.4 + index * 0.1}s` }}
                 >
-                  <div className="flex items-center justify-center w-12">
-                    {prediction.correct ? (
-                      <svg className="h-7 w-7 text-success" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    ) : prediction.result ? (
-                      <svg className="h-7 w-7 text-destructive" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    ) : (
-                      <svg className="h-7 w-7 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    )}
-                  </div>
-                  
-                  {/* Home team */}
-                  <div className="flex items-center gap-4 flex-1 justify-center">
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src={getTeamLogo(prediction.homeTeam)} 
-                        alt={prediction.homeTeam}
-                        className="w-10 h-10 rounded-full object-cover shadow-lg"
-                      />
-                      <span className="font-semibold text-lg">{prediction.homeTeam}</span>
+                  {/* Mobile Layout */}
+                  <div className="prediction-mobile">
+                    <div className="prediction-mobile-header">
+                      <div className="prediction-status">
+                        {!prediction.hasPrediction ? (
+                          <span className="material-symbols-outlined status-icon status-no-prediction">help_outline</span>
+                        ) : prediction.correct ? (
+                          <CheckCircle className="status-icon status-correct" />
+                        ) : prediction.result ? (
+                          <XCircle className="status-icon status-incorrect" />
+                        ) : (
+                          <Calendar className="status-icon status-pending" />
+                        )}
+                        <span className="predicted-score">
+                          {prediction.hasPrediction ? prediction.predictedScore : ''}
+                        </span>
+                      </div>
+                      <div className="prediction-badge-container">
+                        {!prediction.hasPrediction ? (
+                          <div className="prediction-badge prediction-badge-no-prediction">
+                            NO PREDICTION
+                          </div>
+                        ) : prediction.correct ? (
+                          <div className={`prediction-badge ${prediction.isExact ? 'prediction-badge-exact' : 'prediction-badge-result'}`}>
+                            {prediction.isExact ? 'EXACT' : 'RESULT'} +{prediction.points}pts
+                          </div>
+                        ) : prediction.result && !prediction.correct ? (
+                          <div className="prediction-badge prediction-badge-incorrect">
+                            INCORRECT
+                          </div>
+                        ) : (
+                          <div className="prediction-badge prediction-badge-pending">
+                            PENDING
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                    
+                    <div className="prediction-teams-mobile">
+                      <div className="team-row">
+                        <span className="team-name">{prediction.homeTeam}</span>
+                        <img 
+                          src={getTeamLogo(prediction.homeTeam)} 
+                          alt={prediction.homeTeam}
+                          className="team-logo"
+                        />
+                      </div>
+                      <div className="team-row">
+                        <span className="team-name">{prediction.awayTeam}</span>
+                        <img 
+                          src={getTeamLogo(prediction.awayTeam)} 
+                          alt={prediction.awayTeam}
+                          className="team-logo"
+                        />
+        </div>
+      </div>
+        </div>
                   
-                  {/* Score and points */}
-                  <div className="flex flex-col items-center px-8">
-                    <span className="font-black text-primary text-3xl mb-3">{prediction.predictedScore}</span>
-                    <div>
-                      {prediction.correct && (
-                        <Badge 
-                          variant="outline" 
-                          className="border-success text-success bg-success/10 font-bold px-4 py-2 text-sm"
-                        >
-                          EXACT MATCH +{prediction.points} pts
-                        </Badge>
+                  {/* Desktop Layout */}
+                  <div className="prediction-desktop">
+                    <div className="prediction-status-desktop">
+                      {!prediction.hasPrediction ? (
+                        <span className="material-symbols-outlined status-icon-desktop status-no-prediction">help_outline</span>
+                      ) : prediction.correct ? (
+                        <CheckCircle className="status-icon-desktop status-correct" />
+                      ) : prediction.result ? (
+                        <XCircle className="status-icon-desktop status-incorrect" />
+                      ) : (
+                        <Calendar className="status-icon-desktop status-pending" />
                       )}
-                      {prediction.result && !prediction.correct && (
-                        <Badge 
-                          variant="outline" 
-                          className="border-destructive text-destructive bg-destructive/10 font-bold px-4 py-2 text-sm"
-                        >
-                          INCORRECT 0 pts
-                        </Badge>
-                      )}
-                      {!prediction.result && (
-                        <Badge 
-                          variant="outline" 
-                          className="border-warning text-warning bg-warning/10 font-bold px-4 py-2 text-sm"
-                        >
-                          PENDING
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Away team */}
-                  <div className="flex items-center gap-4 flex-1 justify-center">
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-lg">{prediction.awayTeam}</span>
-                      <img 
-                        src={getTeamLogo(prediction.awayTeam)} 
-                        alt={prediction.awayTeam}
-                        className="w-10 h-10 rounded-full object-cover shadow-lg"
-                      />
+        </div>
+                    
+                    <div className="prediction-teams-desktop">
+                      <div className="team-section">
+                        <div className="team-info">
+                          <span className="team-name-desktop">{prediction.homeTeam}</span>
+                          <img 
+                            src={getTeamLogo(prediction.homeTeam)} 
+                            alt={prediction.homeTeam}
+                            className="team-logo-desktop"
+                          />
+        </div>
+      </div>
+                      
+                      <div className="score-section">
+                        <span className="predicted-score-desktop">
+                          {prediction.hasPrediction ? prediction.predictedScore : ''}
+                        </span>
+                        <div className="prediction-badge-container-desktop">
+                          {!prediction.hasPrediction ? (
+                            <div className="prediction-badge prediction-badge-no-prediction">
+                              NO PREDICTION
+                            </div>
+                          ) : prediction.correct ? (
+                            <div className={`prediction-badge ${prediction.isExact ? 'prediction-badge-exact' : 'prediction-badge-result'}`}>
+                              {prediction.isExact ? 'EXACT' : 'RESULT'} +{prediction.points} pts
+                            </div>
+                          ) : prediction.result && !prediction.correct ? (
+                            <div className="prediction-badge prediction-badge-incorrect">
+                              INCORRECT 0 pts
+                            </div>
+                          ) : (
+                            <div className="prediction-badge prediction-badge-pending">
+                              PENDING
+                            </div>
+                          )}
+        </div>
+      </div>
+
+                      <div className="team-section">
+                        <div className="team-info">
+                          <span className="team-name-desktop">{prediction.awayTeam}</span>
+                          <img 
+                            src={getTeamLogo(prediction.awayTeam)} 
+                            alt={prediction.awayTeam}
+                            className="team-logo-desktop"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

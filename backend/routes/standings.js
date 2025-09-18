@@ -175,6 +175,20 @@ router.get('/refresh', async (req, res) => {
   await handleStandingsRefresh(req, res, 'cron');
 });
 
+// Test endpoint to verify cron function is accessible
+router.get('/test-cron', async (req, res) => {
+  res.json({
+    success: true,
+    message: 'Cron function is accessible',
+    timestamp: new Date().toISOString(),
+    environment: {
+      hasApiKey: !!process.env.LEAGUE_STANDINGS_API_KEY,
+      hasSupabaseUrl: !!process.env.SUPABASE_API_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    }
+  });
+});
+
 // Shared function to handle standings refresh
 async function handleStandingsRefresh(req, res, trigger = 'manual') {
   const startTime = Date.now();
