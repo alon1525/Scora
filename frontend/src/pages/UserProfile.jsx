@@ -116,6 +116,12 @@ const UserProfile = () => {
       
       console.log('📊 All users in database:', allUsers);
       console.log('📊 All users error:', allUsersError);
+      console.log('📊 Available user IDs:', allUsers?.map(u => ({ 
+        id: u.id, 
+        user_id: u.user_id, 
+        name: u.display_name,
+        email: u.email 
+      })));
       
       // Try to get user from user_profiles table by user_id first
       const { data: profileData, error: profileError } = await supabase
@@ -140,10 +146,10 @@ const UserProfile = () => {
         if (errorById || !profileById) {
           console.log('❌ User not found in user_profiles table');
           console.log('🔍 Available user IDs:', allUsers?.map(u => ({ id: u.id, user_id: u.user_id, name: u.display_name })));
-          toast.error('User not found');
-          return;
-        }
-        
+        toast.error('User not found');
+        return;
+      }
+
         // Use the profile found by ID
         const transformedPlayer = {
           id: profileById.user_id || profileById.id,
