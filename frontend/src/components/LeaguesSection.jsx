@@ -224,16 +224,6 @@ export const LeaguesSection = ({ preloadedData }) => {
 
   return (
     <div className="leagues-section space-y-6">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">Leagues</h2>
-        <p className="text-muted-foreground">
-          Create or join leagues to compete with friends
-        </p>
-        <div className="text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg inline-block">
-          <span className="font-semibold">Limit:</span> Maximum 5 leagues per user
-        </div>
-      </div>
-
       {/* Action Buttons */}
       <div className="leagues-action-container" style={{ 
         display: 'flex', 

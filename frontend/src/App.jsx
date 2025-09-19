@@ -9,7 +9,6 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import LeaguePage from "./pages/LeaguePage";
 import UserProfile from "./pages/UserProfile";
-import LeaguesStandalone from "./components/LeaguesStandalone";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,7 +25,6 @@ const App = () => {
                 <Route path="/" element={<Landing />} />
                 <Route path="/dashboard" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/leagues" element={<LeaguesStandalone />} />
                 <Route path="/league/:id" element={<LeaguePage />} />
                 <Route path="/user/:userId" element={<UserProfile />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

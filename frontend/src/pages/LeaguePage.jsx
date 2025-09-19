@@ -1,123 +1,49 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../integrations/supabase/client';
-import { Card } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { toast } from 'sonner';
-import axios from 'axios';
-import { API_ENDPOINTS } from '../config/api';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../integrations/supabase/client";
+import { toast } from "sonner";
+import axios from "axios";
+import { API_ENDPOINTS } from "../config/api";
+import "./LeaguePage.css";
 
-// Function to clean team names to short names (same as UserProfile)
-const getCleanTeamName = (teamName) => {
-  const nameMapping = {
-    // Brighton variations
-    'Brighton & Hove Albion': 'Brighton',
-    'Brighton & Hove Albion FC': 'Brighton',
-    'Brighton': 'Brighton',
-    
-    // Wolves variations
-    'Wolverhampton Wanderers': 'Wolves',
-    'Wolverhampton Wanderers FC': 'Wolves',
-    'Wolves': 'Wolves',
-    'Wolverhampton': 'Wolves',
-    
-    // AFC Bournemouth
-    'AFC Bournemouth': 'Bournemouth',
-    'Bournemouth': 'Bournemouth',
-    
-    // Arsenal
-    'Arsenal FC': 'Arsenal',
-    'Arsenal': 'Arsenal',
-    
-    // Aston Villa
-    'Aston Villa FC': 'Aston Villa',
-    'Aston Villa': 'Aston Villa',
-    
-    // Brentford
-    'Brentford FC': 'Brentford',
-    'Brentford': 'Brentford',
-    
-    // Burnley
-    'Burnley FC': 'Burnley',
-    'Burnley': 'Burnley',
-    
-    // Chelsea
-    'Chelsea FC': 'Chelsea',
-    'Chelsea': 'Chelsea',
-    
-    // Crystal Palace
-    'Crystal Palace FC': 'Crystal Palace',
-    'Crystal Palace': 'Crystal Palace',
-    
-    // Everton
-    'Everton FC': 'Everton',
-    'Everton': 'Everton',
-    
-    // Fulham
-    'Fulham FC': 'Fulham',
-    'Fulham': 'Fulham',
-    
-    // Leeds
-    'Leeds United': 'Leeds',
-    'Leeds United FC': 'Leeds',
-    'Leeds': 'Leeds',
-    
-    // Liverpool
-    'Liverpool FC': 'Liverpool',
-    'Liverpool': 'Liverpool',
-    
-    // Manchester City
-    'Manchester City FC': 'Manchester City',
-    'Manchester City': 'Manchester City',
-    
-    // Manchester United
-    'Manchester United FC': 'Manchester United',
-    'Manchester United': 'Manchester United',
-    
-    // Newcastle
-    'Newcastle United': 'Newcastle',
-    'Newcastle United FC': 'Newcastle',
-    'Newcastle': 'Newcastle',
-    
-    // Nottingham Forest
-    'Nottingham Forest FC': 'Nottingham Forest',
-    'Nottingham Forest': 'Nottingham Forest',
-    'Nottingham': 'Nottingham Forest',
-    
-    // Sunderland
-    'Sunderland AFC': 'Sunderland',
-    'Sunderland FC': 'Sunderland',
-    'Sunderland': 'Sunderland',
-    
-    // Tottenham
-    'Tottenham Hotspur': 'Tottenham',
-    'Tottenham Hotspur FC': 'Tottenham',
-    'Tottenham': 'Tottenham',
-    
-    // West Ham
-    'West Ham United': 'West Ham',
-    'West Ham United FC': 'West Ham',
-    'West Ham': 'West Ham'
-  };
-  
-  return nameMapping[teamName] || teamName;
-};
+// Icons as simple components
+const ArrowLeft = ({ className = "" }) => (
+  <svg className={`icon ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+  </svg>
+);
 
+const Trophy = ({ className = "" }) => (
+  <svg className={`icon ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+  </svg>
+);
+
+const Medal = ({ className = "" }) => (
+  <svg className={`icon ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+  </svg>
+);
+
+const Target = ({ className = "" }) => (
+  <svg className={`icon ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+  </svg>
+);
+
+// Main Component
 const LeaguePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [league, setLeague] = useState(null);
+  const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fixtures, setFixtures] = useState([]);
-  const [matchPredictions, setMatchPredictions] = useState({});
 
   useEffect(() => {
     if (id) {
       loadLeagueDetails();
-      loadFixtures();
     }
   }, [id]);
 
@@ -150,10 +76,25 @@ const LeaguePage = () => {
       });
       
       if (response.data.success) {
-        setLeague(response.data.data);
+        const { league, standings, members } = response.data.data;
+        
+        // Set league data with all database fields
+        setLeague({
+          id: league.id,
+          name: league.name,
+          code: league.code,
+          created_by: league.created_by,
+          max_members: league.max_members,
+          created_at: league.created_at,
+          member_count: members?.length || 0
+        });
+        
+        // Set standings data with all database fields
+        setPlayers(standings || []);
       } else {
         toast.error(response.data.error || 'Failed to load league details');
         setLeague(createMockLeagueData());
+        setPlayers(createMockPlayersData());
       }
     } catch (error) {
       console.error('Error loading league details:', error);
@@ -165,110 +106,65 @@ const LeaguePage = () => {
         toast.error('Failed to load league details');
       }
       setLeague(createMockLeagueData());
+      setPlayers(createMockPlayersData());
     } finally {
       setLoading(false);
     }
   };
 
-  const createMockLeagueData = () => {
-    return {
-      id: id,
-      name: "Premier League Predictions",
-      code: "PL",
-      members: [
-        { id: 1, display_name: "John Doe", email: "john@example.com", points: 45, exact_predictions: 8, result_predictions: 12, accuracy: 75 },
-        { id: 2, display_name: "Jane Smith", email: "jane@example.com", points: 42, exact_predictions: 7, result_predictions: 11, accuracy: 68 },
-        { id: 3, display_name: "Mike Johnson", email: "mike@example.com", points: 38, exact_predictions: 6, result_predictions: 10, accuracy: 65 },
-        { id: 4, display_name: "Sarah Wilson", email: "sarah@example.com", points: 35, exact_predictions: 5, result_predictions: 9, accuracy: 60 },
-        { id: 5, display_name: "David Brown", email: "david@example.com", points: 32, exact_predictions: 4, result_predictions: 8, accuracy: 55 }
-      ],
-      standings: [
-        { rank: 1, user_id: 1, display_name: "John Doe", points: 45, exact_predictions: 8, result_predictions: 12, accuracy: 75 },
-        { rank: 2, user_id: 2, display_name: "Jane Smith", points: 42, exact_predictions: 7, result_predictions: 11, accuracy: 68 },
-        { rank: 3, user_id: 3, display_name: "Mike Johnson", points: 38, exact_predictions: 6, result_predictions: 10, accuracy: 65 },
-        { rank: 4, user_id: 4, display_name: "Sarah Wilson", points: 35, exact_predictions: 5, result_predictions: 9, accuracy: 60 },
-        { rank: 5, user_id: 5, display_name: "David Brown", points: 32, exact_predictions: 4, result_predictions: 8, accuracy: 55 }
-      ]
-    };
+  const createMockLeagueData = () => ({
+    id: id,
+    name: "Sample League",
+    code: "ABC123",
+    created_by: "mock-user-id",
+    max_members: 50,
+    created_at: new Date().toISOString(),
+    member_count: 8
+  });
+
+  const createMockPlayersData = () => [
+    { user_id: "1", display_name: "Alex Johnson", total_points: 87, exact_predictions: 15, result_predictions: 8, total_predictions: 25, fixture_points: 53, table_points: 34, rank: 1 },
+    { user_id: "2", display_name: "Sarah Chen", total_points: 82, exact_predictions: 12, result_predictions: 10, total_predictions: 24, fixture_points: 46, table_points: 36, rank: 2 },
+    { user_id: "3", display_name: "Mike Rodriguez", total_points: 79, exact_predictions: 10, result_predictions: 12, total_predictions: 26, fixture_points: 42, table_points: 37, rank: 3 },
+    { user_id: "4", display_name: "Emma Wilson", total_points: 76, exact_predictions: 8, result_predictions: 9, total_predictions: 20, fixture_points: 33, table_points: 43, rank: 4 },
+    { user_id: "5", display_name: "David Thompson", total_points: 73, exact_predictions: 7, result_predictions: 11, total_predictions: 22, fixture_points: 32, table_points: 41, rank: 5 },
+    { user_id: "6", display_name: "Lisa Anderson", total_points: 68, exact_predictions: 6, result_predictions: 8, total_predictions: 18, fixture_points: 26, table_points: 42, rank: 6 },
+    { user_id: "7", display_name: "James Brown", total_points: 65, exact_predictions: 5, result_predictions: 9, total_predictions: 19, fixture_points: 24, table_points: 41, rank: 7 },
+    { user_id: "8", display_name: "Anna Davis", total_points: 62, exact_predictions: 4, result_predictions: 7, total_predictions: 16, fixture_points: 19, table_points: 43, rank: 8 },
+  ];
+
+  const goBack = () => {
+    navigate('/dashboard');
   };
 
-  const loadFixtures = async () => {
-    try {
-      const response = await axios.get(API_ENDPOINTS.FIXTURES_ALL);
-      
-      if (response.data.success) {
-        setFixtures(response.data.data.slice(0, 10)); // Show first 10 fixtures
-        generateMockPredictions(response.data.data.slice(0, 10));
-      } else {
-        // Fallback to mock data
-        const mockFixtures = createMockFixtures();
-        setFixtures(mockFixtures);
-        generateMockPredictions(mockFixtures);
-      }
-    } catch (error) {
-      console.error('Error loading fixtures:', error);
-      // Fallback to mock data
-      const mockFixtures = createMockFixtures();
-      setFixtures(mockFixtures);
-      generateMockPredictions(mockFixtures);
-    }
+  const openPlayerProfile = (playerId) => {
+    navigate(`/user/${playerId}`);
   };
 
-  const createMockFixtures = () => {
-    const teams = ['Arsenal', 'Chelsea', 'Liverpool', 'Manchester City', 'Manchester United', 'Tottenham', 'Newcastle', 'Brighton'];
-    const fixtures = [];
-    
-    for (let i = 0; i < 10; i++) {
-      const homeTeam = teams[Math.floor(Math.random() * teams.length)];
-      const awayTeam = teams[Math.floor(Math.random() * teams.length)];
-      
-      if (homeTeam !== awayTeam) {
-        fixtures.push({
-          id: i + 1,
-          home_team_name: homeTeam,
-          away_team_name: awayTeam,
-          home_score: Math.floor(Math.random() * 4),
-          away_score: Math.floor(Math.random() * 4),
-          status: ['FINISHED', 'IN_PLAY', 'NOT_STARTED'][Math.floor(Math.random() * 3)],
-          match_date: new Date(Date.now() + Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
-        });
-      }
-    }
-    
-    return fixtures;
+  const getRankIcon = (position) => {
+    if (position === 1) return <Trophy className="rank-icon gold" />;
+    if (position === 2) return <Medal className="rank-icon silver" />;
+    if (position === 3) return <Medal className="rank-icon bronze" />;
+    return <span className="rank-number">#{position}</span>;
   };
 
-  const generateMockPredictions = (fixtures) => {
-    const predictions = {};
+  const calculateAccuracy = (player) => {
+    const exactPredictions = player.exact_predictions || 0;
+    const resultPredictions = player.result_predictions || 0;
+    const totalPredictions = player.total_predictions || (exactPredictions + resultPredictions);
     
-    fixtures.forEach(fixture => {
-      const numPredictions = Math.floor(Math.random() * 15) + 5; // 5-20 predictions
-      const fixturePredictions = [];
-      
-      for (let i = 0; i < numPredictions; i++) {
-        fixturePredictions.push({
-          home_score: Math.floor(Math.random() * 4),
-          away_score: Math.floor(Math.random() * 4)
-        });
-      }
-      
-      predictions[fixture.id] = fixturePredictions;
-    });
-    
-    setMatchPredictions(predictions);
-  };
-
-
-  const handleParticipantClick = (participant) => {
-    navigate(`/user/${participant.user_id}`);
+    if (totalPredictions === 0) return 0;
+    return Math.round(((exactPredictions + resultPredictions) / totalPredictions) * 100);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading league details...</p>
+      <div className="league-page">
+        <div className="league-content">
+          <div className="loading-state">
+            <div className="loading-spinner"></div>
+            <p>Loading league details...</p>
+          </div>
         </div>
       </div>
     );
@@ -276,117 +172,162 @@ const LeaguePage = () => {
 
   if (!league) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">League not found</h2>
-          <Button onClick={() => navigate('/')}>Back to Dashboard</Button>
+      <div className="league-page">
+        <div className="league-content">
+          <div className="error-state">
+            <h1 className="error-title">League not found</h1>
+            <button onClick={goBack} className="back-button">
+              Go back
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="container mx-auto px-4 py-8">
+    <div className="league-page">
+      <div className="league-content">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-2xl">{league.name?.charAt(0) || 'L'}</span>
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold text-white mb-2">{league.name}</h1>
-                <div className="flex items-center space-x-6 text-sm">
-                  <span className="flex items-center text-slate-300">
-                    <span className="w-3 h-3 bg-green-500 rounded-full mr-3 shadow-lg"></span>
-                    <span className="font-mono font-semibold text-green-400 bg-slate-800 px-3 py-1 rounded-lg">{league.code}</span>
-                  </span>
-                  <span className="flex items-center text-slate-300">
-                    <span className="w-3 h-3 bg-blue-500 rounded-full mr-3 shadow-lg"></span>
-                    <span className="font-semibold">{league.standings?.length || 0} members</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-            <Button 
-              onClick={() => navigate('/dashboard')} 
-              className="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 text-white border-slate-600"
-            >
-              <span className="material-symbols-outlined text-lg">arrow_back</span>
-              <span>Back to Dashboard</span>
-            </Button>
+        <div className="league-header">
+          <button 
+            onClick={goBack}
+            className="back-button"
+          >
+            <ArrowLeft />
+            <span>Back</span>
+          </button>
+          <div className="league-info">
+            <h1 className="league-title">
+              {league.name}
+            </h1>
+            <p className="league-subtitle">
+              {league.member_count || 0} members • Join code: <span className="join-code">{league.code}</span>
+              {league.max_members && (
+                <span> • Max: {league.max_members}</span>
+              )}
+              {league.created_at && (
+                <span> • Created: {new Date(league.created_at).toLocaleDateString()}</span>
+              )}
+            </p>
           </div>
         </div>
 
-        {/* Leaderboard Cards */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-3">
-              <span className="material-symbols-outlined text-3xl text-purple-400">emoji_events</span>
-              <h2 className="text-3xl font-bold text-purple-400">Leaderboard</h2>
-            </div>
-            <div className="text-sm text-slate-400 bg-slate-700 px-4 py-2 rounded-lg">
-              Click on a player to view their predictions
+        {/* Leaderboard */}
+        <div className="leaderboard-card">
+          <div className="leaderboard-header">
+            <div className="leaderboard-title">
+              <div className="title-icon">
+                <Trophy />
+              </div>
+              Leaderboard
             </div>
           </div>
-          
-          <div className="space-y-3">
-            {league.standings?.map((participant, index) => {
-              const totalPredictions = (participant.exact_predictions || 0) + (participant.result_predictions || 0) + (participant.incorrect_predictions || 0);
-              const accuracy = totalPredictions > 0 ? Math.round(((participant.exact_predictions || 0) + (participant.result_predictions || 0)) / totalPredictions * 100) : 0;
-              
-              return (
-                <div
-                  key={participant.user_id}
-                  className="bg-slate-800 rounded-xl p-4 hover:bg-slate-700 cursor-pointer transition-all duration-200"
-                  onClick={() => handleParticipantClick(participant)}
-                >
-                  <div className="flex items-center justify-between">
-                    {/* Left side - Rank and Player info */}
-                    <div className="flex items-center space-x-4">
-                      {/* Rank */}
-                      <div className="flex-shrink-0">
-                        {participant.rank <= 3 ? (
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg ${
-                            participant.rank === 1 ? "bg-gradient-to-r from-yellow-400 to-yellow-600" :
-                            participant.rank === 2 ? "bg-gradient-to-r from-gray-400 to-gray-600" :
-                            "bg-gradient-to-r from-orange-400 to-orange-600"
-                          }`}>
-                            {participant.rank === 1 ? "🥇" : participant.rank === 2 ? "🥈" : "🥉"}
-                          </div>
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center text-white font-bold text-lg">
-                            #{participant.rank}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Player info */}
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-white mb-1">{participant.display_name}</h3>
-                        <div className="flex items-center space-x-3 text-sm text-slate-400">
-                          <span>{accuracy}% accuracy</span>
-                          <span>•</span>
-                          <span>{totalPredictions} predictions</span>
-                        </div>
+          <div className="leaderboard-content">
+            <div className="players-list">
+              {players.map((player, index) => {
+                const position = player.rank || (index + 1);
+                const accuracy = calculateAccuracy(player);
+                const totalPredictions = player.total_predictions || 0;
+                const exactPredictions = player.exact_predictions || 0;
+                const resultPredictions = player.result_predictions || 0;
+                const fixturePoints = player.fixture_points || 0;
+                const tablePoints = player.table_points || 0;
+                const totalPoints = player.total_points || 0;
+                
+                return (
+                  <div
+                    key={player.user_id}
+                    onClick={() => openPlayerProfile(player.user_id)}
+                    className="player-card"
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                  >
+                    {/* Rank */}
+                    <div className="player-rank">
+                      {getRankIcon(position)}
+                    </div>
+                    
+                    {/* Player Info */}
+                    <div className="player-info">
+                      <h3 className="player-name">
+                        {player.display_name || 'Unknown User'}
+                      </h3>
+                      <div className="player-stats">
+                        <span className="stat-item">
+                          <Target />
+                          {accuracy}% accuracy
+                        </span>
+                        <span className="stat-separator">•</span>
+                        <span>{totalPredictions} predictions</span>
+                        <span className="stat-separator">•</span>
+                        <span>{resultPredictions} results</span>
+                        <span className="stat-separator">•</span>
+                        <span>{exactPredictions} exacts</span>
                       </div>
                     </div>
                     
-                    {/* Right side - Just Points */}
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-green-400 mb-1">
-                        {participant.total_points || participant.points || 0}
+                    {/* Scores */}
+                    <div className="player-scores">
+                      <div className="score-item">
+                        <div className="score-value">{fixturePoints}</div>
+                        <div className="score-label">Fixture</div>
                       </div>
-                      <div className="text-sm text-slate-400">points</div>
+                      <div className="score-item">
+                        <div className="score-value">{tablePoints}</div>
+                        <div className="score-label">Table</div>
+                      </div>
+                      <div className="score-item total-score">
+                        <div className="score-value">{totalPoints}</div>
+                        <div className="score-label">Total</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
 
+        {/* League Stats */}
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-content">
+              <div className="stat-icon">
+                <Trophy />
+              </div>
+              <div className="stat-info">
+                <div className="stat-value">{players[0]?.total_points || 0}</div>
+                <div className="stat-label">Top Score</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-content">
+              <div className="stat-icon">
+                <Target />
+              </div>
+              <div className="stat-info">
+                <div className="stat-value">
+                  {players.length > 0 ? Math.round(players.reduce((acc, p) => acc + calculateAccuracy(p), 0) / players.length) : 0}%
+                </div>
+                <div className="stat-label">Avg Accuracy</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-content">
+              <div className="stat-icon">
+                <Medal />
+              </div>
+              <div className="stat-info">
+                <div className="stat-value">{league.member_count || 0}</div>
+                <div className="stat-label">Total Members</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -283,7 +283,7 @@ router.get('/:leagueId', authenticateUser, async (req, res) => {
     const userIds = members.map(member => member.user_id);
     const { data: userProfiles, error: profilesError } = await supabase
       .from('user_profiles')
-      .select('user_id, display_name, email, total_points, exact_predictions')
+      .select('user_id, display_name, email, total_points, exact_predictions, result_predictions, fixture_points, table_points, fixture_predictions')
       .in('user_id', userIds);
 
     if (profilesError) {
@@ -301,12 +301,19 @@ router.get('/:leagueId', authenticateUser, async (req, res) => {
     const standings = members
       .map(member => {
         const profile = profileMap[member.user_id];
+        const fixturePredictions = profile?.fixture_predictions || {};
+        const totalPredictions = Object.keys(fixturePredictions).length;
+        
         return {
           ...member,
           total_points: profile?.total_points || 0,
           display_name: profile?.display_name || 'Unknown User',
           email: profile?.email || '',
-          exact_predictions: profile?.exact_predictions || 0
+          exact_predictions: profile?.exact_predictions || 0,
+          result_predictions: profile?.result_predictions || 0,
+          total_predictions: totalPredictions,
+          fixture_points: profile?.fixture_points || 0,
+          table_points: profile?.table_points || 0
         };
       })
       .sort((a, b) => {
