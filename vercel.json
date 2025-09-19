@@ -12,12 +12,12 @@
       "dest": "backend/server.js"
     }
   ],
-  "crons": [
-    {
-      "path": "/api/test-cron",
-      "schedule": "0 */6 * * *"
-    }
-  ],
+  // "crons": [
+  //   {
+  //     "path": "/api/test-cron",
+  //     "schedule": "0 */6 * * *"
+  //   }
+  // ],
   "env": {
     "NODE_ENV": "production",
     "CRON_SECRET": "your-secret-key-here"
