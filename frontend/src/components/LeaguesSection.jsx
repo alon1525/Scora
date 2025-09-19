@@ -8,6 +8,7 @@ import { Button } from './ui/button';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
+import './LeaguesSection.css';
 
 export const LeaguesSection = ({ preloadedData }) => {
   const { user } = useAuth();
@@ -116,6 +117,16 @@ export const LeaguesSection = ({ preloadedData }) => {
   const createLeague = async () => {
     if (!user || !newLeague.name) return;
 
+    if (newLeague.name.length > 12) {
+      toast.error('League name must be 12 characters or less');
+      return;
+    }
+    
+    if (myLeagues.length >= 5) {
+      toast.error('You can only be in 5 leagues maximum');
+      return;
+    }
+
     setLoading(true);
     try {
       console.log('Creating league with name:', newLeague.name);
@@ -172,6 +183,11 @@ export const LeaguesSection = ({ preloadedData }) => {
 
   const joinLeague = async () => {
     if (!user || !joinCode) return;
+
+    if (myLeagues.length >= 5) {
+      toast.error('You can only be in 5 leagues maximum');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -260,11 +276,11 @@ export const LeaguesSection = ({ preloadedData }) => {
           />
           <button 
             onClick={joinLeague}
-            disabled={loading || !joinCode || joinCode.length !== 8}
+            disabled={loading || !joinCode || joinCode.length !== 8 || myLeagues.length >= 5}
             className="btn btn-outline league-action-button"
             style={{ padding: '6px 12px', fontSize: '13px' }}
           >
-            {loading ? 'Joining...' : 'Join'}
+            {loading ? 'Joining...' : myLeagues.length >= 5 ? 'Max 5 leagues' : 'Join'}
           </button>
         </div>
         
@@ -294,110 +310,90 @@ export const LeaguesSection = ({ preloadedData }) => {
             type="text"
             value={newLeague.name}
             onChange={(e) => setNewLeague({ name: e.target.value })}
-            placeholder="League name"
+            placeholder="League name (max 12 chars)"
+            maxLength={12}
             className="form-input league-action-input"
             style={{ padding: '6px 8px', fontSize: '13px' }}
           />
           <button 
             onClick={createLeague}
-            disabled={loading || !newLeague.name.trim()}
+            disabled={loading || !newLeague.name.trim() || myLeagues.length >= 5}
             className="btn btn-primary league-action-button"
             style={{ padding: '6px 12px', fontSize: '13px' }}
           >
-            {loading ? 'Creating...' : 'Create'}
+            {loading ? 'Creating...' : myLeagues.length >= 5 ? 'Max 5 leagues' : 'Create'}
           </button>
         </div>
       </div>
 
-      {/* Leagues Table */}
-      <Card className="shadow-lg border-0">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50">
-          <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-            <span className="material-symbols-outlined text-blue-600 mr-2 text-lg">groups</span>
-            My Leagues ({myLeagues.length}/5)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full standings-table">
-              <thead>
-                <tr className="border-b-2 border-gray-200 bg-gray-50">
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">#</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">League Code</th>
-                  <th className="text-left py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">League Name</th>
-                  <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Members</th>
-                  <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Your Position</th>
-                  <th className="text-center py-4 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">Role</th>
-                </tr>
-              </thead>
-              <tbody>
-                {myLeagues.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="text-center text-gray-500 py-12">
-                      <div className="flex flex-col items-center space-y-3">
-                        <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        <div>
-                          <p className="text-lg font-medium text-gray-900">No leagues yet</p>
-                          <p className="text-sm text-gray-500">Create one or join a league with a code!</p>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  myLeagues.map((membership, index) => (
-                    <tr 
-                      key={membership.league.id} 
-                      className="border-b border-gray-100 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer transition-all duration-200"
-                      onClick={() => viewLeagueDetails(membership.league.id)}
-                    >
-                      <td className="py-4 px-4">
-                        <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-semibold text-sm">
-                          {index + 1}
-                        </div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="font-mono text-sm bg-gray-100 px-3 py-1 rounded-lg font-semibold text-gray-700">
-                          {membership.league.code}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">
-                              {membership.league.name?.charAt(0) || 'L'}
-                            </span>
-                          </div>
-                          <div>
-                            <div className="font-semibold text-gray-900">{membership.league.name}</div>
-                            <div className="text-sm text-gray-500">Click to view details</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                          {membership.league.member_count || 0}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <Badge variant="outline" className="text-sm font-semibold">
-                          {userPositions[membership.league.id] ? `${userPositions[membership.league.id]}${getOrdinalSuffix(userPositions[membership.league.id])}` : 'Loading...'}
-                        </Badge>
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <Badge variant={membership.role === 'owner' ? 'default' : 'secondary'} className="text-sm font-semibold">
-                          {membership.role === 'owner' ? 'Owner' : 'Member'}
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+      {/* My Leagues Cards */}
+      <div className="my-leagues-section">
+        <div className="leagues-section-header">
+          <div className="section-icon">
+            <span className="material-symbols-outlined text-2xl">emoji_events</span>
           </div>
-        </CardContent>
-      </Card>
+          <h2 className="section-title">My Leagues ({myLeagues.length}/5)</h2>
+        </div>
+        
+        <div className="leagues-grid">
+          {myLeagues.length === 0 ? (
+            <div className="no-leagues">
+              <div className="no-leagues-icon">
+                <span className="material-symbols-outlined text-6xl text-gray-300">groups</span>
+              </div>
+              <div className="no-leagues-text">
+                <p className="no-leagues-title">No leagues yet</p>
+                <p className="no-leagues-subtitle">Create one or join a league with a code!</p>
+              </div>
+            </div>
+          ) : (
+            myLeagues.map((membership, index) => {
+              const league = membership.league;
+              const position = userPositions[league.id] || 1;
+              const memberCount = league.member_count || 0;
+              
+              return (
+                <div 
+                  key={league.id}
+                  className="league-card"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                  onClick={() => viewLeagueDetails(league.id)}
+                >
+                  <div className="league-card-header">
+                    <div className="league-name">{league.name.length > 12 ? league.name.substring(0, 12) + '...' : league.name}</div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(league.code);
+                        toast.success("Join code copied!");
+                      }}
+                      className="join-code-button"
+                    >
+                      <svg className="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      {league.code}
+                    </button>
+                  </div>
+                  <div className="league-badge">
+                    {memberCount} members
+                  </div>
+                  <div className="league-stats">
+                    <div className="stat-item">
+                      <span className="stat-label">Your Position</span>
+                      <span className="stat-value position">#{position}{getOrdinalSuffix(position)}</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-label">Role</span>
+                      <span className="stat-value role">{membership.role === 'owner' ? 'Owner' : 'Member'}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
 
     </div>
   );

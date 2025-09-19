@@ -145,9 +145,9 @@ const UserProfile = () => {
         } else {
           console.log('❌ User not found in leaderboard data');
           console.log('🔍 Available user IDs:', data.leaderboard.map(u => ({ id: u.id, user_id: u.user_id, name: u.display_name })));
-          toast.error('User not found');
-          return;
-        }
+        toast.error('User not found');
+        return;
+      }
       } else {
         console.error('❌ Failed to fetch leaderboard data:', data);
         toast.error('Failed to load user data');
