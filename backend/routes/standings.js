@@ -189,6 +189,121 @@ router.get('/test-cron', async (req, res) => {
   });
 });
 
+// GET /api/standings/test-recalculate - Test endpoint to recalculate ALL user scores
+router.get('/test-recalculate', async (req, res) => {
+  try {
+    console.log('🧪 [TEST] Starting full recalculation of all user scores...');
+    
+    // Get all users
+    const { data: users, error: usersError } = await supabase
+      .from('user_profiles')
+      .select('user_id, display_name, fixture_predictions');
+
+    if (usersError) {
+      throw new Error(`Failed to fetch users: ${usersError.message}`);
+    }
+
+    console.log(`📊 [TEST] Found ${users.length} users to recalculate`);
+
+    // Get all finished fixtures (including already calculated ones)
+    const { data: finishedFixtures, error: fixturesError } = await supabase
+      .from('fixtures')
+      .select('id, home_score, away_score, status')
+      .eq('status', 'FINISHED');
+
+    if (fixturesError) {
+      throw new Error(`Failed to fetch fixtures: ${fixturesError.message}`);
+    }
+
+    console.log(`⚽ [TEST] Found ${finishedFixtures.length} finished fixtures`);
+
+    let totalUpdated = 0;
+    let totalExact = 0;
+    let totalResult = 0;
+
+    // Process each user
+    for (const user of users) {
+      console.log(`🎯 [TEST] Processing user: ${user.display_name} (${user.user_id})`);
+      
+      let userExact = 0;
+      let userResult = 0;
+      let userTotalPoints = 0;
+
+      if (user.fixture_predictions) {
+        // Process each finished fixture
+        for (const fixture of finishedFixtures) {
+          const prediction = user.fixture_predictions[fixture.id.toString()] || user.fixture_predictions[fixture.id];
+          
+          if (prediction) {
+            const predictedScore = `${prediction.home_score}-${prediction.away_score}`;
+            const actualScore = `${fixture.home_score}-${fixture.away_score}`;
+            
+            // Check if exact prediction
+            if (predictedScore === actualScore) {
+              userExact++;
+              userTotalPoints += 3;
+            } else {
+              // Check if result prediction
+              const predictedResult = prediction.home_score > prediction.away_score ? 'home' : 
+                                    prediction.home_score < prediction.away_score ? 'away' : 'draw';
+              const actualResult = fixture.home_score > fixture.away_score ? 'home' : 
+                                 fixture.home_score < fixture.away_score ? 'away' : 'draw';
+              
+              if (predictedResult === actualResult) {
+                userResult++;
+                userTotalPoints += 1;
+              }
+            }
+          }
+        }
+      }
+
+      // Update user profile
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({
+          exact_predictions: userExact,
+          result_predictions: userResult,
+          fixture_points: userTotalPoints,
+          total_points: userTotalPoints, // Assuming no table points for now
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.user_id);
+
+      if (updateError) {
+        console.error(`❌ [TEST] Error updating ${user.display_name}:`, updateError);
+      } else {
+        console.log(`✅ [TEST] Updated ${user.display_name}: ${userExact} exact, ${userResult} result, ${userTotalPoints} points`);
+        totalUpdated++;
+        totalExact += userExact;
+        totalResult += userResult;
+      }
+    }
+
+    console.log(`🎉 [TEST] Recalculation completed! Updated ${totalUpdated} users`);
+    console.log(`📊 [TEST] Total exact predictions: ${totalExact}`);
+    console.log(`📊 [TEST] Total result predictions: ${totalResult}`);
+
+    res.json({
+      success: true,
+      message: 'Test recalculation completed successfully',
+      stats: {
+        usersUpdated: totalUpdated,
+        totalExactPredictions: totalExact,
+        totalResultPredictions: totalResult,
+        fixturesProcessed: finishedFixtures.length
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ [TEST] Error in test recalculation:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Shared function to handle standings refresh
 async function handleStandingsRefresh(req, res, trigger = 'manual') {
   const startTime = Date.now();
