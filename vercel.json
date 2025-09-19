@@ -4,17 +4,9 @@
     {
       "src": "backend/server.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "api/cron.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
-    {
-      "src": "/api/cron",
-      "dest": "api/cron.js"
-    },
     {
       "src": "/api/(.*)",
       "dest": "backend/server.js"
@@ -27,7 +19,6 @@
   //   }
   // ],
   "env": {
-    "NODE_ENV": "production",
-    "CRON_SECRET": "your-secret-key-here"
+    "NODE_ENV": "production"
   }
 }

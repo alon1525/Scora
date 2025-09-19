@@ -303,24 +303,25 @@ export default async function handler(req, res) {
   console.log('🔄 Cron job started at:', new Date().toISOString());
 
   try {
-    const season = '2025';
+    const baseUrl = process.env.VERCEL_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
 
     // Step 1: Refresh fixtures
     console.log('⚽ Step 1 - Refreshing fixtures...');
-    const fixturesData = await fetchFixturesFromAPI(season);
-    const fixturesStored = await storeFixtures(fixturesData, season);
-    console.log(`✅ Stored ${fixturesStored} fixtures`);
+    const fixturesResponse = await fetch(`${baseUrl}/api/fixtures/refresh`);
+    const fixturesResult = await fixturesResponse.json();
+    console.log('✅ Fixtures refresh result:', fixturesResult);
 
     // Step 2: Refresh standings
     console.log('📊 Step 2 - Refreshing standings...');
-    const standingsData = await fetchStandingsFromAPI(season);
-    const standingsStored = await storeStandings(standingsData, season);
-    console.log(`✅ Stored ${standingsStored} standings`);
+    const standingsResponse = await fetch(`${baseUrl}/api/standings/refresh`);
+    const standingsResult = await standingsResponse.json();
+    console.log('✅ Standings refresh result:', standingsResult);
 
     // Step 3: Recalculate user scores
     console.log('🧮 Step 3 - Recalculating user scores...');
-    const scoresResult = await recalculateUserScores();
-    console.log('✅ User scores recalculation:', scoresResult.success ? 'Success' : 'Failed');
+    const scoresResponse = await fetch(`${baseUrl}/api/users/recalculate-scores`);
+    const scoresResult = await scoresResponse.json();
+    console.log('✅ User scores recalculation result:', scoresResult);
 
     const duration = Date.now() - startTime;
     console.log(`🎉 Cron job completed successfully in ${duration}ms`);
