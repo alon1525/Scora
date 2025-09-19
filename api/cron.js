@@ -2,7 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 // Supabase client
 const supabaseUrl = process.env.SUPABASE_API_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Map football-data team names to our internal IDs
@@ -303,7 +303,11 @@ export default async function handler(req, res) {
   console.log('🔄 Cron job started at:', new Date().toISOString());
 
   try {
-    const baseUrl = process.env.VERCEL_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const baseUrl = process.env.VERCEL_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
+    
+    if (!baseUrl) {
+      throw new Error('No base URL configured. Please set VERCEL_APP_URL or VERCEL_URL environment variable.');
+    }
 
     // Step 1: Refresh fixtures
     console.log('⚽ Step 1 - Refreshing fixtures...');

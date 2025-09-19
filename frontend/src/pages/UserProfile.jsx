@@ -107,34 +107,65 @@ const UserProfile = () => {
     try {
       setLoading(true);
       
-      // Get user profile data
+      console.log('🔍 Loading profile for user ID:', userId);
+      
+      // Try to get user from user_profiles table by user_id first
       const { data: profileData, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
         .single();
 
-      if (profileError) {
-        console.error('Error loading user profile:', profileError);
-        toast.error('User not found');
+      console.log('📊 Profile query result:', { profileData, profileError });
+
+      if (profileError || !profileData) {
+        // Try to find the user by ID field instead of user_id
+        console.log('🔄 Trying to find user by ID field...');
+        const { data: profileById, error: errorById } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+          
+        console.log('📊 Profile by ID result:', { profileById, errorById });
+        
+        if (errorById || !profileById) {
+          console.log('❌ User not found in user_profiles table');
+          toast.error('User not found');
+          return;
+        }
+        
+        // Use the profile found by ID
+        const transformedPlayer = {
+          id: profileById.user_id || profileById.id,
+          name: profileById.display_name || 'Unknown Player',
+          points: profileById.total_points || 0,
+          accuracy: 0,
+          predictions: 0,
+          exacts: profileById.exact_predictions || 0,
+          results: profileById.result_predictions || 0,
+          streak: 0
+        };
+
+        setPlayer(transformedPlayer);
+        await loadPlayerPredictions(profileById.fixture_predictions);
         return;
       }
 
-      // Transform the data to match our component structure
+      // User found in user_profiles table
+      console.log('✅ User found in user_profiles table');
       const transformedPlayer = {
         id: profileData.user_id,
         name: profileData.display_name || 'Unknown Player',
         points: profileData.total_points || 0,
-        accuracy: profileData.exact_predictions && profileData.result_predictions 
-          ? Math.round((profileData.exact_predictions / (profileData.exact_predictions + profileData.result_predictions)) * 100)
-          : 0,
-        predictions: (profileData.exact_predictions || 0) + (profileData.result_predictions || 0),
-        streak: 0 // We'll calculate this later if needed
+        accuracy: 0,
+        predictions: 0,
+        exacts: profileData.exact_predictions || 0,
+        results: profileData.result_predictions || 0,
+        streak: 0
       };
 
       setPlayer(transformedPlayer);
-      
-      // Load finished fixtures and match with player predictions
       await loadPlayerPredictions(profileData.fixture_predictions);
       
     } catch (error) {
@@ -272,6 +303,22 @@ const UserProfile = () => {
       console.log('Team names from database:', uniqueTeams);
       
       console.log(`Loaded ${predictionsArray.length} fixtures for player ${userId} (${predictionsArray.filter(p => p.hasPrediction).length} with predictions)`);
+      
+      // Calculate actual stats from predictions
+      const totalPredictions = predictionsArray.filter(p => p.hasPrediction).length;
+      const exactPredictions = predictionsArray.filter(p => p.isExact).length;
+      const resultPredictions = predictionsArray.filter(p => p.isResult).length;
+      const correctPredictions = exactPredictions + resultPredictions;
+      const accuracy = totalPredictions > 0 ? Math.round((correctPredictions / totalPredictions) * 100) : 0;
+      
+      // Update player stats
+      setPlayer(prev => ({
+        ...prev,
+        predictions: totalPredictions,
+        accuracy: accuracy,
+        exacts: exactPredictions,
+        results: resultPredictions
+      }));
       
     } catch (error) {
       console.error('Error loading player predictions:', error);
@@ -502,7 +549,7 @@ const UserProfile = () => {
               <div className="stat-value">{currentPlayer.points}</div>
               <div className="stat-label">
                 <Trophy className="stat-icon" />
-                Total Points
+                Points
               </div>
             </div>
           </div>
@@ -522,7 +569,27 @@ const UserProfile = () => {
               <div className="stat-value">{currentPlayer.predictions}</div>
               <div className="stat-label">
                 <Calendar className="stat-icon" />
-                Predictions
+                Guesses
+              </div>
+            </div>
+          </div>
+          
+          <div className="stat-card stat-card-exacts">
+            <div className="stat-content">
+              <div className="stat-value">{currentPlayer.exacts}</div>
+              <div className="stat-label">
+                <CheckCircle className="stat-icon" />
+                Exacts
+              </div>
+            </div>
+          </div>
+          
+          <div className="stat-card stat-card-results">
+            <div className="stat-content">
+              <div className="stat-value">{currentPlayer.results}</div>
+              <div className="stat-label">
+                <XCircle className="stat-icon" />
+                Results
               </div>
             </div>
           </div>
