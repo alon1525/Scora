@@ -109,79 +109,50 @@ const UserProfile = () => {
       
       console.log('🔍 Loading profile for user ID:', userId);
       
-      // First, let's see what users exist in the database
-      const { data: allUsers, error: allUsersError } = await supabase
-        .from('user_profiles')
-        .select('id, user_id, display_name, email');
+      // Use the same API endpoint that the leaderboard uses to get all users
+      console.log('🔄 Fetching all users via leaderboard API...');
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/predictions/leaderboard?limit=100`);
+      const data = await response.json();
       
-      console.log('📊 All users in database:', allUsers);
-      console.log('📊 All users error:', allUsersError);
-      console.log('📊 Available user IDs:', allUsers?.map(u => ({ 
-        id: u.id, 
-        user_id: u.user_id, 
-        name: u.display_name,
-        email: u.email 
-      })));
-      
-      // Try to get user from user_profiles table by user_id first
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      console.log('📊 Profile query by user_id result:', { profileData, profileError });
-
-      if (profileError || !profileData) {
-        // Try to find the user by ID field instead of user_id
-        console.log('🔄 Trying to find user by ID field...');
-        const { data: profileById, error: errorById } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
-          
-        console.log('📊 Profile by ID result:', { profileById, errorById });
+      if (data.success && data.leaderboard) {
+        console.log('📊 All users from leaderboard API:', data.leaderboard);
+        console.log('📊 Available user IDs:', data.leaderboard.map(u => ({ 
+          id: u.id, 
+          user_id: u.user_id, 
+          name: u.display_name,
+          email: u.email 
+        })));
         
-        if (errorById || !profileById) {
-          console.log('❌ User not found in user_profiles table');
-          console.log('🔍 Available user IDs:', allUsers?.map(u => ({ id: u.id, user_id: u.user_id, name: u.display_name })));
-        toast.error('User not found');
+        // Find the user in the leaderboard data
+        const userProfile = data.leaderboard.find(user => user.user_id === userId);
+        
+        if (userProfile) {
+          console.log('✅ User found in leaderboard data:', userProfile);
+          const transformedPlayer = {
+            id: userProfile.user_id,
+            name: userProfile.display_name || 'Unknown Player',
+            points: userProfile.total_points || 0,
+            accuracy: 0,
+            predictions: 0,
+            exacts: userProfile.exact_predictions || 0,
+            results: userProfile.result_predictions || 0,
+            streak: 0
+          };
+
+          setPlayer(transformedPlayer);
+          await loadPlayerPredictions(userProfile.fixture_predictions);
+          return;
+        } else {
+          console.log('❌ User not found in leaderboard data');
+          console.log('🔍 Available user IDs:', data.leaderboard.map(u => ({ id: u.id, user_id: u.user_id, name: u.display_name })));
+          toast.error('User not found');
+          return;
+        }
+      } else {
+        console.error('❌ Failed to fetch leaderboard data:', data);
+        toast.error('Failed to load user data');
         return;
       }
-
-        // Use the profile found by ID
-        const transformedPlayer = {
-          id: profileById.user_id || profileById.id,
-          name: profileById.display_name || 'Unknown Player',
-          points: profileById.total_points || 0,
-          accuracy: 0,
-          predictions: 0,
-          exacts: profileById.exact_predictions || 0,
-          results: profileById.result_predictions || 0,
-          streak: 0
-        };
-
-        setPlayer(transformedPlayer);
-        await loadPlayerPredictions(profileById.fixture_predictions);
-        return;
-      }
-
-      // User found in user_profiles table
-      console.log('✅ User found in user_profiles table');
-      const transformedPlayer = {
-        id: profileData.user_id,
-        name: profileData.display_name || 'Unknown Player',
-        points: profileData.total_points || 0,
-        accuracy: 0,
-        predictions: 0,
-        exacts: profileData.exact_predictions || 0,
-        results: profileData.result_predictions || 0,
-        streak: 0
-      };
-
-      setPlayer(transformedPlayer);
-      await loadPlayerPredictions(profileData.fixture_predictions);
       
     } catch (error) {
       console.error('Error loading user profile:', error);
