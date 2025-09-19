@@ -12,5 +12,4 @@ jobs:
     steps:
       - name: Refresh All Data via Cron
         run: |
-          curl -X GET "${{ secrets.VERCEL_APP_URL }}/api/cron" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          curl -X GET "${{ secrets.VERCEL_APP_URL }}/api/cron"

@@ -297,14 +297,7 @@ async function recalculateUserScores() {
 
 // Main cron function
 export default async function handler(req, res) {
-  // Check for CRON_SECRET authorization
-  const authHeader = req.headers.get('Authorization');
-  const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
-  
-  if (authHeader !== expectedAuth) {
-    console.log('❌ Unauthorized cron request');
-    return res.status(401).end('Unauthorized');
-  }
+  // No authorization needed for GitHub Actions
 
   const startTime = Date.now();
   console.log('🔄 Cron job started at:', new Date().toISOString());
