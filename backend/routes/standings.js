@@ -221,14 +221,119 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
     
     // Step 3: Recalculate all user scores (based on updated standings and fixtures)
     console.log(`🧮 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Step 3 - Recalculating user scores...`);
-    const scoresResponse = await fetch(`${req.protocol}://${req.get('host')}/api/users/recalculate-scores`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
+    
+    // Get all users and recalculate their scores
+    const { data: users, error: usersError } = await supabase
+      .from('user_profiles')
+      .select('user_id, display_name, table_prediction, fixture_predictions');
+
+    if (usersError) {
+      console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Error fetching users:`, usersError);
+    } else {
+      let successCount = 0;
+      for (const user of users) {
+        try {
+          // Calculate table points
+          let tablePoints = 0;
+          const prediction = user.table_prediction || [];
+          
+          for (let i = 0; i < prediction.length; i++) {
+            const predictedTeam = prediction[i];
+            const actualPosition = standingsLookup[predictedTeam];
+            
+            if (actualPosition !== undefined) {
+              const positionDiff = Math.abs((i + 1) - actualPosition);
+              const teamPoints = Math.max(0, 20 - positionDiff);
+              tablePoints += teamPoints;
+            }
+          }
+
+          // Get existing fixture points
+          const { data: profile, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('fixture_points')
+            .eq('user_id', user.user_id)
+            .single();
+
+          const existingFixturePoints = profile?.fixture_points || 0;
+          
+          // Calculate new points from uncalculated finished fixtures
+          let newFixturePoints = 0;
+          const { data: finishedFixtures, error: fixturesError } = await supabase
+            .from('fixtures')
+            .select('id, home_score, away_score')
+            .eq('status', 'FINISHED')
+            .eq('calculated', false);
+
+          if (!fixturesError && finishedFixtures) {
+            const fixturePredictions = user.fixture_predictions || {};
+            
+            for (const fixture of finishedFixtures) {
+              const prediction = fixturePredictions[fixture.id.toString()] || fixturePredictions[fixture.id];
+              
+              if (prediction && prediction.home_score !== null && prediction.away_score !== null) {
+                const predictedHome = parseInt(prediction.home_score);
+                const predictedAway = parseInt(prediction.away_score);
+                const actualHome = parseInt(fixture.home_score);
+                const actualAway = parseInt(fixture.away_score);
+
+                if (!isNaN(predictedHome) && !isNaN(predictedAway) && !isNaN(actualHome) && !isNaN(actualAway)) {
+                  // Check for exact match (3 points)
+                  if (predictedHome === actualHome && predictedAway === actualAway) {
+                    newFixturePoints += 3;
+                  } else {
+                    // Check for result match (1 point)
+                    const predictedResult = predictedHome > predictedAway ? 'home' : (predictedHome < predictedAway ? 'away' : 'draw');
+                    const actualResult = actualHome > actualAway ? 'home' : (actualHome < actualAway ? 'away' : 'draw');
+                    
+                    if (predictedResult === actualResult) {
+                      newFixturePoints += 1;
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          const totalFixturePoints = existingFixturePoints + newFixturePoints;
+          const totalPoints = totalFixturePoints + tablePoints;
+
+          // Update user profile
+          const { error: updateError } = await supabase
+            .from('user_profiles')
+            .update({
+              fixture_points: totalFixturePoints,
+              table_points: tablePoints,
+              total_points: totalPoints,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', user.user_id);
+
+          if (!updateError) {
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`❌ Error processing user ${user.user_id}:`, error);
+        }
       }
-    });
-    const scoresResult = await scoresResponse.json();
-    console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Scores recalculation result:`, scoresResult.success ? 'Success' : 'Failed');
+      console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Updated scores for ${successCount} users`);
+      
+      // Mark all processed fixtures as calculated after all users are processed
+      const { data: finishedFixtures, error: fixturesError } = await supabase
+        .from('fixtures')
+        .select('id')
+        .eq('status', 'FINISHED')
+        .eq('calculated', false);
+
+      if (!fixturesError && finishedFixtures && finishedFixtures.length > 0) {
+        const fixtureIds = finishedFixtures.map(f => f.id);
+        await supabase
+          .from('fixtures')
+          .update({ calculated: true })
+          .in('id', fixtureIds);
+        console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Marked ${fixtureIds.length} fixtures as calculated`);
+      }
+    }
     
     const duration = Date.now() - startTime;
     console.log(`🎉 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Complete refresh finished in ${duration}ms`);
