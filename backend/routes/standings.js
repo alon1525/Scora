@@ -197,7 +197,7 @@ router.get('/test-recalculate', async (req, res) => {
     // Get all users
     const { data: users, error: usersError } = await supabase
       .from('user_profiles')
-      .select('user_id, display_name, fixture_predictions');
+      .select('user_id, display_name, fixture_predictions, table_prediction');
 
     if (usersError) {
       throw new Error(`Failed to fetch users: ${usersError.message}`);
@@ -217,9 +217,30 @@ router.get('/test-recalculate', async (req, res) => {
 
     console.log(`⚽ [TEST] Found ${finishedFixtures.length} finished fixtures`);
 
+    // Get current standings for table points calculation
+    const { data: standings, error: standingsError } = await supabase
+      .from('standings')
+      .select('team_id, position')
+      .eq('season', '2025')
+      .order('position', { ascending: true });
+
+    if (standingsError) {
+      console.warn('⚠️ [TEST] Could not fetch standings for table points calculation:', standingsError);
+    }
+
+    // Create lookup for team positions
+    const standingsLookup = {};
+    if (standings) {
+      standings.forEach(standing => {
+        standingsLookup[standing.team_id] = standing.position;
+      });
+      console.log(`📊 [TEST] Loaded ${standings.length} team positions for table points calculation`);
+    }
+
     let totalUpdated = 0;
     let totalExact = 0;
     let totalResult = 0;
+    let totalTablePoints = 0;
 
     // Process each user
     for (const user of users) {
@@ -227,7 +248,23 @@ router.get('/test-recalculate', async (req, res) => {
       
       let userExact = 0;
       let userResult = 0;
-      let userTotalPoints = 0;
+      let userFixturePoints = 0;
+      let userTablePoints = 0;
+
+      // Calculate table points
+      if (user.table_prediction && Array.isArray(user.table_prediction)) {
+        for (let i = 0; i < user.table_prediction.length; i++) {
+          const predictedTeam = user.table_prediction[i];
+          const actualPosition = standingsLookup[predictedTeam];
+          
+          if (actualPosition !== undefined) {
+            const positionDiff = Math.abs((i + 1) - actualPosition);
+            const teamPoints = Math.max(0, 20 - positionDiff);
+            userTablePoints += teamPoints;
+          }
+        }
+        console.log(`📊 [TEST] ${user.display_name} table points: ${userTablePoints}`);
+      }
 
       if (user.fixture_predictions) {
         // Process each finished fixture
@@ -241,7 +278,7 @@ router.get('/test-recalculate', async (req, res) => {
             // Check if exact prediction
             if (predictedScore === actualScore) {
               userExact++;
-              userTotalPoints += 3;
+              userFixturePoints += 3;
             } else {
               // Check if result prediction
               const predictedResult = prediction.home_score > prediction.away_score ? 'home' : 
@@ -251,12 +288,15 @@ router.get('/test-recalculate', async (req, res) => {
               
               if (predictedResult === actualResult) {
                 userResult++;
-                userTotalPoints += 1;
+                userFixturePoints += 1;
               }
             }
           }
         }
       }
+
+      // Calculate total points
+      const userTotalPoints = userFixturePoints + userTablePoints;
 
       // Update user profile
       const { error: updateError } = await supabase
@@ -264,8 +304,9 @@ router.get('/test-recalculate', async (req, res) => {
         .update({
           exact_predictions: userExact,
           result_predictions: userResult,
-          fixture_points: userTotalPoints,
-          total_points: userTotalPoints, // Assuming no table points for now
+          fixture_points: userFixturePoints,
+          table_points: userTablePoints,
+          total_points: userTotalPoints,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.user_id);
@@ -273,16 +314,18 @@ router.get('/test-recalculate', async (req, res) => {
       if (updateError) {
         console.error(`❌ [TEST] Error updating ${user.display_name}:`, updateError);
       } else {
-        console.log(`✅ [TEST] Updated ${user.display_name}: ${userExact} exact, ${userResult} result, ${userTotalPoints} points`);
+        console.log(`✅ [TEST] Updated ${user.display_name}: ${userExact} exact, ${userResult} result, ${userFixturePoints} fixture points, ${userTablePoints} table points, ${userTotalPoints} total points`);
         totalUpdated++;
         totalExact += userExact;
         totalResult += userResult;
+        totalTablePoints += userTablePoints;
       }
     }
 
     console.log(`🎉 [TEST] Recalculation completed! Updated ${totalUpdated} users`);
     console.log(`📊 [TEST] Total exact predictions: ${totalExact}`);
     console.log(`📊 [TEST] Total result predictions: ${totalResult}`);
+    console.log(`📊 [TEST] Total table points: ${totalTablePoints}`);
 
     res.json({
       success: true,
@@ -291,6 +334,7 @@ router.get('/test-recalculate', async (req, res) => {
         usersUpdated: totalUpdated,
         totalExactPredictions: totalExact,
         totalResultPredictions: totalResult,
+        totalTablePoints: totalTablePoints,
         fixturesProcessed: finishedFixtures.length
       }
     });
