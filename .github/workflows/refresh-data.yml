@@ -10,14 +10,10 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
-      - name: Refresh Standings
+      - name: Refresh Standings (includes score recalculation)
         run: |
           curl -X GET "${{ secrets.VERCEL_APP_URL }}/api/standings/refresh"
       
       - name: Refresh Fixtures
         run: |
           curl -X GET "${{ secrets.VERCEL_APP_URL }}/api/fixtures/refresh"
-      
-      - name: Recalculate User Scores
-        run: |
-          curl -X GET "${{ secrets.VERCEL_APP_URL }}/api/users/recalculate-scores"
