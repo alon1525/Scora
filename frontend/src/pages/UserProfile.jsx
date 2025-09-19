@@ -109,6 +109,14 @@ const UserProfile = () => {
       
       console.log('🔍 Loading profile for user ID:', userId);
       
+      // First, let's see what users exist in the database
+      const { data: allUsers, error: allUsersError } = await supabase
+        .from('user_profiles')
+        .select('id, user_id, display_name, email');
+      
+      console.log('📊 All users in database:', allUsers);
+      console.log('📊 All users error:', allUsersError);
+      
       // Try to get user from user_profiles table by user_id first
       const { data: profileData, error: profileError } = await supabase
         .from('user_profiles')
@@ -116,7 +124,7 @@ const UserProfile = () => {
         .eq('user_id', userId)
         .single();
 
-      console.log('📊 Profile query result:', { profileData, profileError });
+      console.log('📊 Profile query by user_id result:', { profileData, profileError });
 
       if (profileError || !profileData) {
         // Try to find the user by ID field instead of user_id
@@ -131,6 +139,7 @@ const UserProfile = () => {
         
         if (errorById || !profileById) {
           console.log('❌ User not found in user_profiles table');
+          console.log('🔍 Available user IDs:', allUsers?.map(u => ({ id: u.id, user_id: u.user_id, name: u.display_name })));
           toast.error('User not found');
           return;
         }
