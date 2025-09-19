@@ -533,9 +533,9 @@ const UserProfile = () => {
           <div className="stat-card stat-card-points">
             <div className="stat-content">
               <div className="stat-value">{currentPlayer.points}</div>
-              <div className="stat-label">
-                <Trophy className="stat-icon" />
-                Points
+              <div className="stat-icon-text">
+                <span className="material-symbols-outlined stat-icon">emoji_events</span>
+                <span className="stat-text">Points</span>
               </div>
             </div>
           </div>
@@ -543,9 +543,9 @@ const UserProfile = () => {
           <div className="stat-card stat-card-accuracy">
             <div className="stat-content">
               <div className="stat-value">{currentPlayer.accuracy}%</div>
-              <div className="stat-label">
-                <Target className="stat-icon" />
-                Accuracy
+              <div className="stat-icon-text">
+                <span className="material-symbols-outlined stat-icon">target</span>
+                <span className="stat-text">Accuracy</span>
               </div>
             </div>
           </div>
@@ -553,9 +553,9 @@ const UserProfile = () => {
           <div className="stat-card stat-card-predictions">
             <div className="stat-content">
               <div className="stat-value">{currentPlayer.predictions}</div>
-              <div className="stat-label">
-                <Calendar className="stat-icon" />
-                Guesses
+              <div className="stat-icon-text">
+                <span className="material-symbols-outlined stat-icon">assignment</span>
+                <span className="stat-text">Guesses</span>
               </div>
             </div>
           </div>
@@ -563,9 +563,9 @@ const UserProfile = () => {
           <div className="stat-card stat-card-exacts">
             <div className="stat-content">
               <div className="stat-value">{currentPlayer.exacts}</div>
-              <div className="stat-label">
-                <CheckCircle className="stat-icon" />
-                Exacts
+              <div className="stat-icon-text">
+                <span className="material-symbols-outlined stat-icon">check_circle</span>
+                <span className="stat-text">Exacts</span>
               </div>
             </div>
           </div>
@@ -573,9 +573,9 @@ const UserProfile = () => {
           <div className="stat-card stat-card-results">
             <div className="stat-content">
               <div className="stat-value">{currentPlayer.results}</div>
-              <div className="stat-label">
-                <XCircle className="stat-icon" />
-                Results
+              <div className="stat-icon-text">
+                <span className="material-symbols-outlined stat-icon">radio_button_unchecked</span>
+                <span className="stat-text">Results</span>
               </div>
             </div>
           </div>

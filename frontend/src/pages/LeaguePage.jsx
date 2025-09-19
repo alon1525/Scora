@@ -113,7 +113,7 @@ const LeaguePage = () => {
   };
 
   const createMockLeagueData = () => ({
-    id: id,
+      id: id,
     name: "Sample League",
     code: "ABC123",
     created_by: "mock-user-id",
@@ -142,9 +142,9 @@ const LeaguePage = () => {
   };
 
   const getRankIcon = (position) => {
-    if (position === 1) return <Trophy className="rank-icon gold" />;
-    if (position === 2) return <Medal className="rank-icon silver" />;
-    if (position === 3) return <Medal className="rank-icon bronze" />;
+    if (position === 1) return <span className="material-symbols-outlined rank-icon gold">emoji_events</span>;
+    if (position === 2) return <span className="material-symbols-outlined rank-icon silver">military_tech</span>;
+    if (position === 3) return <span className="material-symbols-outlined rank-icon bronze">workspace_premium</span>;
     return <span className="rank-number">#{position}</span>;
   };
 
@@ -206,9 +206,6 @@ const LeaguePage = () => {
               {league.max_members && (
                 <span> • Max: {league.max_members}</span>
               )}
-              {league.created_at && (
-                <span> • Created: {new Date(league.created_at).toLocaleDateString()}</span>
-              )}
             </p>
           </div>
         </div>
@@ -242,29 +239,24 @@ const LeaguePage = () => {
                     className="player-card"
                     style={{ animationDelay: `${index * 0.05}s` }}
                   >
-                    {/* Rank */}
-                    <div className="player-rank">
-                      {getRankIcon(position)}
-                    </div>
-                    
                     {/* Player Info */}
                     <div className="player-info">
-                      <h3 className="player-name">
-                        {player.display_name || 'Unknown User'}
-                      </h3>
-                      <div className="player-stats">
-                        <span className="stat-item">
-                          <Target />
-                          {accuracy}% accuracy
-                        </span>
-                        <span className="stat-separator">•</span>
-                        <span>{totalPredictions} predictions</span>
-                        <span className="stat-separator">•</span>
-                        <span>{resultPredictions} results</span>
-                        <span className="stat-separator">•</span>
-                        <span>{exactPredictions} exacts</span>
-                      </div>
-                    </div>
+                      <div className="player-name-stats">
+                        <div className="player-rank">
+                          {getRankIcon(position)}
+              </div>
+                        <h3 className="player-name">
+                          {player.display_name || 'Unknown User'}
+                        </h3>
+                        <div className="player-stats">
+                          <span>{accuracy}% accuracy</span>
+                          <span className="stat-separator">•</span>
+                          <span>{resultPredictions} results</span>
+                          <span className="stat-separator">•</span>
+                          <span>{exactPredictions} exacts</span>
+                </div>
+              </div>
+            </div>
                     
                     {/* Scores */}
                     <div className="player-scores">
@@ -281,6 +273,7 @@ const LeaguePage = () => {
                         <div className="score-label">Total</div>
                       </div>
                     </div>
+
                   </div>
                 );
               })}
@@ -290,40 +283,34 @@ const LeaguePage = () => {
 
         {/* League Stats */}
         <div className="stats-grid">
-          <div className="stat-card">
+          <div className="stat-card stat-card-points">
             <div className="stat-content">
-              <div className="stat-icon">
+              <div className="stat-value">{players[0]?.total_points || 0}</div>
+              <div className="stat-label">
                 <Trophy />
-              </div>
-              <div className="stat-info">
-                <div className="stat-value">{players[0]?.total_points || 0}</div>
-                <div className="stat-label">Top Score</div>
+                Top Score
               </div>
             </div>
           </div>
 
-          <div className="stat-card">
+          <div className="stat-card stat-card-accuracy">
             <div className="stat-content">
-              <div className="stat-icon">
+              <div className="stat-value">
+                {players.length > 0 ? Math.round(players.reduce((acc, p) => acc + calculateAccuracy(p), 0) / players.length) : 0}%
+              </div>
+              <div className="stat-label">
                 <Target />
-              </div>
-              <div className="stat-info">
-                <div className="stat-value">
-                  {players.length > 0 ? Math.round(players.reduce((acc, p) => acc + calculateAccuracy(p), 0) / players.length) : 0}%
-                </div>
-                <div className="stat-label">Avg Accuracy</div>
+                Avg Accuracy
               </div>
             </div>
           </div>
 
-          <div className="stat-card">
+          <div className="stat-card stat-card-members">
             <div className="stat-content">
-              <div className="stat-icon">
+              <div className="stat-value">{league.member_count || 0}</div>
+              <div className="stat-label">
                 <Medal />
-              </div>
-              <div className="stat-info">
-                <div className="stat-value">{league.member_count || 0}</div>
-                <div className="stat-label">Total Members</div>
+                Total Members
               </div>
             </div>
           </div>
