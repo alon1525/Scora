@@ -7,6 +7,7 @@ import { Label } from '../components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
+import { sanitizeUsername, validateEmail, checkFormSubmissionLimit } from '../utils/validation';
 
 const Auth = () => {
   const { user, signIn, signUp } = useAuth();
@@ -49,6 +50,12 @@ const Auth = () => {
     username: '',
   });
 
+  const [validationErrors, setValidationErrors] = useState({
+    username: '',
+    email: '',
+    password: ''
+  });
+
   const handleSignIn = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -75,8 +82,50 @@ const Auth = () => {
     }
   };
 
+  // Validation functions
+  const validateUsername = (username) => {
+    const result = sanitizeUsername(username);
+    if (!result.isValid) {
+      if (result.hasProfanity) {
+        return 'Username contains inappropriate content';
+      }
+      if (result.sanitized.length < 4) {
+        return 'Username must be at least 4 characters';
+      }
+      if (result.sanitized.length > 12) {
+        return 'Username must be 12 characters or less';
+      }
+      return 'Username can only contain letters and numbers';
+    }
+    return '';
+  };
+
+  const validateEmailInput = (email) => {
+    const result = validateEmail(email);
+    return result.isValid ? '' : result.message;
+  };
+
   const handleSignUp = async (e) => {
     e.preventDefault();
+    
+    // Check rate limiting
+    if (!checkFormSubmissionLimit('signup', 'anonymous')) {
+      toast.error('Too many signup attempts. Please wait a moment.');
+      return;
+    }
+    
+    // Validate inputs
+    const usernameError = validateUsername(signUpData.username);
+    const emailError = validateEmailInput(signUpData.email);
+    
+    if (usernameError || emailError) {
+      setValidationErrors({
+        username: usernameError,
+        email: emailError,
+        password: ''
+      });
+      return;
+    }
     
     if (signUpData.password !== signUpData.confirmPassword) {
       toast.error('Passwords do not match');
@@ -85,11 +134,6 @@ const Auth = () => {
 
     if (signUpData.password.length < 6) {
       toast.error('Password must be at least 6 characters');
-      return;
-    }
-
-    if (signUpData.username.length < 4 || signUpData.username.length > 12) {
-      toast.error('Username must be between 4-12 characters');
       return;
     }
 
@@ -189,19 +233,32 @@ const Auth = () => {
                     id="signup-username"
                     type="text"
                     value={signUpData.username}
-                    onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
+                    onChange={(e) => {
+                      const newUsername = e.target.value;
+                      setSignUpData({ ...signUpData, username: newUsername });
+                      setValidationErrors({
+                        ...validationErrors,
+                        username: validateUsername(newUsername)
+                      });
+                    }}
                     placeholder=" "
-                    className="auth-input"
+                    className={`auth-input ${validationErrors.username ? 'error' : ''}`}
                     maxLength={12}
                     minLength={4}
                   />
                   <Label htmlFor="signup-username" className="auth-label">
                     Username {signUpData.username && (
-                      <span className={`username-length ${signUpData.username.length < 4 || signUpData.username.length > 12 ? 'invalid' : 'valid'}`}>
+                      <span className={`username-length ${validationErrors.username ? 'invalid' : 'valid'}`}>
                         ({signUpData.username.length}/12)
                       </span>
                     )}
                   </Label>
+                  {validationErrors.username && (
+                    <div className="validation-error">{validationErrors.username}</div>
+                  )}
+                  <div className="validation-hint">
+                    Username can only contain letters and numbers
+                  </div>
                 </div>
                 <div className="auth-form-group">
                   <Input
@@ -209,11 +266,21 @@ const Auth = () => {
                     type="email"
                     required
                     value={signUpData.email}
-                    onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+                    onChange={(e) => {
+                      const newEmail = e.target.value;
+                      setSignUpData({ ...signUpData, email: newEmail });
+                      setValidationErrors({
+                        ...validationErrors,
+                        email: validateEmailInput(newEmail)
+                      });
+                    }}
                     placeholder=" "
-                    className="auth-input"
+                    className={`auth-input ${validationErrors.email ? 'error' : ''}`}
                   />
                   <Label htmlFor="signup-email" className="auth-label">Email</Label>
+                  {validationErrors.email && (
+                    <div className="validation-error">{validationErrors.email}</div>
+                  )}
                 </div>
                 <div className="auth-form-group">
                   <Input

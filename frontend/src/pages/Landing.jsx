@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
+import { useState } from 'react';
 
 const Landing = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
     <div className="landing-page">
       {/* Header */}
@@ -13,10 +15,60 @@ const Landing = () => {
           <nav className="landing-nav-links">
             <a href="#about" className="landing-nav-link">About</a>
             <a href="#features" className="landing-nav-link">Features</a>
+            <a href="#scoring" className="landing-nav-link">How It Works</a>
             <Link to="/auth?tab=signin" className="landing-nav-link">Sign In</Link>
             <Link to="/auth?tab=signup" className="landing-nav-link">Sign Up</Link>
           </nav>
+          <button 
+            className="landing-mobile-toggle" 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <span className="material-symbols-outlined">menu</span>
+          </button>
         </div>
+        
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className={`landing-mobile-menu ${mobileMenuOpen ? 'show' : ''}`}>
+            <div className="landing-mobile-links">
+              <a 
+                href="#about" 
+                className="landing-mobile-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                About
+              </a>
+              <a 
+                href="#features" 
+                className="landing-mobile-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Features
+              </a>
+              <a 
+                href="#scoring" 
+                className="landing-mobile-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                How It Works
+              </a>
+              <Link 
+                to="/auth?tab=signin" 
+                className="landing-mobile-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign In
+              </Link>
+              <Link 
+                to="/auth?tab=signup" 
+                className="landing-mobile-link"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign Up
+              </Link>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
@@ -101,6 +153,91 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Scoring Section */}
+      <section id="scoring" className="landing-scoring">
+        <div className="landing-scoring-content">
+          <h2 className="landing-scoring-title">How Scoring Works</h2>
+          <p className="landing-scoring-subtitle">Understand how points are calculated in Scora</p>
+          
+          <div className="landing-scoring-grid">
+            <div className="landing-scoring-card">
+              <div className="landing-scoring-card-header">
+                <span className="material-symbols-outlined">sports_soccer</span>
+                <h3>Fixture Predictions</h3>
+              </div>
+              <p className="landing-scoring-description">
+                Predict the outcome of individual matches and earn points based on accuracy.
+              </p>
+              <div className="landing-scoring-points">
+                <div className="landing-scoring-point">
+                  <span className="point-value">3</span>
+                  <span className="point-label">Exact Match</span>
+                  <span className="point-desc">Correct score</span>
+                </div>
+                <div className="landing-scoring-point">
+                  <span className="point-value">1</span>
+                  <span className="point-label">Result Match</span>
+                  <span className="point-desc">Correct outcome</span>
+                </div>
+                <div className="landing-scoring-point">
+                  <span className="point-value">0</span>
+                  <span className="point-label">No Match</span>
+                  <span className="point-desc">Wrong outcome</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="landing-scoring-card">
+              <div className="landing-scoring-card-header">
+                <span className="material-symbols-outlined">table_chart</span>
+                <h3>Table Predictions</h3>
+              </div>
+              <p className="landing-scoring-description">
+                Predict the final league table positions. You get 20 points for each team, minus 1 point for each position off.
+              </p>
+              <div className="landing-scoring-points">
+                <div className="landing-scoring-point">
+                  <span className="point-value">20</span>
+                  <span className="point-label">Exact Position</span>
+                  <span className="point-desc">Perfect prediction</span>
+                </div>
+                <div className="landing-scoring-point">
+                  <span className="point-value">17</span>
+                  <span className="point-label">3 Positions Off</span>
+                  <span className="point-desc">20 - 3 = 17 points</span>
+                </div>
+                <div className="landing-scoring-point">
+                  <span className="point-value">0</span>
+                  <span className="point-label">20+ Positions Off</span>
+                  <span className="point-desc">Minimum 0 points</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="landing-scoring-card">
+              <div className="landing-scoring-card-header">
+                <span className="material-symbols-outlined">calculate</span>
+                <h3>Total Score</h3>
+              </div>
+              <p className="landing-scoring-description">
+                Your total score combines both fixture and table prediction points.
+              </p>
+              <div className="landing-scoring-formula">
+                <div className="formula-line">
+                  <span>Fixture Points = (Exact × 3) + (Result × 1)</span>
+                </div>
+                <div className="formula-line">
+                  <span>Table Points = (20 × 20 teams) - Total Position Differences</span>
+                </div>
+                <div className="formula-total">
+                  <span>Total Score = Fixture + Table Points</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="landing-footer">
         <div className="landing-footer-content">
@@ -115,6 +252,7 @@ const Landing = () => {
             <div className="landing-footer-links">
               <a href="#about" className="landing-footer-link">About</a>
               <a href="#features" className="landing-footer-link">Features</a>
+              <a href="#scoring" className="landing-footer-link">How It Works</a>
               <Link to="/auth?tab=signin" className="landing-footer-link">Sign In</Link>
               <Link to="/auth?tab=signup" className="landing-footer-link">Sign Up</Link>
             </div>

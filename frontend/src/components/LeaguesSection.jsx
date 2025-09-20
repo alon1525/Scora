@@ -8,6 +8,7 @@ import { Button } from './ui/button';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
+import { sanitizeLeagueName, checkFormSubmissionLimit, checkApiRateLimit } from '../utils/validation';
 import './LeaguesSection.css';
 
 export const LeaguesSection = ({ preloadedData }) => {
@@ -18,6 +19,7 @@ export const LeaguesSection = ({ preloadedData }) => {
   const [joinCode, setJoinCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [userPositions, setUserPositions] = useState({});
+  const [leagueValidationError, setLeagueValidationError] = useState('');
 
   const getOrdinalSuffix = (num) => {
     const j = num % 10;
@@ -117,8 +119,24 @@ export const LeaguesSection = ({ preloadedData }) => {
   const createLeague = async () => {
     if (!user || !newLeague.name) return;
 
-    if (newLeague.name.length > 12) {
-      toast.error('League name must be 12 characters or less');
+    // Check rate limiting
+    if (!checkFormSubmissionLimit('create-league', user.id)) {
+      toast.error('Too many league creation attempts. Please wait a moment.');
+      return;
+    }
+
+    // Validate league name
+    const validation = sanitizeLeagueName(newLeague.name);
+    if (!validation.isValid) {
+      if (validation.hasProfanity) {
+        setLeagueValidationError('League name contains inappropriate content');
+      } else if (validation.sanitized.length === 0) {
+        setLeagueValidationError('League name is required');
+      } else if (validation.sanitized.length > 12) {
+        setLeagueValidationError('League name must be 12 characters or less');
+      } else {
+        setLeagueValidationError('League name can only contain letters, numbers, and spaces');
+      }
       return;
     }
     
@@ -183,6 +201,12 @@ export const LeaguesSection = ({ preloadedData }) => {
 
   const joinLeague = async () => {
     if (!user || !joinCode) return;
+
+    // Check rate limiting
+    if (!checkFormSubmissionLimit('join-league', user.id)) {
+      toast.error('Too many join attempts. Please wait a moment.');
+      return;
+    }
 
     if (myLeagues.length >= 5) {
       toast.error('You can only be in 5 leagues maximum');
@@ -296,18 +320,45 @@ export const LeaguesSection = ({ preloadedData }) => {
           }}>
             Create League
           </label>
-          <input
-            type="text"
-            value={newLeague.name}
-            onChange={(e) => setNewLeague({ name: e.target.value })}
-            placeholder="League name (max 12 chars)"
-            maxLength={12}
-            className="form-input league-action-input"
-            style={{ padding: '6px 8px', fontSize: '13px' }}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <input
+              type="text"
+              value={newLeague.name}
+              onChange={(e) => {
+                const newName = e.target.value;
+                setNewLeague({ name: newName });
+                const validation = sanitizeLeagueName(newName);
+                if (!validation.isValid && newName.length > 0) {
+                  if (validation.hasProfanity) {
+                    setLeagueValidationError('Contains inappropriate content');
+                  } else {
+                    setLeagueValidationError('Only letters, numbers, and spaces allowed');
+                  }
+                } else {
+                  setLeagueValidationError('');
+                }
+              }}
+              placeholder="League name (max 12 chars)"
+              maxLength={12}
+              className={`form-input league-action-input ${leagueValidationError ? 'error' : ''}`}
+              style={{ 
+                padding: '6px 8px', 
+                fontSize: '13px',
+                border: leagueValidationError ? '1px solid #ef4444' : undefined
+              }}
+            />
+            {leagueValidationError && (
+              <div style={{ color: '#ef4444', fontSize: '11px' }}>
+                {leagueValidationError}
+              </div>
+            )}
+            <div style={{ color: '#94a3b8', fontSize: '10px', fontStyle: 'italic' }}>
+              Letters, numbers, and spaces only
+            </div>
+          </div>
           <button 
             onClick={createLeague}
-            disabled={loading || !newLeague.name.trim() || myLeagues.length >= 5}
+            disabled={loading || !newLeague.name.trim() || myLeagues.length >= 5 || leagueValidationError}
             className="btn btn-primary league-action-button"
             style={{ padding: '6px 12px', fontSize: '13px' }}
           >
