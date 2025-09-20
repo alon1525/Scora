@@ -2214,6 +2214,7 @@ a:hover {
   font-weight: 700;
   margin-bottom: var(--spacing-sm);
   color: var(--text-primary);
+  justify-content: center;
 }
 
 .leaderboard-subtitle {

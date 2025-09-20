@@ -330,9 +330,9 @@ export const LeaguesSection = ({ preloadedData }) => {
                 const validation = sanitizeLeagueName(newName);
                 if (!validation.isValid && newName.length > 0) {
                   if (validation.hasProfanity) {
-                    setLeagueValidationError('Contains inappropriate content');
+                    setLeagueValidationError('Inappropriate content');
                   } else {
-                    setLeagueValidationError('Only letters, numbers, and spaces allowed');
+                    setLeagueValidationError('Invalid characters');
                   }
                 } else {
                   setLeagueValidationError('');
@@ -352,9 +352,6 @@ export const LeaguesSection = ({ preloadedData }) => {
                 {leagueValidationError}
               </div>
             )}
-            <div style={{ color: '#94a3b8', fontSize: '10px', fontStyle: 'italic' }}>
-              Letters, numbers, and spaces only
-            </div>
           </div>
           <button 
             onClick={createLeague}
