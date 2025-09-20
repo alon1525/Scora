@@ -129,21 +129,21 @@ const Landing = () => {
           <h2 className="landing-features-title">Why Choose Our Platform?</h2>
           <div className="landing-features-grid">
             <div className="landing-feature">
-              <div className="landing-feature-icon">🏆</div>
+              <div className="material-symbols-outlined landing-feature-icon">emoji_events</div>
               <h3 className="landing-feature-title">Compete with Friends</h3>
               <p className="landing-feature-description">
                 Create private leagues and challenge your friends to see who has the best football knowledge.
               </p>
             </div>
             <div className="landing-feature">
-              <div className="landing-feature-icon">⚽</div>
+              <div className="material-symbols-outlined landing-feature-icon">sports_soccer</div>
               <h3 className="landing-feature-title">Live Predictions</h3>
               <p className="landing-feature-description">
                 Make real-time predictions for upcoming matches and track your accuracy over time.
               </p>
             </div>
             <div className="landing-feature">
-              <div className="landing-feature-icon">📊</div>
+              <div className="material-symbols-outlined landing-feature-icon">analytics</div>
               <h3 className="landing-feature-title">Detailed Analytics</h3>
               <p className="landing-feature-description">
                 Get insights into your prediction patterns and see how you stack up against others.

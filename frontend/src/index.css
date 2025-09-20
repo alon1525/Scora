@@ -941,6 +941,7 @@ a:hover {
 .landing-feature-icon {
   font-size: 3rem;
   margin-bottom: var(--spacing-md);
+  font-family: 'Material Symbols Outlined';
 }
 
 .landing-feature-title {
@@ -1322,7 +1323,8 @@ a:hover {
 }
 
 .dashboard-title::before {
-  content: "⚽";
+  content: "sports_soccer";
+  font-family: 'Material Symbols Outlined';
   font-size: 2.2rem;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   animation: bounce 2s infinite;
@@ -1435,6 +1437,10 @@ a:hover {
 
 .calendar-icon {
   font-size: 16px;
+  font-family: 'Material Symbols Outlined';
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .match-date {
@@ -1456,6 +1462,7 @@ a:hover {
   display: flex;
   gap: 8px;
   margin-left: auto;
+  font-size: 14px;
 }
 
 .points-badge {
@@ -1468,20 +1475,24 @@ a:hover {
 .stadium-info {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   padding: 12px 20px;
   background: var(--bg-muted);
   border-bottom: 1px solid var(--border-light);
+  text-align: center;
 }
 
 .stadium-icon {
   font-size: 20px;
+  font-family: 'Material Symbols Outlined';
 }
 
 .stadium-details {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  align-items: center;
 }
 
 .stadium-name {
@@ -1503,16 +1514,17 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 16px 20px;
+  gap: 6px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
   color: white;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .prompt-icon {
-  font-size: 18px;
+  font-size: 16px;
+  font-family: 'Material Symbols Outlined';
 }
 
 /* Teams Section */
@@ -4054,6 +4066,10 @@ a:hover {
     font-size: 0.875rem;
   }
   
+  .match-date {
+    font-size: 0.875rem;
+  }
+  
   .match-time {
     font-size: 0.75rem;
     padding: 4px 8px;
@@ -4300,8 +4316,16 @@ a:hover {
   }
   
   .prediction-prompt {
-    padding: 8px 16px;
+    padding: 6px 12px;
     text-align: center;
+    font-size: 0.875rem;
+  }
+  
+  .prompt-icon {
+    font-size: 14px;
+  }
+  
+  .prompt-text {
     font-size: 0.875rem;
   }
   
@@ -4714,6 +4738,10 @@ a:hover {
     font-size: 0.75rem;
   }
   
+  .match-date {
+    font-size: 0.75rem;
+  }
+  
   .match-time {
     font-size: 0.7rem;
     padding: 3px 6px;
@@ -4904,13 +4932,30 @@ a:hover {
     font-size: 0.7rem;
   }
   
+  .match-date {
+    font-size: 0.7rem;
+  }
+  
+  .prediction-prompt {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+  
+  .prompt-icon {
+    font-size: 12px;
+  }
+  
+  .prompt-text {
+    font-size: 0.75rem;
+  }
+  
   .match-time {
     font-size: 0.6rem;
     padding: 2px 4px;
   }
   
   .match-status {
-    font-size: 0.6rem;
+    font-size: 0.5rem;
     padding: 2px 4px;
   }
   

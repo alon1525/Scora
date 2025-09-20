@@ -743,7 +743,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                   {/* Match Header */}
                   <div className="match-header">
                     <div className="match-date-info">
-                      <span className="calendar-icon">📅</span>
+                      <span className="material-symbols-outlined calendar-icon">event</span>
                       <span className="match-date">
                         {new Date(fixture.scheduled_date).toLocaleDateString('en-US', { 
                           weekday: 'short', 
@@ -765,7 +765,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
 
                   {/* Stadium Info */}
                   <div className="stadium-info">
-                    <div className="stadium-icon">🏟️</div>
+                    <div className="material-symbols-outlined stadium-icon">stadium</div>
                     <div className="stadium-details">
                       <span className="stadium-name">{getStadiumInfo(fixture.home_team_name).stadium}</span>
                       <span className="stadium-stats">Capacity: {getStadiumInfo(fixture.home_team_name).capacity}</span>
@@ -775,7 +775,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                   {/* Prediction Prompt - Only show for games that haven't started */}
                   {canEditPrediction(fixture.scheduled_date) && (
                     <div className="prediction-prompt">
-                      <span className="prompt-icon">👇</span>
+                      <span className="material-symbols-outlined prompt-icon">keyboard_arrow_down</span>
                       <span className="prompt-text">Predict a score</span>
                     </div>
                   )}
