@@ -135,7 +135,7 @@ export const UserTablePredictions = ({ onPredictionSaved }) => {
     if (isMobile) {
       // Mobile: No drag, just buttons
       return (
-        <tr className="draggable-row">
+        <tr key={teamId} className="draggable-row">
           <td className="prediction-position">{index + 1}</td>
           <td>
             <div className="prediction-team">
