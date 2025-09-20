@@ -903,7 +903,7 @@ a:hover {
 /* Features Section */
 .landing-features {
   padding: var(--spacing-3xl) var(--spacing-lg);
-  background: var(--bg-muted);
+  background: var(--bg-primary);
 }
 
 .landing-features-content {
