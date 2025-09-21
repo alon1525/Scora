@@ -1,10 +1,10 @@
-name: Cron Job
+name: Cron Job (DISABLED - Using refresh-data.yml instead)
 
-on:
-  schedule:
-    # Run every 2 hours
-    - cron: '0 */2 * * *'
-  workflow_dispatch: # Allow manual trigger
+# on:
+#   schedule:
+#     # Run every 2 hours
+#     - cron: '0 */2 * * *'
+#   workflow_dispatch: # Allow manual trigger
 
 jobs:
   cron:
@@ -27,6 +27,7 @@ jobs:
       - name: Run cron job
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_API_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           LEAGUE_STANDINGS_API_KEY: ${{ secrets.LEAGUE_STANDINGS_API_KEY }}
