@@ -383,6 +383,15 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
     
     let scoresResult = { success: false, results: 'No users processed' };
     
+    // Create standings lookup for table points calculation
+    const standingsLookup = {};
+    if (standingsData) {
+      standingsData.forEach(standing => {
+        standingsLookup[standing.team_id] = standing.position;
+      });
+      console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Created standings lookup with ${standingsData.length} teams`);
+    }
+    
     // Get all users and recalculate their scores
     const { data: users, error: usersError } = await supabase
       .from('user_profiles')
@@ -392,12 +401,16 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
       console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Error fetching users:`, usersError);
       scoresResult = { success: false, results: `Error fetching users: ${usersError.message}` };
     } else {
+      console.log(`👥 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Processing ${users.length} users`);
       let successCount = 0;
       for (const user of users) {
         try {
+          console.log(`👤 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Processing user ${user.user_id} (${user.display_name})`);
+          
           // Calculate table points
           let tablePoints = 0;
           const prediction = user.table_prediction || [];
+          console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} table prediction:`, prediction);
           
           for (let i = 0; i < prediction.length; i++) {
             const predictedTeam = prediction[i];
@@ -407,8 +420,13 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
               const positionDiff = Math.abs((i + 1) - actualPosition);
               const teamPoints = Math.max(0, 20 - positionDiff);
               tablePoints += teamPoints;
+              console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Team ${predictedTeam} - Predicted: ${i + 1}, Actual: ${actualPosition}, Points: ${teamPoints}`);
+            } else {
+              console.log(`⚠️ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Team ${predictedTeam} not found in standings lookup`);
             }
           }
+          
+          console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} total table points: ${tablePoints}`);
 
           // Get existing fixture points
           const { data: profile, error: profileError } = await supabase
@@ -427,8 +445,11 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
             .eq('status', 'FINISHED')
             .eq('calculated', false);
 
+          console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Found ${finishedFixtures?.length || 0} uncalculated finished fixtures`);
+
           if (!fixturesError && finishedFixtures) {
             const fixturePredictions = user.fixture_predictions || {};
+            console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} fixture predictions:`, Object.keys(fixturePredictions).length, 'predictions');
             
             for (const fixture of finishedFixtures) {
               const prediction = fixturePredictions[fixture.id.toString()] || fixturePredictions[fixture.id];
@@ -439,10 +460,13 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
                 const actualHome = parseInt(fixture.home_score);
                 const actualAway = parseInt(fixture.away_score);
 
+                console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Fixture ${fixture.id} - Predicted: ${predictedHome}-${predictedAway}, Actual: ${actualHome}-${actualAway}`);
+
                 if (!isNaN(predictedHome) && !isNaN(predictedAway) && !isNaN(actualHome) && !isNaN(actualAway)) {
                   // Check for exact match (3 points)
                   if (predictedHome === actualHome && predictedAway === actualAway) {
                     newFixturePoints += 3;
+                    console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Exact match! +3 points`);
                   } else {
                     // Check for result match (1 point)
                     const predictedResult = predictedHome > predictedAway ? 'home' : (predictedHome < predictedAway ? 'away' : 'draw');
@@ -450,15 +474,24 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
                     
                     if (predictedResult === actualResult) {
                       newFixturePoints += 1;
+                      console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Result match! +1 point`);
+                    } else {
+                      console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: No match`);
                     }
                   }
                 }
+              } else {
+                console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: No prediction for fixture ${fixture.id}`);
               }
             }
           }
+          
+          console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} new fixture points: ${newFixturePoints}`);
 
           const totalFixturePoints = existingFixturePoints + newFixturePoints;
           const totalPoints = totalFixturePoints + tablePoints;
+
+          console.log(`💰 [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} - Existing: ${existingFixturePoints}, New: ${newFixturePoints}, Table: ${tablePoints}, Total: ${totalPoints}`);
 
           // Update user profile
           const { error: updateError } = await supabase
@@ -473,6 +506,9 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
 
           if (!updateError) {
             successCount++;
+            console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Successfully updated user ${user.user_id}`);
+          } else {
+            console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Failed to update user ${user.user_id}:`, updateError);
           }
         } catch (error) {
           console.error(`❌ Error processing user ${user.user_id}:`, error);
