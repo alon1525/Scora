@@ -533,6 +533,8 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     if (loadedMatchweeks.has(matchweek)) {
       if (matchweek === currentMatchweek) {
         setFixtures(fixturesCache[matchweek] || []);
+        // Also load match predictions for the current week
+        await loadMatchPredictions(fixturesCache[matchweek] || [], matchweek);
       }
       return;
     }
@@ -542,6 +544,8 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       const preloadedFixtures = preloadedData.fixtures[matchweek];
       if (matchweek === currentMatchweek) {
         setFixtures(preloadedFixtures);
+        // Load match predictions for the current week
+        await loadMatchPredictions(preloadedFixtures, matchweek);
       }
       setLoadedMatchweeks(prev => new Set([...prev, matchweek]));
       setFixturesCache(prev => ({ ...prev, [matchweek]: preloadedFixtures }));
@@ -559,6 +563,8 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       if (data.success) {
         if (matchweek === currentMatchweek) {
           setFixtures(data.fixtures);
+          // Load match predictions for the current week
+          await loadMatchPredictions(data.fixtures, matchweek);
         }
         setLoadedMatchweeks(prev => new Set([...prev, matchweek]));
         setFixturesCache(prev => ({ ...prev, [matchweek]: data.fixtures }));
@@ -601,7 +607,8 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         console.log(`🔄 Preloading matchweek ${week}...`);
         try {
           await loadFixturesForMatchweek(week, false);
-          // Also preload predictions for this week
+          // Wait for fixtures to be cached, then preload predictions
+          await new Promise(resolve => setTimeout(resolve, 50));
           await preloadPredictionsForWeek(week);
           console.log(`✅ Preloaded matchweek ${week}`);
         } catch (error) {
@@ -623,9 +630,12 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       const weekFixtures = fixturesCache[week];
       if (weekFixtures && weekFixtures.length > 0) {
         await loadMatchPredictions(weekFixtures, week);
+        console.log(`✅ Preloaded match predictions for week ${week}`);
+      } else {
+        console.log(`⚠️ No fixtures available for week ${week} when preloading predictions`);
       }
       
-      console.log(`✅ Preloaded predictions for week ${week}`);
+      console.log(`✅ Preloaded user predictions for week ${week}`);
     } catch (error) {
       console.log(`⚠️ Failed to preload predictions for week ${week}:`, error);
     }
