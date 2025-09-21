@@ -385,11 +385,18 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
     
     // Create standings lookup for table points calculation
     const standingsLookup = {};
-    if (standingsData) {
-      standingsData.forEach(standing => {
-        standingsLookup[standing.team_id] = standing.position;
-      });
-      console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Created standings lookup with ${standingsData.length} teams`);
+    if (standingsData && standingsData.standings) {
+      // Extract the actual standings table from the API response
+      const standingsTable = standingsData.standings.find(table => table.type === 'TOTAL');
+      if (standingsTable && standingsTable.table) {
+        standingsTable.table.forEach((team, index) => {
+          const teamId = TEAM_NAME_TO_ID[team.team.name];
+          if (teamId) {
+            standingsLookup[teamId] = index + 1; // Position is 1-based
+          }
+        });
+        console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Created standings lookup with ${standingsTable.table.length} teams`);
+      }
     }
     
     // Get all users and recalculate their scores
