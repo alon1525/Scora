@@ -344,6 +344,10 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const [predictions, setPredictions] = useState({});
   const [loading, setLoading] = useState(false);
   const [matchPredictions, setMatchPredictions] = useState({}); // Store all user predictions for each match
+  const [loadedMatchweeks, setLoadedMatchweeks] = useState(new Set()); // Track which matchweeks have been loaded
+  const [fixturesCache, setFixturesCache] = useState({}); // Cache loaded fixtures
+  const [predictionsCache, setPredictionsCache] = useState({}); // Cache loaded predictions
+  const [matchPredictionsCache, setMatchPredictionsCache] = useState({}); // Cache loaded match predictions
   // Hardcoded season - no need for state
 
   // Simple function to get current matchweek from preloaded data
@@ -375,38 +379,35 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     );
   }
 
-  // Fetch team form data when fixtures change
+  // Fetch team form data when fixtures change (only for current matchweek)
   useEffect(() => {
-    if (user && fixtures.length > 0) {
-      fetchTeamForms();
+    if (user && fixtures.length > 0 && currentMatchweek !== null) {
+      fetchTeamFormsForCurrentMatchweek();
     }
-  }, [user, fixtures]);
+  }, [user, fixtures, currentMatchweek]);
 
-  // Fetch fixtures for current matchweek
+  // Fetch fixtures for current matchweek and adjacent weeks (lazy loading with preloading)
   useEffect(() => {
     if (user && currentMatchweek !== null) {
-      // Check if we have preloaded fixtures for this matchweek
-      if (preloadedData?.fixtures?.[currentMatchweek]) {
-        setFixtures(preloadedData.fixtures[currentMatchweek]);
-      } else {
-        fetchFixtures();
-      }
+      loadFixturesForMatchweek(currentMatchweek);
+      // Preload adjacent weeks
+      preloadAdjacentWeeks(currentMatchweek);
     }
-  }, [user, currentMatchweek, preloadedData?.fixtures]);
+  }, [user, currentMatchweek]);
 
   // Fetch user predictions for current matchweek
   useEffect(() => {
     if (user && fixtures.length > 0 && currentMatchweek !== null) {
-      fetchPredictions();
+      fetchPredictions(currentMatchweek, true);
     }
   }, [user, fixtures, currentMatchweek]);
 
   // Load match predictions for prediction bars
   useEffect(() => {
-    if (user && fixtures.length > 0) {
-      loadMatchPredictions();
+    if (user && fixtures.length > 0 && currentMatchweek !== null) {
+      loadMatchPredictions(fixtures, currentMatchweek);
     }
-  }, [user, fixtures]);
+  }, [user, fixtures, currentMatchweek]);
 
   // Force re-render when fixtures or predictions change to update matchday points
   useEffect(() => {
@@ -470,37 +471,183 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     }
   };
 
-  const fetchFixtures = async () => {
+  // Optimized team forms loading - only for teams in current fixtures
+  const fetchTeamFormsForCurrentMatchweek = async () => {
+    if (fixtures.length === 0) return;
+    
     try {
-      setLoading(true);
-      
-      // Check if we have preloaded fixtures for this matchweek
-      if (preloadedData?.fixtures?.[currentMatchweek]) {
-        setFixtures(preloadedData.fixtures[currentMatchweek]);
-        setLoading(false);
-        return;
-      }
-      
-      // Fallback to API call
-      const response = await axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${currentMatchweek}`);
+      // Get unique team names from current fixtures
+      const teamNames = new Set();
+      fixtures.forEach(fixture => {
+        teamNames.add(fixture.home_team_name);
+        teamNames.add(fixture.away_team_name);
+      });
+
+      // Get all fixtures for team form calculation
+      const response = await axios.get(API_ENDPOINTS.FIXTURES_ALL);
       const data = response.data;
       
-      if (data.success) {
-        setFixtures(data.fixtures);
-      } else {
-        toast.error('Failed to fetch fixtures');
+      if (!data.success) {
+        console.error('Failed to fetch fixtures for team forms');
+        return;
       }
+
+      const allFixturesData = data.fixtures;
+      
+      // Calculate team forms only for teams in current fixtures
+      const teamForms = { ...allFixtures };
+      
+      teamNames.forEach(teamName => {
+        const teamFixtures = allFixturesData.filter(fixture => 
+          fixture.home_team_name === teamName || fixture.away_team_name === teamName
+        );
+        
+        // Sort by date and get last 3 results
+        const sortedFixtures = teamFixtures
+          .filter(fixture => fixture.status === 'FINISHED' && 
+                            fixture.home_score !== null && 
+                            fixture.away_score !== null)
+          .sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date))
+          .slice(0, 3);
+        
+        teamForms[teamName] = sortedFixtures.map(fixture => {
+          const isHome = fixture.home_team_name === teamName;
+          const teamScore = isHome ? fixture.home_score : fixture.away_score;
+          const opponentScore = isHome ? fixture.away_score : fixture.home_score;
+
+          if (teamScore > opponentScore) return { result: 'W', class: 'win' };
+          if (teamScore === opponentScore) return { result: 'D', class: 'draw' };
+          return { result: 'L', class: 'loss' };
+        });
+      });
+
+      setAllFixtures(teamForms);
     } catch (error) {
-      toast.error('Error fetching fixtures');
-    } finally {
-      setLoading(false);
+      console.error('Error fetching team forms:', error);
     }
   };
 
-  const fetchPredictions = async () => {
+  // Lazy load fixtures for a specific matchweek
+  const loadFixturesForMatchweek = async (matchweek, showLoading = true) => {
+    // Check if already loaded
+    if (loadedMatchweeks.has(matchweek)) {
+      if (matchweek === currentMatchweek) {
+        setFixtures(fixturesCache[matchweek] || []);
+      }
+      return;
+    }
+
+    // Check if we have preloaded fixtures for this matchweek
+    if (preloadedData?.fixtures?.[matchweek]) {
+      const preloadedFixtures = preloadedData.fixtures[matchweek];
+      if (matchweek === currentMatchweek) {
+        setFixtures(preloadedFixtures);
+      }
+      setLoadedMatchweeks(prev => new Set([...prev, matchweek]));
+      setFixturesCache(prev => ({ ...prev, [matchweek]: preloadedFixtures }));
+      return;
+    }
+
+    // Load from API
+    try {
+      if (showLoading && matchweek === currentMatchweek) {
+        setLoading(true);
+      }
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${matchweek}`);
+      const data = response.data;
+      
+      if (data.success) {
+        if (matchweek === currentMatchweek) {
+          setFixtures(data.fixtures);
+        }
+        setLoadedMatchweeks(prev => new Set([...prev, matchweek]));
+        setFixturesCache(prev => ({ ...prev, [matchweek]: data.fixtures }));
+      } else {
+        if (matchweek === currentMatchweek) {
+          toast.error('Failed to fetch fixtures');
+          setFixtures([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching fixtures:', error);
+      if (matchweek === currentMatchweek) {
+        toast.error('Error fetching fixtures');
+        setFixtures([]);
+      }
+    } finally {
+      if (showLoading && matchweek === currentMatchweek) {
+        setLoading(false);
+      }
+    }
+  };
+
+  // Preload adjacent weeks for faster switching
+  const preloadAdjacentWeeks = async (currentWeek) => {
+    const weeksToPreload = [];
+    
+    // Add previous week if it exists
+    if (currentWeek > 1) {
+      weeksToPreload.push(currentWeek - 1);
+    }
+    
+    // Add next week if it exists
+    if (currentWeek < maxMatchweek) {
+      weeksToPreload.push(currentWeek + 1);
+    }
+    
+    // Preload each week in the background (without showing loading state)
+    weeksToPreload.forEach(async (week) => {
+      if (!loadedMatchweeks.has(week)) {
+        console.log(`🔄 Preloading matchweek ${week}...`);
+        try {
+          await loadFixturesForMatchweek(week, false);
+          // Also preload predictions for this week
+          await preloadPredictionsForWeek(week);
+          console.log(`✅ Preloaded matchweek ${week}`);
+        } catch (error) {
+          console.log(`⚠️ Failed to preload matchweek ${week}:`, error);
+        }
+      }
+    });
+  };
+
+  // Preload predictions for a specific week
+  const preloadPredictionsForWeek = async (week) => {
+    if (!user) return;
+    
+    try {
+      // Preload user predictions
+      await fetchPredictions(week, false);
+      
+      // Preload match predictions if fixtures are available
+      const weekFixtures = fixturesCache[week];
+      if (weekFixtures && weekFixtures.length > 0) {
+        await loadMatchPredictions(weekFixtures, week);
+      }
+      
+      console.log(`✅ Preloaded predictions for week ${week}`);
+    } catch (error) {
+      console.log(`⚠️ Failed to preload predictions for week ${week}:`, error);
+    }
+  };
+
+  const fetchFixtures = async () => {
+    // This function is now deprecated, use loadFixturesForMatchweek instead
+    await loadFixturesForMatchweek(currentMatchweek);
+  };
+
+  const fetchPredictions = async (week = currentMatchweek, useCache = true) => {
+    // Check cache first
+    if (useCache && predictionsCache[week]) {
+      if (week === currentMatchweek) {
+        setPredictions(predictionsCache[week]);
+      }
+      return predictionsCache[week];
+    }
+
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const response = await axios.get(`${API_ENDPOINTS.FIXTURE_PREDICTIONS}?matchday=${currentMatchweek}`, {
+      const response = await axios.get(`${API_ENDPOINTS.FIXTURE_PREDICTIONS}?matchday=${week}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -517,17 +664,32 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
               away_score: fixture.prediction.away_score,
               points_earned: fixture.prediction.points_earned
             };
-            // Removed debug logging
           }
         });
-        setPredictions(predictionsMap);
+        
+        // Cache the predictions
+        setPredictionsCache(prev => ({ ...prev, [week]: predictionsMap }));
+        
+        if (week === currentMatchweek) {
+          setPredictions(predictionsMap);
+        }
+        
+        return predictionsMap;
       }
     } catch (error) {
-      // Silent error handling
+      console.log(`Error fetching predictions for week ${week}:`, error);
     }
   };
 
-  const loadMatchPredictions = async () => {
+  const loadMatchPredictions = async (weekFixtures = fixtures, week = currentMatchweek) => {
+    // Check cache first
+    if (matchPredictionsCache[week]) {
+      if (week === currentMatchweek) {
+        setMatchPredictions(matchPredictionsCache[week]);
+      }
+      return matchPredictionsCache[week];
+    }
+
     try {
       const predictions = {};
 
@@ -537,7 +699,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         return;
       }
 
-      for (const fixture of fixtures) {
+      for (const fixture of weekFixtures) {
         try {
           const response = await axios.get(`${API_ENDPOINTS.MATCH_PREDICTIONS}/${fixture.id}`, {
             headers: {
@@ -561,9 +723,16 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         }
       }
 
-      setMatchPredictions(predictions);
+      // Cache the match predictions
+      setMatchPredictionsCache(prev => ({ ...prev, [week]: predictions }));
+      
+      if (week === currentMatchweek) {
+        setMatchPredictions(predictions);
+      }
+
+      return predictions;
     } catch (error) {
-      // Silent error handling
+      console.error('Error loading match predictions:', error);
     }
   };
 

@@ -381,6 +381,8 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
     // Step 3: Recalculate all user scores (based on updated standings and fixtures)
     console.log(`🧮 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Step 3 - Recalculating user scores...`);
     
+    let scoresResult = { success: false, results: 'No users processed' };
+    
     // Get all users and recalculate their scores
     const { data: users, error: usersError } = await supabase
       .from('user_profiles')
@@ -388,6 +390,7 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
 
     if (usersError) {
       console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Error fetching users:`, usersError);
+      scoresResult = { success: false, results: `Error fetching users: ${usersError.message}` };
     } else {
       let successCount = 0;
       for (const user of users) {
@@ -492,6 +495,12 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
           .in('id', fixtureIds);
         console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Marked ${fixtureIds.length} fixtures as calculated`);
       }
+      
+      // Update scoresResult with the actual results
+      scoresResult = { 
+        success: true, 
+        results: `Updated scores for ${successCount} users, marked ${finishedFixtures?.length || 0} fixtures as calculated` 
+      };
     }
     
     const duration = Date.now() - startTime;

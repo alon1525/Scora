@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // Supabase client
-const supabaseUrl = process.env.SUPABASE_API_URL;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.SUPABASE_API_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -296,41 +296,42 @@ async function recalculateUserScores() {
 }
 
 // Main cron function
-export default async function handler(req, res) {
-  // No authorization needed for GitHub Actions
-
+async function runCronJob() {
   const startTime = Date.now();
   console.log('🔄 Cron job started at:', new Date().toISOString());
 
   try {
-    const baseUrl = process.env.VERCEL_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
-    
-    if (!baseUrl) {
-      throw new Error('No base URL configured. Please set VERCEL_APP_URL or VERCEL_URL environment variable.');
+    // Check environment variables
+    if (!supabaseUrl) {
+      throw new Error('SUPABASE_URL environment variable is not set');
+    }
+    if (!supabaseKey) {
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
     }
 
-    // Step 1: Refresh fixtures
-    console.log('⚽ Step 1 - Refreshing fixtures...');
-    const fixturesResponse = await fetch(`${baseUrl}/api/fixtures/refresh`);
-    const fixturesResult = await fixturesResponse.json();
-    console.log('✅ Fixtures refresh result:', fixturesResult);
+    console.log('✅ Environment variables validated');
 
-    // Step 2: Refresh standings
-    console.log('📊 Step 2 - Refreshing standings...');
-    const standingsResponse = await fetch(`${baseUrl}/api/standings/refresh`);
-    const standingsResult = await standingsResponse.json();
-    console.log('✅ Standings refresh result:', standingsResult);
+    // Step 1: Fetch and store fixtures
+    console.log('⚽ Step 1 - Fetching and storing fixtures...');
+    const fixturesData = await fetchFixturesFromAPI('2025');
+    const fixturesStored = await storeFixtures(fixturesData, '2025');
+    console.log(`✅ Stored ${fixturesStored} fixtures`);
+
+    // Step 2: Fetch and store standings
+    console.log('📊 Step 2 - Fetching and storing standings...');
+    const standingsData = await fetchStandingsFromAPI('2025');
+    const standingsStored = await storeStandings(standingsData, '2025');
+    console.log(`✅ Stored ${standingsStored} standings`);
 
     // Step 3: Recalculate user scores
     console.log('🧮 Step 3 - Recalculating user scores...');
-    const scoresResponse = await fetch(`${baseUrl}/api/users/recalculate-scores`);
-    const scoresResult = await scoresResponse.json();
+    const scoresResult = await recalculateUserScores();
     console.log('✅ User scores recalculation result:', scoresResult);
 
     const duration = Date.now() - startTime;
     console.log(`🎉 Cron job completed successfully in ${duration}ms`);
 
-    res.status(200).json({
+    return {
       success: true,
       message: 'Cron job completed successfully',
       timestamp: new Date().toISOString(),
@@ -340,17 +341,32 @@ export default async function handler(req, res) {
         standings: { stored: standingsStored, total: standingsData.length },
         scores: scoresResult
       }
-    });
+    };
 
   } catch (error) {
     const duration = Date.now() - startTime;
     console.error(`❌ Cron job failed after ${duration}ms:`, error);
     
-    res.status(500).json({
+    return {
       success: false,
       error: error.message,
       timestamp: new Date().toISOString(),
       duration: `${duration}ms`
-    });
+    };
   }
-};
+}
+
+// Run the cron job
+if (require.main === module) {
+  runCronJob()
+    .then(result => {
+      console.log('Final result:', JSON.stringify(result, null, 2));
+      process.exit(result.success ? 0 : 1);
+    })
+    .catch(error => {
+      console.error('Unhandled error:', error);
+      process.exit(1);
+    });
+}
+
+module.exports = { runCronJob };
