@@ -189,6 +189,57 @@ router.get('/test-cron', async (req, res) => {
   });
 });
 
+// Test endpoint to check database state
+router.get('/test-db-state', async (req, res) => {
+  try {
+    // Check fixtures
+    const { data: allFixtures, error: fixturesError } = await supabase
+      .from('fixtures')
+      .select('id, status, calculated, home_score, away_score')
+      .order('id', { ascending: true });
+
+    const finishedFixtures = allFixtures?.filter(f => f.status === 'FINISHED') || [];
+    const uncalculatedFinished = finishedFixtures.filter(f => f.calculated === false);
+
+    // Check users
+    const { data: users, error: usersError } = await supabase
+      .from('user_profiles')
+      .select('user_id, display_name, fixture_points, table_points, total_points, exacts, results');
+
+    res.json({
+      success: true,
+      fixtures: {
+        total: allFixtures?.length || 0,
+        finished: finishedFixtures.length,
+        uncalculated_finished: uncalculatedFinished.length,
+        sample_finished: finishedFixtures.slice(0, 5),
+        sample_uncalculated: uncalculatedFinished.slice(0, 5)
+      },
+      users: {
+        total: users?.length || 0,
+        sample: users?.slice(0, 3).map(u => ({
+          user_id: u.user_id,
+          display_name: u.display_name,
+          fixture_points: u.fixture_points,
+          table_points: u.table_points,
+          total_points: u.total_points,
+          exacts: u.exacts,
+          results: u.results
+        })) || []
+      },
+      errors: {
+        fixtures: fixturesError?.message,
+        users: usersError?.message
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // GET /api/standings/test-recalculate - Test endpoint to recalculate ALL user scores
 router.get('/test-recalculate', async (req, res) => {
   try {
