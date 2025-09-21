@@ -486,17 +486,21 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
           
           console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} total table points: ${tablePoints}`);
 
-          // Get existing fixture points
+          // Get existing fixture points, exacts, and results
           const { data: profile, error: profileError } = await supabase
             .from('user_profiles')
-            .select('fixture_points')
+            .select('fixture_points, exacts, results')
             .eq('user_id', user.user_id)
             .single();
 
           const existingFixturePoints = profile?.fixture_points || 0;
+          const existingExacts = profile?.exacts || 0;
+          const existingResults = profile?.results || 0;
           
           // Calculate new points from uncalculated finished fixtures
           let newFixturePoints = 0;
+          let newExacts = 0;
+          let newResults = 0;
           const { data: finishedFixtures, error: fixturesError } = await supabase
             .from('fixtures')
             .select('id, home_score, away_score')
@@ -524,7 +528,8 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
                   // Check for exact match (3 points)
                   if (predictedHome === actualHome && predictedAway === actualAway) {
                     newFixturePoints += 3;
-                    console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Exact match! +3 points`);
+                    newExacts += 1;
+                    console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Exact match! +3 points, +1 exact`);
                   } else {
                     // Check for result match (1 point)
                     const predictedResult = predictedHome > predictedAway ? 'home' : (predictedHome < predictedAway ? 'away' : 'draw');
@@ -532,7 +537,8 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
                     
                     if (predictedResult === actualResult) {
                       newFixturePoints += 1;
-                      console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Result match! +1 point`);
+                      newResults += 1;
+                      console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Result match! +1 point, +1 result`);
                     } else {
                       console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: No match`);
                     }
@@ -544,12 +550,15 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
             }
           }
           
-          console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} new fixture points: ${newFixturePoints}`);
+          console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} new fixture points: ${newFixturePoints}, new exacts: ${newExacts}, new results: ${newResults}`);
 
           const totalFixturePoints = existingFixturePoints + newFixturePoints;
+          const totalExacts = existingExacts + newExacts;
+          const totalResults = existingResults + newResults;
           const totalPoints = totalFixturePoints + tablePoints;
 
           console.log(`💰 [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} - Existing: ${existingFixturePoints}, New: ${newFixturePoints}, Table: ${tablePoints}, Total: ${totalPoints}`);
+          console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} - Exacts: ${existingExacts} + ${newExacts} = ${totalExacts}, Results: ${existingResults} + ${newResults} = ${totalResults}`);
 
           // Update user profile
           const { error: updateError } = await supabase
@@ -558,6 +567,8 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
               fixture_points: totalFixturePoints,
               table_points: tablePoints,
               total_points: totalPoints,
+              exacts: totalExacts,
+              results: totalResults,
               updated_at: new Date().toISOString()
             })
             .eq('user_id', user.user_id);
