@@ -195,16 +195,25 @@ router.get('/test-db-state', async (req, res) => {
     // Check fixtures
     const { data: allFixtures, error: fixturesError } = await supabase
       .from('fixtures')
-      .select('id, status, calculated, home_score, away_score')
+      .select('id, status, calculated, home_score, away_score, updated_at')
       .order('id', { ascending: true });
 
     const finishedFixtures = allFixtures?.filter(f => f.status === 'FINISHED') || [];
     const uncalculatedFinished = finishedFixtures.filter(f => f.calculated === false);
 
+    // Check standings
+    const { data: standings, error: standingsError } = await supabase
+      .from('standings')
+      .select('team_id, position, updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(5);
+
     // Check users
     const { data: users, error: usersError } = await supabase
       .from('user_profiles')
-      .select('user_id, display_name, fixture_points, table_points, total_points, exacts, results');
+      .select('user_id, display_name, fixture_points, table_points, total_points, exacts, results, updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(3);
 
     res.json({
       success: true,
@@ -213,10 +222,17 @@ router.get('/test-db-state', async (req, res) => {
         finished: finishedFixtures.length,
         uncalculated_finished: uncalculatedFinished.length,
         sample_finished: finishedFixtures.slice(0, 5),
-        sample_uncalculated: uncalculatedFinished.slice(0, 5)
+        sample_uncalculated: uncalculatedFinished.slice(0, 5),
+        last_updated: allFixtures?.[0]?.updated_at
+      },
+      standings: {
+        count: standings?.length || 0,
+        last_updated: standings?.[0]?.updated_at,
+        sample: standings?.slice(0, 3)
       },
       users: {
         total: users?.length || 0,
+        last_updated: users?.[0]?.updated_at,
         sample: users?.slice(0, 3).map(u => ({
           user_id: u.user_id,
           display_name: u.display_name,
@@ -224,11 +240,13 @@ router.get('/test-db-state', async (req, res) => {
           table_points: u.table_points,
           total_points: u.total_points,
           exacts: u.exacts,
-          results: u.results
+          results: u.results,
+          updated_at: u.updated_at
         })) || []
       },
       errors: {
         fixtures: fixturesError?.message,
+        standings: standingsError?.message,
         users: usersError?.message
       }
     });
