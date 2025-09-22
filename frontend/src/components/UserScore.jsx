@@ -13,9 +13,9 @@ const UserScore = ({ refreshTrigger, preloadedData }) => {
   useEffect(() => {
     if (user) {
       // Use preloaded data if available
-      if (preloadedData?.userStats?.scores) {
+      if (preloadedData?.userScores) {
         console.log('✅ Using preloaded user scores data');
-        setUserScores(preloadedData.userStats.scores);
+        setUserScores(preloadedData.userScores);
       } else {
         fetchUserScores();
       }

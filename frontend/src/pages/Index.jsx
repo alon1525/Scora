@@ -196,10 +196,12 @@ const Index = () => {
 
       // Load other data in parallel
       const [
+        userScoresResponse,
         userStatsResponse,
         leaguesResponse
       ] = await Promise.allSettled([
         axios.get(API_ENDPOINTS.USER_SCORES, { headers }),
+        axios.get(`${API_ENDPOINTS.USER_STATS}/${user.id}`, { headers }),
         axios.get(API_ENDPOINTS.LEAGUES_MY_LEAGUES, { headers })
       ]);
 
@@ -219,10 +221,17 @@ const Index = () => {
         console.log('✅ Leaderboard processed');
       }
 
+      // Process user scores
+      let userScores = null;
+      if (userScoresResponse.status === 'fulfilled' && userScoresResponse.value.data?.success) {
+        userScores = userScoresResponse.value.data.scores;
+        console.log('✅ User scores loaded');
+      }
+
       // Process user stats
       let userStats = null;
       if (userStatsResponse.status === 'fulfilled' && userStatsResponse.value.data?.success) {
-        userStats = userStatsResponse.value.data;
+        userStats = userStatsResponse.value.data.data;
         console.log('✅ User stats loaded');
       }
 
@@ -237,6 +246,7 @@ const Index = () => {
         standings,
         leaderboard,
         userStats,
+        userScores,
         leagues,
         fixtures,
         currentMatchday,
