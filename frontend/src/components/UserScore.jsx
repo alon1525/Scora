@@ -5,16 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 
-const UserScore = ({ refreshTrigger }) => {
+const UserScore = ({ refreshTrigger, preloadedData }) => {
   const { user } = useAuth();
   const [userScores, setUserScores] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
-      fetchUserScores();
+      // Use preloaded data if available
+      if (preloadedData?.userStats?.scores) {
+        console.log('✅ Using preloaded user scores data');
+        setUserScores(preloadedData.userStats.scores);
+      } else {
+        fetchUserScores();
+      }
     }
-  }, [user, refreshTrigger]);
+  }, [user, refreshTrigger, preloadedData]);
 
   const fetchUserScores = async () => {
     if (!user) return;

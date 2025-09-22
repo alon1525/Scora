@@ -175,7 +175,7 @@ const Index = () => {
       console.log(`🏃‍♂️ Loading fixtures for matchweek ${currentMatchday} and surrounding ones...`);
       const fixturesPromises = [];
       const startMatchday = Math.max(1, currentMatchday - 1);
-      const endMatchday = Math.min(38, currentMatchday + 3);
+      const endMatchday = Math.min(38, currentMatchday + 1);
       
       for (let matchday = startMatchday; matchday <= endMatchday; matchday++) {
         fixturesPromises.push(
@@ -438,7 +438,7 @@ const Index = () => {
               </p>
             </div>
             <div className="header-stats">
-              <UserStatsCompact refreshTrigger={scoreRefreshTrigger} />
+              <UserStatsCompact refreshTrigger={scoreRefreshTrigger} preloadedData={preloadedData} />
             </div>
           </div>
         </div>

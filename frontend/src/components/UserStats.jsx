@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 
-const UserStats = ({ refreshTrigger }) => {
+const UserStats = ({ refreshTrigger, preloadedData }) => {
   const { user } = useAuth();
   const [userStats, setUserStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,9 +34,16 @@ const UserStats = ({ refreshTrigger }) => {
 
   useEffect(() => {
     if (user) {
-      fetchUserStats();
+      // Use preloaded data if available
+      if (preloadedData?.userStats) {
+        console.log('✅ Using preloaded user stats data');
+        setUserStats(preloadedData.userStats);
+        setLoading(false);
+      } else {
+        fetchUserStats();
+      }
     }
-  }, [user, refreshTrigger]);
+  }, [user, refreshTrigger, preloadedData]);
 
   if (!user) {
     return null;

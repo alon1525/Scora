@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 
-const UserStatsCompact = ({ refreshTrigger }) => {
+const UserStatsCompact = ({ refreshTrigger, preloadedData }) => {
   const { user } = useAuth();
   const [userStats, setUserStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,9 +28,16 @@ const UserStatsCompact = ({ refreshTrigger }) => {
 
   useEffect(() => {
     if (user) {
-      fetchUserStats();
+      // Use preloaded data if available
+      if (preloadedData?.userStats) {
+        console.log('✅ Using preloaded user stats data for compact view');
+        setUserStats(preloadedData.userStats);
+        setLoading(false);
+      } else {
+        fetchUserStats();
+      }
     }
-  }, [user, refreshTrigger]);
+  }, [user, refreshTrigger, preloadedData]);
 
   if (!user || loading || !userStats) {
     return (
