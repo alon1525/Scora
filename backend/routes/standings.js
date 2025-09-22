@@ -189,6 +189,86 @@ router.get('/test-cron', async (req, res) => {
   });
 });
 
+// Bulk predictions endpoint for efficient loading
+router.get('/bulk-predictions', async (req, res) => {
+  try {
+    const { week } = req.query;
+    if (!week) {
+      return res.status(400).json({
+        success: false,
+        error: 'Week parameter is required'
+      });
+    }
+
+    const currentWeek = parseInt(week);
+    const weeks = [currentWeek - 1, currentWeek, currentWeek + 1].filter(w => w > 0 && w <= 38);
+
+    // Get all fixtures for the requested weeks
+    const { data: fixtures, error: fixturesError } = await supabase
+      .from('fixtures')
+      .select('id, matchday, home_team_name, away_team_name, status')
+      .in('matchday', weeks)
+      .order('matchday', { ascending: true });
+
+    if (fixturesError) {
+      throw new Error(`Failed to fetch fixtures: ${fixturesError.message}`);
+    }
+
+    // Get all user predictions for these fixtures
+    const fixtureIds = fixtures.map(f => f.id);
+    const { data: predictions, error: predictionsError } = await supabase
+      .from('user_profiles')
+      .select('user_id, display_name, fixture_predictions')
+      .not('fixture_predictions', 'is', null);
+
+    if (predictionsError) {
+      throw new Error(`Failed to fetch predictions: ${predictionsError.message}`);
+    }
+
+    // Organize predictions by fixture
+    const predictionsByFixture = {};
+    
+    for (const fixture of fixtures) {
+      predictionsByFixture[fixture.id] = [];
+      
+      for (const user of predictions) {
+        const userPredictions = user.fixture_predictions || {};
+        const prediction = userPredictions[fixture.id.toString()] || userPredictions[fixture.id];
+        
+        if (prediction && prediction.home_score !== null && prediction.away_score !== null) {
+          predictionsByFixture[fixture.id].push({
+            user_id: user.user_id,
+            display_name: user.display_name,
+            home_score: prediction.home_score,
+            away_score: prediction.away_score
+          });
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        fixtures: fixtures.map(f => ({
+          id: f.id,
+          matchday: f.matchday,
+          home_team_name: f.home_team_name,
+          away_team_name: f.away_team_name,
+          status: f.status,
+          predictions: predictionsByFixture[f.id] || []
+        })),
+        weeks: weeks
+      }
+    });
+  } catch (error) {
+    console.error('Error in bulk predictions:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Test endpoint to check database state
 router.get('/test-db-state', async (req, res) => {
   try {

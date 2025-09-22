@@ -701,48 +701,46 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     }
 
     try {
-      const predictions = {};
-
       // Get auth token
       const token = (await supabase.auth.getSession()).data.session?.access_token;
       if (!token) {
-        return;
+        return {};
       }
 
-      for (const fixture of weekFixtures) {
-        try {
-          const response = await axios.get(`${API_ENDPOINTS.MATCH_PREDICTIONS}/${fixture.id}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (response.data.success) {
-            // Transform the data to match PredictionBar expected format
-            const matchPredictions = response.data.data.map(pred => ({
-              home_score: pred.home_score,
-              away_score: pred.away_score
-            }));
-            predictions[fixture.id] = matchPredictions;
-          } else {
-            predictions[fixture.id] = [];
-          }
-        } catch (error) {
-          predictions[fixture.id] = [];
+      // Use the new bulk predictions endpoint
+      const response = await axios.get(`${API_ENDPOINTS.STANDINGS}/bulk-predictions?week=${week}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      }
+      });
 
-      // Cache the match predictions
-      setMatchPredictionsCache(prev => ({ ...prev, [week]: predictions }));
-      
-      if (week === currentMatchweek) {
-        setMatchPredictions(predictions);
-      }
+      if (response.data.success) {
+        const predictions = {};
+        
+        // Transform the bulk data to match the existing format
+        for (const fixture of response.data.data.fixtures) {
+          predictions[fixture.id] = fixture.predictions.map(pred => ({
+            home_score: pred.home_score,
+            away_score: pred.away_score
+          }));
+        }
 
-      return predictions;
+        // Cache the match predictions
+        setMatchPredictionsCache(prev => ({ ...prev, [week]: predictions }));
+        
+        if (week === currentMatchweek) {
+          setMatchPredictions(predictions);
+        }
+
+        return predictions;
+      } else {
+        console.error('Failed to load bulk predictions:', response.data.error);
+        return {};
+      }
     } catch (error) {
       console.error('Error loading match predictions:', error);
+      return {};
     }
   };
 
