@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const RoundNavigation = ({ currentMatchday, maxMatchday, onMatchdayChange }) => {
+const RoundNavigation = ({ currentMatchday, maxMatchday, onMatchdayChange, onWeekHover }) => {
   const [visibleRounds, setVisibleRounds] = useState([]);
   const [startIndex, setStartIndex] = useState(0);
 
@@ -81,6 +81,7 @@ const RoundNavigation = ({ currentMatchday, maxMatchday, onMatchdayChange }) => 
             key={round.number}
             className={`round-item ${round.isActive ? 'active' : ''} ${!round.isAvailable ? 'disabled' : ''}`}
             onClick={() => round.isAvailable && onMatchdayChange(round.number)}
+            onMouseEnter={() => round.isAvailable && onWeekHover && onWeekHover(round.number)}
             disabled={!round.isAvailable}
           >
             <div className="round-number">Week {round.number}</div>

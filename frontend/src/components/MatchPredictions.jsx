@@ -587,7 +587,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     }
   };
 
-  // Preload adjacent weeks for faster switching
+  // Smart fixture loading - Option A: Load adjacent weeks on demand
   const preloadAdjacentWeeks = async (currentWeek) => {
     const weeksToPreload = [];
     
@@ -616,6 +616,20 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         }
       }
     });
+  };
+
+  // Load week on demand when user navigates to it
+  const loadWeekOnDemand = async (week) => {
+    if (!loadedMatchweeks.has(week)) {
+      console.log(`🔄 Loading matchweek ${week} on demand...`);
+      try {
+        await loadFixturesForMatchweek(week, true); // Show loading for on-demand
+        await preloadPredictionsForWeek(week);
+        console.log(`✅ Loaded matchweek ${week} on demand`);
+      } catch (error) {
+        console.log(`⚠️ Failed to load matchweek ${week} on demand:`, error);
+      }
+    }
   };
 
   // Preload predictions for a specific week
@@ -889,7 +903,17 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         <RoundNavigation 
           currentMatchday={currentMatchweek}
           maxMatchday={maxMatchweek}
-          onMatchdayChange={setCurrentMatchweek}
+          onMatchdayChange={(week) => {
+            setCurrentMatchweek(week);
+            // Load week on demand if not already loaded
+            loadWeekOnDemand(week);
+          }}
+          onWeekHover={(week) => {
+            // Preload week on hover for better UX
+            if (!loadedMatchweeks.has(week)) {
+              loadFixturesForMatchweek(week, false); // Silent preload
+            }
+          }}
         />
 
         {/* Matchday Points */}
