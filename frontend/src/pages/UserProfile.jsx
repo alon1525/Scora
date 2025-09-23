@@ -168,7 +168,7 @@ const UserProfile = () => {
       const { data: fixturesData, error: fixturesError } = await supabase
         .from('fixtures')
         .select('id, home_team_name, away_team_name, home_team_logo, away_team_logo, home_score, away_score, status, scheduled_date, matchday')
-        .eq('status', 'FINISHED')
+        .in('status', ['FINISHED', 'IN_PLAY', 'PAUSED', 'STARTED'])
         .order('matchday', { ascending: false })
         .order('scheduled_date', { ascending: false })
         .limit(100); // Get more fixtures to find predictions
