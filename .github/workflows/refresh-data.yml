@@ -10,6 +10,38 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
+      - name: Debug Environment
+        run: |
+          echo "🔍 Checking environment..."
+          echo "VERCEL_APP_URL: ${{ secrets.VERCEL_APP_URL }}"
+          if [ -z "${{ secrets.VERCEL_APP_URL }}" ]; then
+            echo "❌ VERCEL_APP_URL secret is not set!"
+            exit 1
+          fi
+          
+      - name: Test API Connection
+        run: |
+          echo "🔄 Testing API connection..."
+          curl -v -X GET "${{ secrets.VERCEL_APP_URL }}/health" || echo "Health check failed"
+          
       - name: Refresh Standings (includes fixtures and score recalculation)
         run: |
-          curl -X GET "${{ secrets.VERCEL_APP_URL }}/api/standings/refresh"
+          echo "🔄 Calling refresh endpoint..."
+          response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X GET "${{ secrets.VERCEL_APP_URL }}/api/standings/refresh")
+          echo "📊 Full response:"
+          echo "$response"
+          
+          # Extract HTTP code
+          http_code=$(echo "$response" | grep "HTTP_CODE:" | cut -d: -f2)
+          response_body=$(echo "$response" | sed '/HTTP_CODE:/d')
+          
+          echo "🌐 HTTP Status Code: $http_code"
+          echo "📄 Response Body: $response_body"
+          
+          # Check if the response contains success
+          if echo "$response_body" | grep -q '"success":true'; then
+            echo "✅ Refresh completed successfully"
+          else
+            echo "❌ Refresh failed or returned error"
+            exit 1
+          fi
