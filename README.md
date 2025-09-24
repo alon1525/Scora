@@ -1,4 +1,6 @@
 https://scora-nine.vercel.app/
+presentation:
+https://gamma.app/docs/Scora-Premier-League-Prediction-Platform-7zv7x38tnt123mv
 # Premier League Predictions
 
 A full-stack web application for predicting Premier League match results and table standings. Users can create accounts, make predictions, and compete with friends in private leagues.
