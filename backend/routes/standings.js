@@ -1,6 +1,7 @@
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
+const { checkAchievements } = require('../utils/achievementChecker');
 
 const router = express.Router();
 
@@ -464,6 +465,17 @@ router.get('/test-recalculate', async (req, res) => {
         console.error(`❌ [TEST] Error updating ${user.display_name}:`, updateError);
       } else {
         console.log(`✅ [TEST] Updated ${user.display_name}: ${userExact} exact, ${userResult} result, ${userFixturePoints} fixture points, ${userTablePoints} table points, ${userTotalPoints} total points`);
+        
+        // Check for new achievements
+        try {
+          const newAchievements = await checkAchievements(user.user_id);
+          if (newAchievements.length > 0) {
+            console.log(`🎉 [ACHIEVEMENTS] ${user.display_name} unlocked: ${newAchievements.map(a => a.name).join(', ')}`);
+          }
+        } catch (achievementError) {
+          console.error(`❌ [ACHIEVEMENTS] Error checking achievements for ${user.display_name}:`, achievementError);
+        }
+        
         totalUpdated++;
         totalExact += userExact;
         totalResult += userResult;

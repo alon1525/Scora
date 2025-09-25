@@ -2400,11 +2400,19 @@ a:hover {
   border-radius: 0.75rem;
   padding: 1rem;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
   width: 100%;
-  justify-content: center;
   backdrop-filter: blur(10px);
+}
+
+.user-stats-content-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
 }
 
 /* Removed ::before pseudo-element to fix visual issues */
@@ -6625,5 +6633,476 @@ a:hover {
   
   .deadline-countdown {
     font-size: 0.75rem;
+  }
+}
+
+/* Clickable Username */
+.clickable-username {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clickable-username:hover {
+  color: var(--primary-green);
+  text-decoration: underline;
+}
+
+/* Recent Badges */
+.recent-badges {
+  margin: 0.75rem 0;
+  text-align: center;
+}
+
+.badges-container {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.badge-item {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.badge-item.unlocked {
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dark));
+  color: white;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+}
+
+.badge-item.locked {
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  border: 2px solid var(--border-light);
+}
+
+.badge-item:hover {
+  transform: scale(1.1);
+}
+
+.badge-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1000;
+}
+
+.badge-item:hover .badge-tooltip {
+  opacity: 1;
+}
+
+.badge-counter {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Mobile responsiveness for badges */
+@media (max-width: 768px) {
+  .user-stats-compact {
+    padding: 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  .user-stats-content-compact {
+    gap: 0.4rem;
+  }
+  
+  .recent-badges {
+    margin: 0.3rem 0;
+  }
+  
+  .badges-container {
+    gap: 0.2rem;
+  }
+  
+  .badge-item {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .badge-item .material-symbols-outlined {
+    font-size: 14px;
+  }
+  
+  .badge-counter {
+    font-size: 0.7rem;
+  }
+  
+  .stats-row-compact {
+    gap: 0.4rem;
+  }
+  
+  .stats-row-compact span {
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  
+  .stats-row-compact span::before {
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  
+  /* Make the actual numbers bigger */
+  .stats-row-compact span[data-value] {
+    font-size: 1.4rem;
+    font-weight: 800;
+  }
+  
+  /* Make stats more prominent on mobile */
+  .user-name-small {
+    font-size: 1rem;
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+  }
+  
+  .global-rank-compact {
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+    font-weight: 500;
+  }
+}
+
+/* Mobile Table Predictions */
+@media (max-width: 768px) {
+  .prediction-table {
+    font-size: 0.8rem;
+  }
+  
+  .prediction-table th,
+  .prediction-table td {
+    padding: 0.4rem 0.2rem;
+  }
+  
+  .prediction-team {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+  }
+  
+  .prediction-team-logo {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .prediction-team-name {
+    font-size: 0.7rem;
+    text-align: center;
+    line-height: 1.2;
+  }
+  
+  .prediction-position {
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  
+  .mobile-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  
+  .move-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+    padding: 0;
+  }
+  
+  .prediction-table th:first-child,
+  .prediction-table td:first-child {
+    width: 50px;
+  }
+  
+  .prediction-table th:last-child,
+  .prediction-table td:last-child {
+    width: 60px;
+  }
+  
+  .prediction-table th:nth-child(2),
+  .prediction-table td:nth-child(2) {
+    width: auto;
+    min-width: 0;
+  }
+  
+  /* Make table more compact */
+  .prediction-table {
+    table-layout: fixed;
+    width: 100%;
+  }
+  
+  .prediction-table tbody tr {
+    height: 60px;
+  }
+  
+  /* Hide drag handle text on mobile */
+  .drag-handle {
+    text-align: center;
+  }
+  
+  .drag-handle::before {
+    display: none;
+  }
+}
+
+/* Achievements Grid */
+.achievements-grid {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+}
+
+.achievements-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.achievements-title-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.achievements-counter {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--accent-gold);
+  background: var(--bg-muted);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 2px solid var(--accent-gold);
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+}
+
+.achievements-grid h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.achievements-progress {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+.progress-bar-container {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-muted);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-green), var(--accent-gold));
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.achievements-progress .progress-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 50px;
+  text-align: center;
+  background: var(--bg-muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+}
+
+.achievements-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.achievement-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: var(--bg-muted);
+  border: 2px solid var(--border-light);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.achievement-item.unlocked {
+  border-color: var(--accent-gold);
+  background: linear-gradient(135deg, var(--bg-muted), rgba(251, 191, 36, 0.1));
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+}
+
+.achievement-item.locked {
+  opacity: 0.6;
+  filter: grayscale(50%);
+}
+
+.achievement-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-medium);
+}
+
+.achievement-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.achievement-item.unlocked .achievement-icon {
+  background: var(--accent-gold);
+  color: white;
+  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+}
+
+.achievement-item.locked .achievement-icon {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  border: 2px solid var(--border-light);
+}
+
+.achievement-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.achievement-info h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.achievement-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-card);
+  border-radius: 3px;
+  margin-top: 0.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--primary-green);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  position: absolute;
+  top: -20px;
+  right: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Mobile responsiveness for achievements grid */
+@media (max-width: 768px) {
+  .achievements-grid {
+    margin: 1.5rem 0;
+    padding: 1rem;
+  }
+  
+  .achievements-header {
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .achievements-title-section {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .achievements-counter {
+    font-size: 1.25rem;
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .achievements-grid h3 {
+    font-size: 1.1rem;
+  }
+  
+  .achievements-progress {
+    max-width: 250px;
+    gap: 0.75rem;
+  }
+  
+  .progress-bar-container {
+    height: 6px;
+  }
+  
+  .achievements-progress .progress-text {
+    font-size: 0.8rem;
+    min-width: 35px;
+  }
+  
+  .achievements-container {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .achievement-item {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  
+  .achievement-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+  }
+  
+  .achievement-info h4 {
+    font-size: 0.9rem;
+  }
+  
+  .achievement-info p {
+    font-size: 0.8rem;
   }
 }

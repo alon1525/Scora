@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Trophy, Target, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "../integrations/supabase/client";
 import { toast } from "sonner";
+import AchievementsGrid from "../components/AchievementsGrid";
 import "./UserProfile.css";
 
 // Team kit imports
@@ -580,6 +581,12 @@ const UserProfile = () => {
             </div>
           </div>
         </div>
+
+        {/* Achievements Section */}
+        <AchievementsGrid 
+          userAchievements={currentPlayer.achievements || []}
+          allAchievements={[]}
+        />
 
         {/* Predictions History */}
         <div className="predictions-card">

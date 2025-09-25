@@ -1,6 +1,7 @@
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
+const { checkAchievements } = require('../utils/achievementChecker');
 
 const router = express.Router();
 
@@ -208,34 +209,47 @@ async function canUserUpdatePredictions(user_id) {
       };
     }
 
-    // If user joined during the season, find the next upcoming fixture
-    const { data: nextFixture, error: nextFixtureError } = await supabase
+    // If user joined during the season, find the first fixture after they joined
+    const { data: firstFixtureAfterJoin, error: firstFixtureAfterJoinError } = await supabase
       .from('fixtures')
       .select('scheduled_date, matchday')
       .eq('season', '2025')
-      .gte('scheduled_date', now.toISOString())
+      .gte('scheduled_date', userCreatedAt.toISOString())
       .order('scheduled_date', { ascending: true })
       .limit(1)
       .single();
 
-    console.log('Next fixture query result:', { nextFixture, nextFixtureError });
+    console.log('First fixture after user joined:', { firstFixtureAfterJoin, firstFixtureAfterJoinError });
 
-    if (nextFixtureError || !nextFixture) {
-      // No upcoming fixtures found - season is over
+    if (firstFixtureAfterJoinError || !firstFixtureAfterJoin) {
+      // No fixtures found after user joined - this shouldn't happen
       return {
         canUpdate: false,
-        reason: 'The season is over. You cannot update your predictions.'
+        reason: 'No fixtures found after your join date.'
       };
     }
 
-    const nextFixtureDate = new Date(nextFixture.scheduled_date);
+    const firstFixtureAfterJoinDate = new Date(firstFixtureAfterJoin.scheduled_date);
     
-    console.log('Next fixture date:', nextFixtureDate);
+    console.log('First fixture after join date:', firstFixtureAfterJoinDate);
+    console.log('Current time vs first fixture after join:', {
+      now,
+      firstFixtureAfterJoinDate,
+      isPastDeadline: now >= firstFixtureAfterJoinDate
+    });
+
+    // Check if the first fixture after they joined has already started
+    if (now >= firstFixtureAfterJoinDate) {
+      return {
+        canUpdate: false,
+        reason: 'Prediction deadline has passed. You can only update predictions until the first fixture after you joined starts.'
+      };
+    }
 
     return {
       canUpdate: true,
-      deadline: nextFixtureDate,
-      reason: `You can update your predictions until the next fixture starts (${nextFixtureDate.toLocaleString()})`
+      deadline: firstFixtureAfterJoinDate,
+      reason: `You can update your predictions until the first fixture after you joined starts (${firstFixtureAfterJoinDate.toLocaleString()})`
     };
 
   } catch (error) {

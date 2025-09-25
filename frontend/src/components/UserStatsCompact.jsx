@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
+import RecentBadges from './RecentBadges';
 
 const UserStatsCompact = ({ refreshTrigger, preloadedData }) => {
   const { user } = useAuth();
@@ -60,11 +61,6 @@ const UserStatsCompact = ({ refreshTrigger, preloadedData }) => {
 
   return (
     <div className="user-stats-compact">
-      <div className="user-avatar-small">
-        <div className="avatar-initial-small">
-          {userStats.display_name?.charAt(0)?.toUpperCase() || userStats.email?.charAt(0)?.toUpperCase() || '?'}
-        </div>
-      </div>
       <div className="user-stats-content-compact">
         <div className="user-name-small">
           {userStats.display_name || userStats.email?.split('@')[0] || 'Anonymous User'}
@@ -78,6 +74,12 @@ const UserStatsCompact = ({ refreshTrigger, preloadedData }) => {
           🌍 {userStats.globalRank ? `${userStats.globalRank} / ${userStats.totalUsers || 0}` : '- / 0'}
         </div>
       </div>
+      
+      {/* Recent Badges */}
+      <RecentBadges 
+        achievements={userStats.achievements || []}
+        totalAchievements={userStats.achievements?.length || 0}
+      />
     </div>
   );
 };

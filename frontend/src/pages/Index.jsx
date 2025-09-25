@@ -451,7 +451,11 @@ const Index = () => {
               <div className="nav-avatar">
                 {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'}
               </div>
-              <span className="nav-username">
+              <span 
+                className="nav-username clickable-username"
+                onClick={() => navigate(`/user/${user.id}`)}
+                title="View Profile"
+              >
                 {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player'}
               </span>
             </div>
