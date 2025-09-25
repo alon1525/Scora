@@ -3906,12 +3906,12 @@ a:hover {
 
   /* Prediction Table - More Compact on Mobile */
   .prediction-table {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
   }
   
   .prediction-table th,
   .prediction-table td {
-    padding: 8px 4px;
+    padding: 4px 2px;
   }
   
   .prediction-table .team-name {
@@ -3920,7 +3920,7 @@ a:hover {
   }
   
   .prediction-table .draggable-row {
-    min-height: 50px;
+    min-height: 35px;
   }
   
   /* Better drag visibility on mobile */
@@ -6783,23 +6783,23 @@ a:hover {
 /* Mobile Table Predictions */
 @media (max-width: 768px) {
   .prediction-table {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
   }
   
   .prediction-table th,
   .prediction-table td {
-    padding: 0.4rem 0.2rem;
+    padding: 0.02rem 0.01rem;
   }
   
   .prediction-team {
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 0.2rem;
+    gap: 0.3rem;
   }
   
   .prediction-team-logo {
-    width: 24px;
-    height: 24px;
+    width: 14px;
+    height: 14px;
   }
   
   .prediction-team-name {
@@ -6820,9 +6820,9 @@ a:hover {
   }
   
   .move-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 0.8rem;
+    width: 16px;
+    height: 16px;
+    font-size: 0.5rem;
     padding: 0;
   }
   
@@ -6849,7 +6849,7 @@ a:hover {
   }
   
   .prediction-table tbody tr {
-    height: 60px;
+    height: 20px;
   }
   
   /* Hide drag handle text on mobile */
