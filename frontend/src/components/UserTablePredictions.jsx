@@ -10,6 +10,7 @@ import {
 } from "@hello-pangea/dnd";
 import axios from "axios";
 import { API_ENDPOINTS } from "../config/api";
+import { checkPredictionDeadline, formatDeadline, getDeadlineMessage } from "../utils/predictionDeadline";
 
 function reorder(list, startIndex, endIndex) {
   const result = Array.from(list);
@@ -18,17 +19,32 @@ function reorder(list, startIndex, endIndex) {
   return result;
 }
 
-export const UserTablePredictions = ({ onPredictionSaved }) => {
+export const UserTablePredictions = ({ onPredictionSaved, preloadedData }) => {
   const { user } = useAuth();
   const defaultOrder = TEAMS.map((t) => t.id);
   const [userOrder, setUserOrder] = useState(defaultOrder);
   const [loading, setLoading] = useState(false);
+  const [deadlineStatus, setDeadlineStatus] = useState({ canUpdate: true, reason: '', deadline: null });
+  const [deadlineCountdown, setDeadlineCountdown] = useState(null);
 
   // Load user's predictions
   useEffect(() => {
     const loadUserPredictions = async () => {
       if (!user) return;
 
+      // Use preloaded data if available
+      if (preloadedData?.tablePredictions) {
+        console.log('✅ Using preloaded table predictions data');
+        const savedOrder = preloadedData.tablePredictions;
+        // Filter to only include teams that exist in current TEAMS array
+        const validOrder = savedOrder.filter(id => TEAMS.some(t => t.id === id));
+        if (validOrder.length === 20) {
+          setUserOrder(validOrder);
+        }
+        return;
+      }
+
+      // Fallback to API call if no preloaded data
       try {
         const token = (await supabase.auth.getSession()).data.session?.access_token;
         const response = await axios.get(API_ENDPOINTS.TABLE_PREDICTIONS, {
@@ -54,10 +70,50 @@ export const UserTablePredictions = ({ onPredictionSaved }) => {
     };
 
     loadUserPredictions();
-  }, [user]);
+  }, [user, preloadedData]);
+
+  // Check prediction deadline status
+  useEffect(() => {
+    if (user) {
+      // Use preloaded deadline status if available
+      if (preloadedData?.deadlineStatus) {
+        console.log('✅ Using preloaded deadline status data');
+        setDeadlineStatus(preloadedData.deadlineStatus);
+        if (preloadedData.deadlineStatus.deadline) {
+          setDeadlineCountdown(formatDeadline(preloadedData.deadlineStatus.deadline));
+        }
+        return;
+      }
+
+      // Fallback to API call if no preloaded data
+      checkPredictionDeadline().then(status => {
+        setDeadlineStatus(status);
+        if (status.deadline) {
+          setDeadlineCountdown(formatDeadline(status.deadline));
+        }
+      });
+    }
+  }, [user, preloadedData]);
+
+  // Update countdown every minute
+  useEffect(() => {
+    if (deadlineStatus.deadline) {
+      const interval = setInterval(() => {
+        setDeadlineCountdown(formatDeadline(deadlineStatus.deadline));
+      }, 60000); // Update every minute
+
+      return () => clearInterval(interval);
+    }
+  }, [deadlineStatus.deadline]);
 
   const savePredictions = async () => {
     if (!user) return;
+
+    // Check if user can still update predictions
+    if (!deadlineStatus.canUpdate) {
+      toast.error(deadlineStatus.reason);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -220,6 +276,23 @@ export const UserTablePredictions = ({ onPredictionSaved }) => {
           Drag and drop teams to predict the final league table
         </p>
       </div>
+
+      {/* Deadline Status */}
+      {deadlineStatus && (
+        <div className={`deadline-status ${deadlineStatus.canUpdate ? 'can-update' : 'cannot-update'}`}>
+          <div className="deadline-message">
+            <span className="material-symbols-outlined">
+              {deadlineStatus.canUpdate ? 'schedule' : 'lock'}
+            </span>
+            <span className="deadline-text">
+              {deadlineStatus.reason}
+              {deadlineCountdown && deadlineStatus.canUpdate && (
+                <span className="deadline-countdown"> ({deadlineCountdown})</span>
+              )}
+            </span>
+          </div>
+        </div>
+      )}
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="prediction-card">

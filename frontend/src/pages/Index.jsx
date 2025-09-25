@@ -130,8 +130,11 @@ const Index = () => {
     standings: null,
     leaderboard: null,
     userStats: null,
+    userScores: null,
     leagues: null,
     fixtures: {},
+    tablePredictions: null,
+    deadlineStatus: null,
     predictions: {},
     loading: true,
     error: null
@@ -198,11 +201,15 @@ const Index = () => {
       const [
         userScoresResponse,
         userStatsResponse,
-        leaguesResponse
+        leaguesResponse,
+        tablePredictionsResponse,
+        deadlineStatusResponse
       ] = await Promise.allSettled([
         axios.get(API_ENDPOINTS.USER_SCORES, { headers }),
         axios.get(`${API_ENDPOINTS.USER_STATS}/${user.id}`, { headers }),
-        axios.get(API_ENDPOINTS.LEAGUES_MY_LEAGUES, { headers })
+        axios.get(API_ENDPOINTS.LEAGUES_MY_LEAGUES, { headers }),
+        axios.get(API_ENDPOINTS.TABLE_PREDICTIONS, { headers }),
+        axios.get(`${API_ENDPOINTS.PREDICTIONS}/deadline-status`, { headers })
       ]);
 
       // Process standings (already loaded above)
@@ -242,6 +249,24 @@ const Index = () => {
         console.log('✅ Leagues loaded');
       }
 
+      // Process table predictions
+      let tablePredictions = null;
+      if (tablePredictionsResponse.status === 'fulfilled' && tablePredictionsResponse.value.data?.success) {
+        tablePredictions = tablePredictionsResponse.value.data.prediction;
+        console.log('✅ Table predictions loaded');
+      }
+
+      // Process deadline status
+      let deadlineStatus = null;
+      if (deadlineStatusResponse.status === 'fulfilled' && deadlineStatusResponse.value.data?.success) {
+        deadlineStatus = {
+          canUpdate: deadlineStatusResponse.value.data.canUpdate,
+          reason: deadlineStatusResponse.value.data.reason,
+          deadline: deadlineStatusResponse.value.data.deadline ? new Date(deadlineStatusResponse.value.data.deadline) : null
+        };
+        console.log('✅ Deadline status loaded');
+      }
+
       setPreloadedData({
         standings,
         leaderboard,
@@ -250,6 +275,8 @@ const Index = () => {
         leagues,
         fixtures,
         currentMatchday,
+        tablePredictions,
+        deadlineStatus,
         predictions: {},
         loading: false,
         error: null
@@ -497,7 +524,7 @@ const Index = () => {
         <div className="tab-content">
           {activeTab === 'predictions' && (
             <div className="dashboard-tabs-content">
-              <UserTablePredictions onPredictionSaved={triggerScoreRefresh} />
+              <UserTablePredictions onPredictionSaved={triggerScoreRefresh} preloadedData={preloadedData} />
             </div>
           )}
           

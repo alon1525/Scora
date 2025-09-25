@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { useState } from 'react';
+import ScoraLogo from '../assets/Scora_Logo.png';
 
 const Landing = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -10,7 +11,7 @@ const Landing = () => {
       <header className="landing-header">
         <div className="landing-nav">
           <div className="landing-logo">
-            <h1>Scora</h1>
+            <img src={ScoraLogo} alt="Scora" className="logo-image" />
           </div>
           <nav className="landing-nav-links">
             <a href="#about" className="landing-nav-link">About</a>

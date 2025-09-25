@@ -138,6 +138,115 @@ router.get('/user-stats/:userId', async (req, res) => {
 // Apply authentication to all routes
 router.use(authenticateUser);
 
+// Utility function to check if user can still update predictions
+async function canUserUpdatePredictions(user_id) {
+  try {
+    console.log('Checking deadline for user:', user_id);
+    
+    // Get user's created_at date
+    const { data: userProfile, error: userError } = await supabase
+      .from('user_profiles')
+      .select('created_at')
+      .eq('user_id', user_id)
+      .single();
+
+    console.log('User profile query result:', { userProfile, userError });
+
+    if (userError || !userProfile) {
+      console.log('User profile not found or error:', userError);
+      return {
+        canUpdate: false,
+        reason: 'User profile not found'
+      };
+    }
+
+    const userCreatedAt = new Date(userProfile.created_at);
+    console.log('User created at:', userCreatedAt);
+    
+    // Get the first fixture of the season
+    const { data: firstFixture, error: firstFixtureError } = await supabase
+      .from('fixtures')
+      .select('scheduled_date, matchday')
+      .eq('season', '2025')
+      .order('scheduled_date', { ascending: true })
+      .limit(1)
+      .single();
+
+    console.log('First fixture query result:', { firstFixture, firstFixtureError });
+
+    if (firstFixtureError || !firstFixture) {
+      console.log('No fixtures found or error:', firstFixtureError);
+      return {
+        canUpdate: false,
+        reason: 'No fixtures found for the season'
+      };
+    }
+
+    const firstFixtureDate = new Date(firstFixture.scheduled_date);
+    const now = new Date();
+    
+    console.log('Date comparison:', {
+      userCreatedAt,
+      firstFixtureDate,
+      now,
+      userJoinedBeforeSeason: userCreatedAt < firstFixtureDate
+    });
+
+    // If user joined before the season started, they can update until first fixture starts
+    if (userCreatedAt < firstFixtureDate) {
+      if (now >= firstFixtureDate) {
+        return {
+          canUpdate: false,
+          reason: 'Prediction deadline has passed. The first fixture has already started.'
+        };
+      }
+      
+      return {
+        canUpdate: true,
+        deadline: firstFixtureDate,
+        reason: `You can update your predictions until the first fixture starts (${firstFixtureDate.toLocaleString()})`
+      };
+    }
+
+    // If user joined during the season, find the next upcoming fixture
+    const { data: nextFixture, error: nextFixtureError } = await supabase
+      .from('fixtures')
+      .select('scheduled_date, matchday')
+      .eq('season', '2025')
+      .gte('scheduled_date', now.toISOString())
+      .order('scheduled_date', { ascending: true })
+      .limit(1)
+      .single();
+
+    console.log('Next fixture query result:', { nextFixture, nextFixtureError });
+
+    if (nextFixtureError || !nextFixture) {
+      // No upcoming fixtures found - season is over
+      return {
+        canUpdate: false,
+        reason: 'The season is over. You cannot update your predictions.'
+      };
+    }
+
+    const nextFixtureDate = new Date(nextFixture.scheduled_date);
+    
+    console.log('Next fixture date:', nextFixtureDate);
+
+    return {
+      canUpdate: true,
+      deadline: nextFixtureDate,
+      reason: `You can update your predictions until the next fixture starts (${nextFixtureDate.toLocaleString()})`
+    };
+
+  } catch (error) {
+    console.error('Error checking prediction deadline:', error);
+    return {
+      canUpdate: false,
+      reason: 'Error checking prediction deadline'
+    };
+  }
+}
+
 // POST /api/predictions/table - Create or update table prediction
 router.post('/table', authenticateUser, async (req, res) => {
   try {
@@ -151,7 +260,14 @@ router.post('/table', authenticateUser, async (req, res) => {
       });
     }
 
-    // Skip prediction lock check for now (function doesn't exist)
+    // Check if user can still update predictions
+    const deadlineCheck = await canUserUpdatePredictions(user_id);
+    if (!deadlineCheck.canUpdate) {
+      return res.status(403).json({
+        success: false,
+        error: deadlineCheck.reason
+      });
+    }
 
     // Validate team IDs
     const validTeamIds = [
@@ -812,6 +928,31 @@ router.post('/update-all-scores', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message
+    });
+  }
+});
+
+// GET /api/predictions/deadline-status - Check if user can still update predictions
+router.get('/deadline-status', async (req, res) => {
+  try {
+    console.log('Deadline status endpoint called');
+    const user_id = req.user.id;
+    console.log('User ID:', user_id);
+    
+    const deadlineCheck = await canUserUpdatePredictions(user_id);
+    console.log('Deadline check result:', deadlineCheck);
+    
+    res.json({
+      success: true,
+      canUpdate: deadlineCheck.canUpdate,
+      reason: deadlineCheck.reason,
+      deadline: deadlineCheck.deadline || null
+    });
+  } catch (error) {
+    console.error('Error checking deadline status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error checking deadline status'
     });
   }
 });

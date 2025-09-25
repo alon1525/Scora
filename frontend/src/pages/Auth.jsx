@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
 import { sanitizeUsername, validateEmail, checkFormSubmissionLimit } from '../utils/validation';
+import ScoraLogo from '../assets/Scora_Logo.png';
 
 const Auth = () => {
   const { user, signIn, signUp } = useAuth();
@@ -182,7 +183,7 @@ const Auth = () => {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-header">
-          <h1 className="auth-title">Scora</h1>
+          <img src={ScoraLogo} alt="Scora" className="auth-logo" />
           <p className="auth-subtitle">
             Join the ultimate prediction game
           </p>

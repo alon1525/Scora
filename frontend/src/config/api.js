@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
   STANDINGS_REFRESH: `${API_BASE_URL}/api/standings/refresh`,
   
   // Predictions
+  PREDICTIONS: `${API_BASE_URL}/api/predictions`,
   TABLE_PREDICTIONS: `${API_BASE_URL}/api/predictions/table`,
   FIXTURE_PREDICTIONS: `${API_BASE_URL}/api/predictions/fixtures`,
   USER_SCORES: `${API_BASE_URL}/api/predictions/scores`,
