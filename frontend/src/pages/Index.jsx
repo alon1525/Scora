@@ -157,25 +157,16 @@ const Index = () => {
         'Content-Type': 'application/json'
       };
 
-      console.log('🚀 Starting comprehensive data load...');
-
       // Load leaderboard first (priority)
-      console.log('🏃‍♂️ Loading leaderboard first (priority)...');
       const leaderboardResponse = await axios.get(`${API_ENDPOINTS.LEADERBOARD}?limit=50`);
-      console.log('✅ Leaderboard loaded first');
 
       // Load standings to get current matchweek
-      console.log('🏃‍♂️ Loading standings to get current matchweek...');
       const standingsResponse = await axios.get(API_ENDPOINTS.STANDINGS);
       
       let currentMatchday = 1;
       if (standingsResponse.data?.success) {
         currentMatchday = standingsResponse.data.currentMatchday || 1;
-        console.log(`🎯 Found current matchday: ${currentMatchday}`);
       }
-
-      // Load fixtures for current matchweek and surrounding ones
-      console.log(`🏃‍♂️ Loading fixtures for matchweek ${currentMatchday} and surrounding ones...`);
       const fixturesPromises = [];
       const startMatchday = Math.max(1, currentMatchday - 1);
       const endMatchday = Math.min(38, currentMatchday + 1);
@@ -195,7 +186,6 @@ const Index = () => {
           fixtures[result.value.matchday] = result.value.data.fixtures;
         }
       });
-      console.log(`✅ Loaded fixtures for ${Object.keys(fixtures).length} matchdays`);
 
       // Load other data in parallel
       const [
@@ -218,42 +208,36 @@ const Index = () => {
         standings = standingsResponse.data.standingsData;
         setStandingsData(standings);
         setLastUpdated(standingsResponse.data?.lastUpdated || "");
-        console.log(`✅ Standings loaded - Current matchday: ${currentMatchday}`);
       }
 
       // Process leaderboard (already loaded above)
       let leaderboard = null;
       if (leaderboardResponse.data?.success) {
         leaderboard = leaderboardResponse.data.leaderboard;
-        console.log('✅ Leaderboard processed');
       }
 
       // Process user scores
       let userScores = null;
       if (userScoresResponse.status === 'fulfilled' && userScoresResponse.value.data?.success) {
         userScores = userScoresResponse.value.data.scores;
-        console.log('✅ User scores loaded');
       }
 
       // Process user stats
       let userStats = null;
       if (userStatsResponse.status === 'fulfilled' && userStatsResponse.value.data?.success) {
         userStats = userStatsResponse.value.data.data;
-        console.log('✅ User stats loaded');
       }
 
       // Process leagues
       let leagues = null;
       if (leaguesResponse.status === 'fulfilled' && leaguesResponse.value.data?.success) {
         leagues = leaguesResponse.value.data.leagues;
-        console.log('✅ Leagues loaded');
       }
 
       // Process table predictions
       let tablePredictions = null;
       if (tablePredictionsResponse.status === 'fulfilled' && tablePredictionsResponse.value.data?.success) {
         tablePredictions = tablePredictionsResponse.value.data.prediction;
-        console.log('✅ Table predictions loaded');
       }
 
       // Process deadline status
@@ -264,7 +248,6 @@ const Index = () => {
           reason: deadlineStatusResponse.value.data.reason,
           deadline: deadlineStatusResponse.value.data.deadline ? new Date(deadlineStatusResponse.value.data.deadline) : null
         };
-        console.log('✅ Deadline status loaded');
       }
 
       setPreloadedData({
@@ -282,7 +265,6 @@ const Index = () => {
         error: null
       });
 
-      console.log('🎉 All data loaded successfully!');
     } catch (error) {
       console.error('❌ Error loading data:', error);
       setPreloadedData(prev => ({
@@ -402,7 +384,6 @@ const Index = () => {
   // Auto-refresh when standings change (games end)
   useEffect(() => {
     if (standingsData.length > 0) {
-      console.log('🔄 Standings updated, refreshing scores...');
       triggerScoreRefresh();
     }
   }, [standingsData]);

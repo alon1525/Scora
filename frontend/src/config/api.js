@@ -35,7 +35,10 @@ export const API_ENDPOINTS = {
   
   // Match Predictions
   MATCH_PREDICTIONS: `${API_BASE_URL}/api/predictions/match`,
-  USER_PREDICTIONS: `${API_BASE_URL}/api/predictions/user`
+  USER_PREDICTIONS: `${API_BASE_URL}/api/predictions/user`,
+  
+  // Comments
+  COMMENTS: `${API_BASE_URL}/api/comments`
 };
 
 export default API_BASE_URL;

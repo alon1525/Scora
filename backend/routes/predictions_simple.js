@@ -142,7 +142,6 @@ router.use(authenticateUser);
 // Utility function to check if user can still update predictions
 async function canUserUpdatePredictions(user_id) {
   try {
-    console.log('Checking deadline for user:', user_id);
     
     // Get user's created_at date
     const { data: userProfile, error: userError } = await supabase
@@ -151,10 +150,7 @@ async function canUserUpdatePredictions(user_id) {
       .eq('user_id', user_id)
       .single();
 
-    console.log('User profile query result:', { userProfile, userError });
-
     if (userError || !userProfile) {
-      console.log('User profile not found or error:', userError);
       return {
         canUpdate: false,
         reason: 'User profile not found'
@@ -162,7 +158,6 @@ async function canUserUpdatePredictions(user_id) {
     }
 
     const userCreatedAt = new Date(userProfile.created_at);
-    console.log('User created at:', userCreatedAt);
     
     // Get the first fixture of the season
     const { data: firstFixture, error: firstFixtureError } = await supabase
@@ -173,10 +168,7 @@ async function canUserUpdatePredictions(user_id) {
       .limit(1)
       .single();
 
-    console.log('First fixture query result:', { firstFixture, firstFixtureError });
-
     if (firstFixtureError || !firstFixture) {
-      console.log('No fixtures found or error:', firstFixtureError);
       return {
         canUpdate: false,
         reason: 'No fixtures found for the season'
@@ -186,12 +178,6 @@ async function canUserUpdatePredictions(user_id) {
     const firstFixtureDate = new Date(firstFixture.scheduled_date);
     const now = new Date();
     
-    console.log('Date comparison:', {
-      userCreatedAt,
-      firstFixtureDate,
-      now,
-      userJoinedBeforeSeason: userCreatedAt < firstFixtureDate
-    });
 
     // If user joined before the season started, they can update until first fixture starts
     if (userCreatedAt < firstFixtureDate) {
@@ -219,7 +205,6 @@ async function canUserUpdatePredictions(user_id) {
       .limit(1)
       .single();
 
-    console.log('First fixture after user joined:', { firstFixtureAfterJoin, firstFixtureAfterJoinError });
 
     if (firstFixtureAfterJoinError || !firstFixtureAfterJoin) {
       // No fixtures found after user joined - this shouldn't happen
@@ -231,12 +216,6 @@ async function canUserUpdatePredictions(user_id) {
 
     const firstFixtureAfterJoinDate = new Date(firstFixtureAfterJoin.scheduled_date);
     
-    console.log('First fixture after join date:', firstFixtureAfterJoinDate);
-    console.log('Current time vs first fixture after join:', {
-      now,
-      firstFixtureAfterJoinDate,
-      isPastDeadline: now >= firstFixtureAfterJoinDate
-    });
 
     // Check if the first fixture after they joined has already started
     if (now >= firstFixtureAfterJoinDate) {
@@ -382,7 +361,7 @@ router.get('/table', async (req, res) => {
 // POST /api/predictions/fixture - Create or update fixture prediction
 router.post('/fixture', async (req, res) => {
   try {
-    const { fixture_id, home_score, away_score } = req.body;
+    const { fixture_id, home_score, away_score, comment } = req.body;
     const user_id = req.user.id;
 
     if (!fixture_id || home_score === undefined || away_score === undefined) {
@@ -448,7 +427,8 @@ router.post('/fixture', async (req, res) => {
     fixturePredictions[fixture_id] = {
       home_score: parseInt(home_score) || 0,
       away_score: parseInt(away_score) || 0,
-      points_earned
+      points_earned,
+      comment: comment || null
     };
 
     // Update user profile
@@ -732,7 +712,7 @@ router.post('/recalculate-user/:userId', async (req, res) => {
 // POST /api/predictions/fixtures - Create or update fixture prediction (alias for /fixture)
 router.post('/fixtures', async (req, res) => {
   try {
-    const { fixture_id, home_score, away_score } = req.body;
+    const { fixture_id, home_score, away_score, comment } = req.body;
     const user_id = req.user.id;
 
     if (!fixture_id || home_score === undefined || away_score === undefined) {
@@ -784,7 +764,8 @@ router.post('/fixtures', async (req, res) => {
     const prediction = {
       home_score: parseInt(home_score) || 0,
       away_score: parseInt(away_score) || 0,
-      points_earned: points_earned
+      points_earned: points_earned,
+      comment: comment || null
     };
 
     // Get current user profile
@@ -949,12 +930,8 @@ router.post('/update-all-scores', async (req, res) => {
 // GET /api/predictions/deadline-status - Check if user can still update predictions
 router.get('/deadline-status', async (req, res) => {
   try {
-    console.log('Deadline status endpoint called');
     const user_id = req.user.id;
-    console.log('User ID:', user_id);
-    
     const deadlineCheck = await canUserUpdatePredictions(user_id);
-    console.log('Deadline check result:', deadlineCheck);
     
     res.json({
       success: true,

@@ -48,9 +48,6 @@ async function fetchStandingsFromAPI(season = '2025') {
 
   const url = `https://api.football-data.org/v4/competitions/PL/standings?season=${season}`;
   
-  console.log(`🔍 Fetching standings from: ${url}`);
-  console.log(`🔑 API Key present: ${!!API_KEY}, length: ${API_KEY ? API_KEY.length : 0}`);
-  console.log(`🔑 API Key starts with: ${API_KEY ? API_KEY.substring(0, 8) + '...' : 'undefined'}`);
   
   const response = await fetch(url, {
     headers: {
@@ -93,8 +90,6 @@ async function storeStandings(standingsData, season = '2025') {
             points: team.points,
             last_updated: new Date().toISOString()
           });
-        } else {
-          console.log(`Skipping team: ${team.team.name} - not found in mapping`);
         }
       }
     }
@@ -342,7 +337,6 @@ router.get('/test-db-state', async (req, res) => {
 // GET /api/standings/test-recalculate - Test endpoint to recalculate ALL user scores
 router.get('/test-recalculate', async (req, res) => {
   try {
-    console.log('🧪 [TEST] Starting full recalculation of all user scores...');
     
     // Get all users
     const { data: users, error: usersError } = await supabase
@@ -353,7 +347,6 @@ router.get('/test-recalculate', async (req, res) => {
       throw new Error(`Failed to fetch users: ${usersError.message}`);
     }
 
-    console.log(`📊 [TEST] Found ${users.length} users to recalculate`);
 
     // Get all finished fixtures (including already calculated ones)
     const { data: finishedFixtures, error: fixturesError } = await supabase
@@ -365,8 +358,6 @@ router.get('/test-recalculate', async (req, res) => {
       throw new Error(`Failed to fetch fixtures: ${fixturesError.message}`);
     }
 
-    console.log(`⚽ [TEST] Found ${finishedFixtures.length} finished fixtures`);
-
     // Get current standings for table points calculation
     const { data: standings, error: standingsError } = await supabase
       .from('standings')
@@ -374,17 +365,12 @@ router.get('/test-recalculate', async (req, res) => {
       .eq('season', '2025')
       .order('position', { ascending: true });
 
-    if (standingsError) {
-      console.warn('⚠️ [TEST] Could not fetch standings for table points calculation:', standingsError);
-    }
-
     // Create lookup for team positions
     const standingsLookup = {};
     if (standings) {
       standings.forEach(standing => {
         standingsLookup[standing.team_id] = standing.position;
       });
-      console.log(`📊 [TEST] Loaded ${standings.length} team positions for table points calculation`);
     }
 
     let totalUpdated = 0;
@@ -394,7 +380,6 @@ router.get('/test-recalculate', async (req, res) => {
 
     // Process each user
     for (const user of users) {
-      console.log(`🎯 [TEST] Processing user: ${user.display_name} (${user.user_id})`);
       
       let userExact = 0;
       let userResult = 0;
@@ -413,7 +398,6 @@ router.get('/test-recalculate', async (req, res) => {
             userTablePoints += teamPoints;
           }
         }
-        console.log(`📊 [TEST] ${user.display_name} table points: ${userTablePoints}`);
       }
 
       if (user.fixture_predictions) {
@@ -464,16 +448,11 @@ router.get('/test-recalculate', async (req, res) => {
       if (updateError) {
         console.error(`❌ [TEST] Error updating ${user.display_name}:`, updateError);
       } else {
-        console.log(`✅ [TEST] Updated ${user.display_name}: ${userExact} exact, ${userResult} result, ${userFixturePoints} fixture points, ${userTablePoints} table points, ${userTotalPoints} total points`);
-        
         // Check for new achievements
         try {
-          const newAchievements = await checkAchievements(user.user_id);
-          if (newAchievements.length > 0) {
-            console.log(`🎉 [ACHIEVEMENTS] ${user.display_name} unlocked: ${newAchievements.map(a => a.name).join(', ')}`);
-          }
+          await checkAchievements(user.user_id);
         } catch (achievementError) {
-          console.error(`❌ [ACHIEVEMENTS] Error checking achievements for ${user.display_name}:`, achievementError);
+          console.error(`Error checking achievements for ${user.display_name}:`, achievementError);
         }
         
         totalUpdated++;
@@ -483,10 +462,7 @@ router.get('/test-recalculate', async (req, res) => {
       }
     }
 
-    console.log(`🎉 [TEST] Recalculation completed! Updated ${totalUpdated} users`);
-    console.log(`📊 [TEST] Total exact predictions: ${totalExact}`);
-    console.log(`📊 [TEST] Total result predictions: ${totalResult}`);
-    console.log(`📊 [TEST] Total table points: ${totalTablePoints}`);
+    console.log(`Recalculation completed! Updated ${totalUpdated} users`);
 
     res.json({
       success: true,
@@ -515,15 +491,8 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
   try {
     const season = '2025'; // Hardcoded season
     
-    console.log(`🔄 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Starting complete refresh (standings + fixtures + scores)...`);
-    console.log(`🔍 ${trigger.toUpperCase()} Environment check:`, {
-      hasApiKey: !!process.env.LEAGUE_STANDINGS_API_KEY,
-      hasSupabaseUrl: !!process.env.SUPABASE_API_URL,
-      hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-    });
     
     // Step 1: Refresh fixtures first (get latest match results)
-    console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Step 1 - Refreshing fixtures...`);
     const fixturesResponse = await fetch(`${req.protocol}://${req.get('host')}/api/fixtures/refresh`, {
       method: 'GET',
       headers: {
@@ -531,16 +500,12 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
       }
     });
     const fixturesResult = await fixturesResponse.json();
-    console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Fixtures refresh result:`, fixturesResult.success ? 'Success' : 'Failed');
     
     // Step 2: Refresh standings (based on completed matches)
-    console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Step 2 - Fetching standings...`);
     const standingsData = await fetchStandingsFromAPI(season);
     const storedCount = await storeStandings(standingsData, season);
-    console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Refreshed ${storedCount} standings`);
     
     // Step 3: Recalculate all user scores (based on updated standings and fixtures)
-    console.log(`🧮 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Step 3 - Recalculating user scores...`);
     
     let scoresResult = { success: false, results: 'No users processed' };
     
@@ -556,7 +521,6 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
             standingsLookup[teamId] = index + 1; // Position is 1-based
           }
         });
-        console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Created standings lookup with ${standingsTable.table.length} teams`);
       }
     }
     
@@ -569,16 +533,12 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
       console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Error fetching users:`, usersError);
       scoresResult = { success: false, results: `Error fetching users: ${usersError.message}` };
     } else {
-      console.log(`👥 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Processing ${users.length} users`);
       let successCount = 0;
       for (const user of users) {
         try {
-          console.log(`👤 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Processing user ${user.user_id} (${user.display_name})`);
-          
           // Calculate table points
           let tablePoints = 0;
           const prediction = user.table_prediction || [];
-          console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} table prediction:`, prediction);
           
           for (let i = 0; i < prediction.length; i++) {
             const predictedTeam = prediction[i];
@@ -588,13 +548,9 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
               const positionDiff = Math.abs((i + 1) - actualPosition);
               const teamPoints = Math.max(0, 20 - positionDiff);
               tablePoints += teamPoints;
-              console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Team ${predictedTeam} - Predicted: ${i + 1}, Actual: ${actualPosition}, Points: ${teamPoints}`);
-            } else {
-              console.log(`⚠️ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Team ${predictedTeam} not found in standings lookup`);
             }
           }
           
-          console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} total table points: ${tablePoints}`);
 
           // Get existing fixture points, exacts, and results
           const { data: profile, error: profileError } = await supabase
@@ -617,11 +573,8 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
             .eq('status', 'FINISHED')
             .eq('calculated', false);
 
-          console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Found ${finishedFixtures?.length || 0} uncalculated finished fixtures`);
-
           if (!fixturesError && finishedFixtures) {
             const fixturePredictions = user.fixture_predictions || {};
-            console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} fixture predictions:`, Object.keys(fixturePredictions).length, 'predictions');
             
             for (const fixture of finishedFixtures) {
               const prediction = fixturePredictions[fixture.id.toString()] || fixturePredictions[fixture.id];
@@ -632,14 +585,11 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
                 const actualHome = parseInt(fixture.home_score);
                 const actualAway = parseInt(fixture.away_score);
 
-                console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Fixture ${fixture.id} - Predicted: ${predictedHome}-${predictedAway}, Actual: ${actualHome}-${actualAway}`);
-
                 if (!isNaN(predictedHome) && !isNaN(predictedAway) && !isNaN(actualHome) && !isNaN(actualAway)) {
                   // Check for exact match (3 points)
                   if (predictedHome === actualHome && predictedAway === actualAway) {
                     newFixturePoints += 3;
                     newExacts += 1;
-                    console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Exact match! +3 points, +1 exact`);
                   } else {
                     // Check for result match (1 point)
                     const predictedResult = predictedHome > predictedAway ? 'home' : (predictedHome < predictedAway ? 'away' : 'draw');
@@ -648,27 +598,17 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
                     if (predictedResult === actualResult) {
                       newFixturePoints += 1;
                       newResults += 1;
-                      console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Result match! +1 point, +1 result`);
-                    } else {
-                      console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: No match`);
                     }
                   }
                 }
-              } else {
-                console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: No prediction for fixture ${fixture.id}`);
               }
             }
           }
           
-          console.log(`⚽ [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} new fixture points: ${newFixturePoints}, new exacts: ${newExacts}, new results: ${newResults}`);
-
           const totalFixturePoints = existingFixturePoints + newFixturePoints;
           const totalExacts = existingExacts + newExacts;
           const totalResults = existingResults + newResults;
           const totalPoints = totalFixturePoints + tablePoints;
-
-          console.log(`💰 [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} - Existing: ${existingFixturePoints}, New: ${newFixturePoints}, Table: ${tablePoints}, Total: ${totalPoints}`);
-          console.log(`📊 [${new Date().toISOString()}] ${trigger.toUpperCase()}: User ${user.user_id} - Exacts: ${existingExacts} + ${newExacts} = ${totalExacts}, Results: ${existingResults} + ${newResults} = ${totalResults}`);
 
           // Update user profile
           const { error: updateError } = await supabase
@@ -685,15 +625,14 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
 
           if (!updateError) {
             successCount++;
-            console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Successfully updated user ${user.user_id}`);
           } else {
-            console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Failed to update user ${user.user_id}:`, updateError);
+            console.error(`Failed to update user ${user.user_id}:`, updateError);
           }
         } catch (error) {
           console.error(`❌ Error processing user ${user.user_id}:`, error);
         }
       }
-      console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Updated scores for ${successCount} users`);
+      console.log(`Updated scores for ${successCount} users`);
       
       // Mark all processed fixtures as calculated after all users are processed
       const { data: finishedFixtures, error: fixturesError } = await supabase
@@ -708,7 +647,6 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
           .from('fixtures')
           .update({ calculated: true })
           .in('id', fixtureIds);
-        console.log(`✅ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Marked ${fixtureIds.length} fixtures as calculated`);
       }
       
       // Update scoresResult with the actual results
@@ -719,7 +657,7 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
     }
     
     const duration = Date.now() - startTime;
-    console.log(`🎉 [${new Date().toISOString()}] ${trigger.toUpperCase()}: Complete refresh finished in ${duration}ms`);
+    console.log(`Complete refresh finished in ${duration}ms`);
     
     res.json({
       success: true,

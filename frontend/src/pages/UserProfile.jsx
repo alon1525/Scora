@@ -96,11 +96,13 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState('all');
   const [availableWeeks, setAvailableWeeks] = useState([]);
+  const [userComments, setUserComments] = useState([]);
 
   useEffect(() => {
     if (userId) {
       loadUserProfile();
       loadFixtures();
+      loadUserComments();
     }
   }, [userId]);
 
@@ -108,27 +110,16 @@ const UserProfile = () => {
     try {
       setLoading(true);
       
-      console.log('🔍 Loading profile for user ID:', userId);
-      
       // Use the same API endpoint that the leaderboard uses to get all users
-      console.log('🔄 Fetching all users via leaderboard API...');
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/predictions/leaderboard?limit=100`);
       const data = await response.json();
       
       if (data.success && data.leaderboard) {
-        console.log('📊 All users from leaderboard API:', data.leaderboard);
-        console.log('📊 Available user IDs:', data.leaderboard.map(u => ({ 
-          id: u.id, 
-          user_id: u.user_id, 
-          name: u.display_name,
-          email: u.email 
-        })));
         
         // Find the user in the leaderboard data
         const userProfile = data.leaderboard.find(user => user.user_id === userId);
         
         if (userProfile) {
-          console.log('✅ User found in leaderboard data:', userProfile);
           const transformedPlayer = {
             id: userProfile.user_id,
             name: userProfile.display_name || 'Unknown Player',
@@ -144,8 +135,6 @@ const UserProfile = () => {
           await loadPlayerPredictions(userProfile.fixture_predictions);
           return;
         } else {
-          console.log('❌ User not found in leaderboard data');
-          console.log('🔍 Available user IDs:', data.leaderboard.map(u => ({ id: u.id, user_id: u.user_id, name: u.display_name })));
         toast.error('User not found');
         return;
       }
@@ -180,7 +169,6 @@ const UserProfile = () => {
       }
 
       if (!fixturesData || fixturesData.length === 0) {
-        console.log('No finished fixtures found');
         return;
       }
 
@@ -205,16 +193,6 @@ const UserProfile = () => {
             (fixturePredictions[fixture.id.toString()] || fixturePredictions[fixture.id]) : null;
           const actualScore = `${fixture.home_score}-${fixture.away_score}`;
           
-          // Debug logging for user ID 1
-          if (userId === '1' && fixture.id <= 5) {
-            console.log(`Fixture ${fixture.id}:`, {
-              fixtureId: fixture.id,
-              fixtureIdString: fixture.id.toString(),
-              hasPrediction: !!prediction,
-              prediction: prediction,
-              fixturePredictionsKeys: fixturePredictions ? Object.keys(fixturePredictions) : 'null'
-            });
-          }
           
           if (prediction) {
             // Player made a prediction
@@ -285,11 +263,6 @@ const UserProfile = () => {
         setSelectedWeek(matchdays[0]); // First matchday (most recent)
       }
       
-      // Debug: Log team names to see what we're getting from database
-      const uniqueTeams = [...new Set(predictionsArray.flatMap(p => [p.homeTeam, p.awayTeam]))];
-      console.log('Team names from database:', uniqueTeams);
-      
-      console.log(`Loaded ${predictionsArray.length} fixtures for player ${userId} (${predictionsArray.filter(p => p.hasPrediction).length} with predictions)`);
       
       // Calculate actual stats from predictions
       const totalPredictions = predictionsArray.filter(p => p.hasPrediction).length;
@@ -348,6 +321,23 @@ const UserProfile = () => {
     } catch (error) {
       console.error('Error loading fixtures:', error);
     }
+  };
+
+  const loadUserComments = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/comments/user/${userId}?limit=10&sort=newest`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setUserComments(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading user comments:', error);
+    }
+  };
+
+  const getCommentForFixture = (fixtureId) => {
+    return userComments.find(comment => comment.fixture_id === fixtureId);
   };
 
   const getTeamLogo = (teamName) => {
@@ -674,9 +664,30 @@ const UserProfile = () => {
                           alt={prediction.awayTeam}
                           className="team-logo"
                         />
-        </div>
-      </div>
-        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Comment for this fixture */}
+                    {getCommentForFixture(prediction.id) && (
+                      <div className="prediction-comment-mobile">
+                        <div className="comment-icon">
+                          <span className="material-symbols-outlined">comment</span>
+                        </div>
+                        <div className="comment-content">
+                          <p>"{getCommentForFixture(prediction.id).comment}"</p>
+                          <div className="comment-meta">
+                            <span className="comment-likes">
+                              <span className="material-symbols-outlined">favorite</span>
+                              {getCommentForFixture(prediction.id).likes_count}
+                            </span>
+                            <span className="comment-date">
+                              {new Date(getCommentForFixture(prediction.id).created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
                   {/* Desktop Layout */}
                   <div className="prediction-desktop">
@@ -740,6 +751,29 @@ const UserProfile = () => {
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Comment for this fixture */}
+                    {getCommentForFixture(prediction.id) && (
+                      <div className="prediction-comment-desktop">
+                        <div className="comment-header">
+                          <div className="comment-icon">
+                            <span className="material-symbols-outlined">comment</span>
+                          </div>
+                          <div className="comment-meta">
+                            <span className="comment-likes">
+                              <span className="material-symbols-outlined">favorite</span>
+                              {getCommentForFixture(prediction.id).likes_count}
+                            </span>
+                            <span className="comment-date">
+                              {new Date(getCommentForFixture(prediction.id).created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="comment-content">
+                          <p>"{getCommentForFixture(prediction.id).comment}"</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

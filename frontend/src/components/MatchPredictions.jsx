@@ -11,6 +11,8 @@ import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import RoundNavigation from './RoundNavigation';
 import PredictionBar from './PredictionBar';
+import CommentInput from './CommentInput';
+import CommentsModal from './CommentsModal';
 
 // Import team kit images
 import Arsenal from '../assets/Teams_Kits/Arsenal.png';
@@ -348,6 +350,9 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const [fixturesCache, setFixturesCache] = useState({}); // Cache loaded fixtures
   const [predictionsCache, setPredictionsCache] = useState({}); // Cache loaded predictions
   const [matchPredictionsCache, setMatchPredictionsCache] = useState({}); // Cache loaded match predictions
+  const [commentsModal, setCommentsModal] = useState({ isOpen: false, fixtureId: null, fixtureTitle: '' });
+  const [commentInputs, setCommentInputs] = useState({});
+  const [submittingComment, setSubmittingComment] = useState({});
   // Hardcoded season - no need for state
 
   // Simple function to get current matchweek from preloaded data
@@ -1132,12 +1137,35 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                     />
                   )}
 
+                  {/* Comments Button */}
+                  <div className="comments-section full-width">
+                    <button 
+                      className="comments-btn full-width"
+                      onClick={() => setCommentsModal({
+                        isOpen: true,
+                        fixtureId: fixture.id,
+                        fixtureTitle: `${getCleanTeamName(fixture.home_team_name)} vs ${getCleanTeamName(fixture.away_team_name)}`
+                      })}
+                    >
+                      <span className="material-symbols-outlined">comment</span>
+                      <span>Comments</span>
+                    </button>
+                  </div>
+
                 </Card>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* Comments Modal */}
+      <CommentsModal
+        isOpen={commentsModal.isOpen}
+        onClose={() => setCommentsModal({ isOpen: false, fixtureId: null, fixtureTitle: '' })}
+        fixtureId={commentsModal.fixtureId}
+        fixtureTitle={commentsModal.fixtureTitle}
+      />
     </div>
   );
 };

@@ -8,6 +8,7 @@ const fixturesRoutes = require('./routes/fixtures');
 const predictionsRoutes = require('./routes/predictions_simple');
 const standingsRoutes = require('./routes/standings');
 const leaguesRoutes = require('./routes/leagues');
+const commentsRoutes = require('./routes/comments');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -42,6 +43,7 @@ app.use('/api/fixtures', fixturesRoutes);
 app.use('/api/predictions', predictionsRoutes);
 app.use('/api/leagues', leaguesRoutes);
 app.use('/api/standings', standingsRoutes);
+app.use('/api/comments', commentsRoutes);
 
 // Test endpoint to check environment variables
 app.get('/api/test-env', (req, res) => {
