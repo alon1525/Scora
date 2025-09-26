@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
 import { API_ENDPOINTS } from '../config/api';
@@ -17,6 +18,20 @@ const CommentsModal = ({ isOpen, onClose, fixtureId, fixtureTitle }) => {
       loadComments();
     }
   }, [isOpen, fixtureId, sortBy]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   const loadComments = async (page = 1) => {
     setLoading(true);
@@ -153,7 +168,7 @@ const CommentsModal = ({ isOpen, onClose, fixtureId, fixtureTitle }) => {
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div className="comments-modal-overlay" onClick={onClose}>
       <div className="comments-modal" onClick={(e) => e.stopPropagation()}>
         <div className="comments-modal-header">
@@ -235,6 +250,9 @@ const CommentsModal = ({ isOpen, onClose, fixtureId, fixtureTitle }) => {
       </div>
     </div>
   );
+
+  // Render modal using portal to document.body
+  return createPortal(modalContent, document.body);
 };
 
 // Individual Comment Component
