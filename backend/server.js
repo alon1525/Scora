@@ -8,6 +8,7 @@ const fixturesRoutes = require('./routes/fixtures');
 const predictionsRoutes = require('./routes/predictions_simple');
 const standingsRoutes = require('./routes/standings');
 const leaguesRoutes = require('./routes/leagues');
+const seasonsRoutes = require('./routes/seasons');
 const commentsRoutes = require('./routes/comments');
 
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api/fixtures', fixturesRoutes);
 app.use('/api/predictions', predictionsRoutes);
 app.use('/api/leagues', leaguesRoutes);
 app.use('/api/standings', standingsRoutes);
+app.use('/api/seasons', seasonsRoutes);
 app.use('/api/comments', commentsRoutes);
 
 // Test endpoint to check environment variables
