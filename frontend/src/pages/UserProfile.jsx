@@ -154,11 +154,12 @@ const UserProfile = () => {
 
   const loadPlayerPredictions = async (fixturePredictions) => {
     try {
-      // Get all finished fixtures with matchday information
+      // Get all fixtures that have passed their scheduled time (regardless of status)
+      const now = new Date().toISOString();
       const { data: fixturesData, error: fixturesError } = await supabase
         .from('fixtures')
         .select('id, home_team_name, away_team_name, home_team_logo, away_team_logo, home_score, away_score, status, scheduled_date, matchday')
-        .in('status', ['FINISHED', 'IN_PLAY', 'PAUSED', 'STARTED'])
+        .lt('scheduled_date', now) // Only get fixtures where scheduled_date is before current time
         .order('matchday', { ascending: false })
         .order('scheduled_date', { ascending: false })
         .limit(100); // Get more fixtures to find predictions
@@ -287,11 +288,12 @@ const UserProfile = () => {
 
   const loadFixtures = async () => {
     try {
-      // Get finished fixtures to match with predictions
+      // Get fixtures that have passed their scheduled time to match with predictions
+      const now = new Date().toISOString();
       const { data: fixturesData, error: fixturesError } = await supabase
         .from('fixtures')
         .select('id, home_team_name, away_team_name, home_score, away_score, status')
-        .eq('status', 'FINISHED')
+        .lt('scheduled_date', now) // Only get fixtures where scheduled_date is before current time
         .limit(20);
 
       if (fixturesError) {

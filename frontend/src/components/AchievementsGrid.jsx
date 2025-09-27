@@ -66,7 +66,6 @@ const AchievementsGrid = ({ userAchievements = [], allAchievements = [] }) => {
               style={{ width: `${(unlockedCount / totalCount) * 100}%` }}
             />
           </div>
-          <span className="progress-text">{unlockedCount}/{totalCount}</span>
         </div>
       </div>
       <div className="achievements-container">
