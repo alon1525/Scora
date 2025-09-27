@@ -524,86 +524,92 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
       }
     }
     
-    // Get all users and recalculate their scores
-    const { data: users, error: usersError } = await supabase
-      .from('user_profiles')
-      .select('user_id, display_name, table_prediction, fixture_predictions');
+    // Get all uncalculated finished fixtures first
+    const { data: finishedFixtures, error: fixturesError } = await supabase
+      .from('fixtures')
+      .select('id, home_score, away_score')
+      .eq('status', 'FINISHED')
+      .eq('calculated', false);
 
-    if (usersError) {
-      console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Error fetching users:`, usersError);
-      scoresResult = { success: false, results: `Error fetching users: ${usersError.message}` };
+    if (fixturesError) {
+      console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Error fetching fixtures:`, fixturesError);
+      scoresResult = { success: false, results: `Error fetching fixtures: ${fixturesError.message}` };
     } else {
-      let successCount = 0;
-      for (const user of users) {
-        try {
-          // Calculate table points
-          let tablePoints = 0;
-          const prediction = user.table_prediction || [];
-          
-          for (let i = 0; i < prediction.length; i++) {
-            const predictedTeam = prediction[i];
-            const actualPosition = standingsLookup[predictedTeam];
+      // Get all users and recalculate their scores
+      const { data: users, error: usersError } = await supabase
+        .from('user_profiles')
+        .select('user_id, display_name, table_prediction, fixture_predictions');
+
+      if (usersError) {
+        console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Error fetching users:`, usersError);
+        scoresResult = { success: false, results: `Error fetching users: ${usersError.message}` };
+      } else {
+        let successCount = 0;
+        for (const user of users) {
+          try {
+            // Calculate table points
+            let tablePoints = 0;
+            const prediction = user.table_prediction || [];
             
-            if (actualPosition !== undefined) {
-              const positionDiff = Math.abs((i + 1) - actualPosition);
-              const teamPoints = Math.max(0, 20 - positionDiff);
-              tablePoints += teamPoints;
-            }
-          }
-          
-
-          // Get existing fixture points, exacts, and results
-          const { data: profile, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('fixture_points, exacts, results')
-            .eq('user_id', user.user_id)
-            .single();
-
-          const existingFixturePoints = profile?.fixture_points || 0;
-          const existingExacts = profile?.exacts || 0;
-          const existingResults = profile?.results || 0;
-          
-          // Calculate new points from uncalculated finished fixtures
-          let newFixturePoints = 0;
-          let newExacts = 0;
-          let newResults = 0;
-          const { data: finishedFixtures, error: fixturesError } = await supabase
-            .from('fixtures')
-            .select('id, home_score, away_score')
-            .eq('status', 'FINISHED')
-            .eq('calculated', false);
-
-          if (!fixturesError && finishedFixtures) {
-            const fixturePredictions = user.fixture_predictions || {};
-            
-            for (const fixture of finishedFixtures) {
-              const prediction = fixturePredictions[fixture.id.toString()] || fixturePredictions[fixture.id];
+            for (let i = 0; i < prediction.length; i++) {
+              const predictedTeam = prediction[i];
+              const actualPosition = standingsLookup[predictedTeam];
               
-              if (prediction && prediction.home_score !== null && prediction.away_score !== null) {
-                const predictedHome = parseInt(prediction.home_score);
-                const predictedAway = parseInt(prediction.away_score);
-                const actualHome = parseInt(fixture.home_score);
-                const actualAway = parseInt(fixture.away_score);
+              if (actualPosition !== undefined) {
+                const positionDiff = Math.abs((i + 1) - actualPosition);
+                const teamPoints = Math.max(0, 20 - positionDiff);
+                tablePoints += teamPoints;
+              }
+            }
+            
 
-                if (!isNaN(predictedHome) && !isNaN(predictedAway) && !isNaN(actualHome) && !isNaN(actualAway)) {
-                  // Check for exact match (3 points)
-                  if (predictedHome === actualHome && predictedAway === actualAway) {
-                    newFixturePoints += 3;
-                    newExacts += 1;
-                  } else {
-                    // Check for result match (1 point)
-                    const predictedResult = predictedHome > predictedAway ? 'home' : (predictedHome < predictedAway ? 'away' : 'draw');
-                    const actualResult = actualHome > actualAway ? 'home' : (actualHome < actualAway ? 'away' : 'draw');
-                    
-                    if (predictedResult === actualResult) {
-                      newFixturePoints += 1;
-                      newResults += 1;
+            // Get existing fixture points, exacts, and results
+            const { data: profile, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('fixture_points, exacts, results')
+              .eq('user_id', user.user_id)
+              .single();
+
+            const existingFixturePoints = profile?.fixture_points || 0;
+            const existingExacts = profile?.exacts || 0;
+            const existingResults = profile?.results || 0;
+            
+            // Calculate new points from uncalculated finished fixtures
+            let newFixturePoints = 0;
+            let newExacts = 0;
+            let newResults = 0;
+
+            if (finishedFixtures) {
+              const fixturePredictions = user.fixture_predictions || {};
+              
+              for (const fixture of finishedFixtures) {
+                const prediction = fixturePredictions[fixture.id.toString()] || fixturePredictions[fixture.id];
+                
+                if (prediction && prediction.home_score !== null && prediction.away_score !== null) {
+                  const predictedHome = parseInt(prediction.home_score);
+                  const predictedAway = parseInt(prediction.away_score);
+                  const actualHome = parseInt(fixture.home_score);
+                  const actualAway = parseInt(fixture.away_score);
+
+                  if (!isNaN(predictedHome) && !isNaN(predictedAway) && !isNaN(actualHome) && !isNaN(actualAway)) {
+                    // Check for exact match (3 points)
+                    if (predictedHome === actualHome && predictedAway === actualAway) {
+                      newFixturePoints += 3;
+                      newExacts += 1;
+                    } else {
+                      // Check for result match (1 point)
+                      const predictedResult = predictedHome > predictedAway ? 'home' : (predictedHome < predictedAway ? 'away' : 'draw');
+                      const actualResult = actualHome > actualAway ? 'home' : (actualHome < actualAway ? 'away' : 'draw');
+                      
+                      if (predictedResult === actualResult) {
+                        newFixturePoints += 1;
+                        newResults += 1;
+                      }
                     }
                   }
                 }
               }
             }
-          }
           
           const totalFixturePoints = existingFixturePoints + newFixturePoints;
           const totalExacts = existingExacts + newExacts;
@@ -644,11 +650,12 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
         console.log(`Marked ${fixtureIds.length} fixtures as calculated`);
       }
       
-      // Update scoresResult with the actual results
-      scoresResult = { 
-        success: true, 
-        results: `Updated scores for ${successCount} users, marked ${finishedFixtures?.length || 0} fixtures as calculated` 
-      };
+        // Update scoresResult with the actual results
+        scoresResult = { 
+          success: true, 
+          results: `Updated scores for ${successCount} users, marked ${finishedFixtures?.length || 0} fixtures as calculated` 
+        };
+      }
     }
     
     const duration = Date.now() - startTime;
