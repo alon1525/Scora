@@ -635,18 +635,13 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
       console.log(`Updated scores for ${successCount} users`);
       
       // Mark all processed fixtures as calculated after all users are processed
-      const { data: finishedFixtures, error: fixturesError } = await supabase
-        .from('fixtures')
-        .select('id')
-        .eq('status', 'FINISHED')
-        .eq('calculated', false);
-
-      if (!fixturesError && finishedFixtures && finishedFixtures.length > 0) {
+      if (finishedFixtures && finishedFixtures.length > 0) {
         const fixtureIds = finishedFixtures.map(f => f.id);
         await supabase
           .from('fixtures')
           .update({ calculated: true })
           .in('id', fixtureIds);
+        console.log(`Marked ${fixtureIds.length} fixtures as calculated`);
       }
       
       // Update scoresResult with the actual results
