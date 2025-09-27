@@ -1017,49 +1017,43 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                     {/* Score Prediction */}
                     <div className="score-prediction">
                       <div className="score-inputs">
-                        <Input
-                          type="number"
-                          min="0"
-                          max="9"
-                          maxLength="1"
+                        <select
                           value={prediction.home_score}
                           onChange={(e) => {
                             const value = e.target.value;
-                            if (value.length <= 1 && value >= 0 && value <= 9) {
-                              const newPredictions = { ...predictions };
-                              if (!newPredictions[fixture.id]) {
-                                newPredictions[fixture.id] = { home_score: '', away_score: '' };
-                              }
-                              newPredictions[fixture.id].home_score = value;
-                              setPredictions(newPredictions);
+                            const newPredictions = { ...predictions };
+                            if (!newPredictions[fixture.id]) {
+                              newPredictions[fixture.id] = { home_score: '', away_score: '' };
                             }
+                            newPredictions[fixture.id].home_score = value;
+                            setPredictions(newPredictions);
                           }}
                           disabled={!canEdit}
-                          className="score-input"
-                          placeholder="0"
-                        />
+                          className="score-select"
+                        >
+                          {Array.from({ length: 10 }, (_, i) => (
+                            <option key={i} value={i}>{i}</option>
+                          ))}
+                        </select>
                         <span className="score-separator">-</span>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="9"
-                          maxLength="1"
+                        <select
                           value={prediction.away_score}
                           onChange={(e) => {
                             const value = e.target.value;
-                            if (value.length <= 1 && value >= 0 && value <= 9) {
-                              const newPredictions = { ...predictions };
-                              if (!newPredictions[fixture.id]) {
-                                newPredictions[fixture.id] = { home_score: '', away_score: '' };
-                              }
-                              newPredictions[fixture.id].away_score = value;
-                              setPredictions(newPredictions);
+                            const newPredictions = { ...predictions };
+                            if (!newPredictions[fixture.id]) {
+                              newPredictions[fixture.id] = { home_score: '', away_score: '' };
                             }
+                            newPredictions[fixture.id].away_score = value;
+                            setPredictions(newPredictions);
                           }}
                           disabled={!canEdit}
-                          className="score-input"
-                          placeholder="0"
-                        />
+                          className="score-select"
+                        >
+                          {Array.from({ length: 10 }, (_, i) => (
+                            <option key={i} value={i}>{i}</option>
+                          ))}
+                        </select>
                       </div>
                       
                       {canEdit && (

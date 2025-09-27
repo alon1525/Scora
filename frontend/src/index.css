@@ -1696,6 +1696,45 @@ a:hover {
   opacity: 0.6;
 }
 
+.score-select {
+  width: 48px;
+  height: 48px;
+  font-size: 18px;
+  font-weight: 700;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: white;
+  transition: all 0.2s ease;
+  text-align: center;
+  padding: 0 8px;
+  margin: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.score-select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  outline: none;
+}
+
+.score-select:disabled {
+  color: var(--text-secondary);
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.score-select option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
 .score-separator {
   font-size: 20px;
   font-weight: 700;
@@ -3564,6 +3603,12 @@ a:hover {
     font-size: 0.95rem;
   }
   
+  .score-select {
+    width: 42px;
+    height: 32px;
+    font-size: 0.95rem;
+  }
+  
   .score-separator {
     font-size: 1.05rem;
   }
@@ -4332,6 +4377,19 @@ a:hover {
     margin: 0;
   }
   
+  .score-select {
+    width: 40px;
+    height: 30px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: 2px solid #e2e8f0;
+    border-radius: 6px;
+    color: white;
+    text-align: center;
+    padding: 0 4px;
+    margin: 0;
+  }
+  
   .score-input:disabled {
     color: var(--text-secondary);
     opacity: 0.6;
@@ -4920,6 +4978,15 @@ a:hover {
     margin: 0;
   }
   
+  .score-select {
+    width: 38px;
+    height: 28px;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 0 2px;
+    margin: 0;
+  }
+  
   .score-inputs {
     gap: 5px;
   }
@@ -5105,6 +5172,15 @@ a:hover {
     font-size: 0.8rem;
     text-align: center;
     padding: 0;
+    margin: 0;
+  }
+  
+  .score-select {
+    width: 35px;
+    height: 24px;
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 0 1px;
     margin: 0;
   }
   
