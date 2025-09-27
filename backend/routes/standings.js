@@ -544,6 +544,7 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
         console.error(`❌ [${new Date().toISOString()}] ${trigger.toUpperCase()}: Error fetching users:`, usersError);
         scoresResult = { success: false, results: `Error fetching users: ${usersError.message}` };
       } else {
+        console.log(`Processing ${users.length} users with ${finishedFixtures?.length || 0} uncalculated fixtures`);
         let successCount = 0;
         for (const user of users) {
           try {
@@ -566,13 +567,13 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
             // Get existing fixture points, exacts, and results
             const { data: profile, error: profileError } = await supabase
               .from('user_profiles')
-              .select('fixture_points, exacts, results')
+              .select('fixture_points, exact_predictions, result_predictions')
               .eq('user_id', user.user_id)
               .single();
 
             const existingFixturePoints = profile?.fixture_points || 0;
-            const existingExacts = profile?.exacts || 0;
-            const existingResults = profile?.results || 0;
+            const existingExacts = profile?.exact_predictions || 0;
+            const existingResults = profile?.result_predictions || 0;
             
             // Calculate new points from uncalculated finished fixtures
             let newFixturePoints = 0;
@@ -623,14 +624,15 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
               fixture_points: totalFixturePoints,
               table_points: tablePoints,
               total_points: totalPoints,
-              exacts: totalExacts,
-              results: totalResults,
+              exact_predictions: totalExacts,
+              result_predictions: totalResults,
               updated_at: new Date().toISOString()
             })
             .eq('user_id', user.user_id);
 
           if (!updateError) {
             successCount++;
+            console.log(`✅ Updated user ${user.user_id}: +${newFixturePoints} fixture points, +${newExacts} exacts, +${newResults} results`);
           } else {
             console.error(`Failed to update user ${user.user_id}:`, updateError);
           }
@@ -641,13 +643,16 @@ async function handleStandingsRefresh(req, res, trigger = 'manual') {
       console.log(`Updated scores for ${successCount} users`);
       
       // Mark all processed fixtures as calculated after all users are processed
-      if (finishedFixtures && finishedFixtures.length > 0) {
+      // Only mark as calculated if we actually processed users and fixtures
+      if (finishedFixtures && finishedFixtures.length > 0 && successCount > 0) {
         const fixtureIds = finishedFixtures.map(f => f.id);
         await supabase
           .from('fixtures')
           .update({ calculated: true })
           .in('id', fixtureIds);
-        console.log(`Marked ${fixtureIds.length} fixtures as calculated`);
+        console.log(`Marked ${fixtureIds.length} fixtures as calculated after processing ${successCount} users`);
+      } else {
+        console.log(`Skipping fixture calculation marking - successCount: ${successCount}, finishedFixtures: ${finishedFixtures?.length || 0}`);
       }
       
         // Update scoresResult with the actual results
