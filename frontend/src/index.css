@@ -2445,6 +2445,8 @@ a:hover {
   gap: 1rem;
   width: 100%;
   backdrop-filter: blur(10px);
+  min-height: 80px; /* Prevent layout shift */
+  transition: opacity 0.2s ease; /* Smooth transition */
 }
 
 .user-stats-content-compact {

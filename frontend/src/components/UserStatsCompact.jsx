@@ -6,9 +6,17 @@ import RecentBadges from './RecentBadges';
 
 const UserStatsCompact = ({ refreshTrigger, preloadedData }) => {
   const { user } = useAuth();
-  const [userStats, setUserStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize with preloaded data if available immediately
+  const [userStats, setUserStats] = useState(() => {
+    // Try to get preloaded data on initial render
+    return preloadedData?.userStats || null;
+  });
+  const [loading, setLoading] = useState(() => {
+    // Only show loading if we don't have preloaded data
+    return !preloadedData?.userStats;
+  });
   const hasLoaded = useRef(false);
+  const lastUserStatsRef = useRef(null); // Track last loaded stats to prevent resets
 
   const fetchUserStats = async () => {
     if (!user) return;
@@ -19,11 +27,13 @@ const UserStatsCompact = ({ refreshTrigger, preloadedData }) => {
       const response = await axios.get(`${API_ENDPOINTS.USER_STATS}/${user.id}`);
       
       if (response.data.success) {
-        setUserStats(response.data.data);
+        const stats = response.data.data;
+        setUserStats(stats);
+        lastUserStatsRef.current = stats; // Store loaded stats
+        setLoading(false);
       }
     } catch (err) {
       console.error('Error fetching user stats:', err);
-    } finally {
       setLoading(false);
     }
   };
@@ -34,6 +44,7 @@ const UserStatsCompact = ({ refreshTrigger, preloadedData }) => {
       if (preloadedData?.userStats) {
         console.log('✅ Using preloaded user stats data for compact view');
         setUserStats(preloadedData.userStats);
+        lastUserStatsRef.current = preloadedData.userStats;
         setLoading(false);
         hasLoaded.current = true;
       } else if (preloadedData?.loading === false) {
@@ -43,56 +54,63 @@ const UserStatsCompact = ({ refreshTrigger, preloadedData }) => {
       }
       // If preloadedData.loading is true, wait for it to finish
     }
-  }, [user, preloadedData]);
+  }, [user, preloadedData?.userStats, preloadedData?.loading]);
+
+  // Update stats when preloaded data becomes available (but don't reset if we already have stats)
+  useEffect(() => {
+    if (preloadedData?.userStats && !lastUserStatsRef.current) {
+      setUserStats(preloadedData.userStats);
+      lastUserStatsRef.current = preloadedData.userStats;
+      setLoading(false);
+    }
+  }, [preloadedData?.userStats]);
 
   // Separate effect for refresh trigger - only refetch on explicit refresh
   useEffect(() => {
-    if (user && refreshTrigger) {
-      hasLoaded.current = false; // Reset flag to allow refetch
+    if (user && refreshTrigger && refreshTrigger > 0) {
       fetchUserStats();
     }
   }, [refreshTrigger]);
 
-  if (!user || loading || !userStats) {
-    return (
-      <div className="user-stats-compact">
-        <div className="user-avatar-small">
-          <div className="avatar-initial-small">?</div>
-        </div>
-        <div className="user-stats-content-compact">
-          <div className="user-name-small">Loading...</div>
-          <div className="stats-row-compact">
-            <span data-label="Rank" data-value="#-"></span>
-            <span data-label="Exacts" data-value="0"></span>
-            <span data-label="Points" data-value="0" className="points-compact"></span>
-          </div>
-          <div className="global-rank-compact">🌍 - / 0</div>
-        </div>
-      </div>
-    );
-  }
-
+  // Use the ref to prevent showing 0 0 0 if we've ever had stats
+  // This prevents the flash of empty state after stats have loaded
+  const displayStats = userStats || lastUserStatsRef.current;
+  const isLoading = !user || (loading && !displayStats);
+  
   return (
-    <div className="user-stats-compact">
+    <div className="user-stats-compact" style={{ opacity: isLoading ? 0.6 : 1 }}>
       <div className="user-stats-content-compact">
-        <div className="user-name-small">
-          {userStats.display_name || userStats.email?.split('@')[0] || 'Anonymous User'}
-        </div>
-        <div className="stats-row-compact">
-          <span data-label="Rank" data-value={`#${userStats.globalRank || '-'}`}></span>
-          <span data-label="Exacts" data-value={userStats.exact_predictions || 0}></span>
-          <span data-label="Points" data-value={userStats.total_points || 0} className="points-compact"></span>
-        </div>
-        <div className="global-rank-compact">
-          🌍 {userStats.globalRank ? `${userStats.globalRank} / ${userStats.totalUsers || 0}` : '- / 0'}
-        </div>
+        {isLoading || !displayStats ? (
+          <>
+            <div className="user-name-small">Loading...</div>
+            <div className="stats-row-compact">
+              <span data-label="Rank" data-value="#-"></span>
+              <span data-label="Exacts" data-value="0"></span>
+              <span data-label="Points" data-value="0" className="points-compact"></span>
+            </div>
+            <div className="global-rank-compact">🌍 - / 0</div>
+          </>
+        ) : (
+          <>
+            <div className="user-name-small">
+              {displayStats.display_name || displayStats.email?.split('@')[0] || 'Anonymous User'}
+            </div>
+            <div className="stats-row-compact">
+              <span data-label="Rank" data-value={`#${displayStats.globalRank || '-'}`}></span>
+              <span data-label="Exacts" data-value={displayStats.exact_predictions || 0}></span>
+              <span data-label="Points" data-value={displayStats.total_points || 0} className="points-compact"></span>
+            </div>
+            <div className="global-rank-compact">
+              🌍 {displayStats.globalRank ? `${displayStats.globalRank} / ${displayStats.totalUsers || 0}` : '- / 0'}
+            </div>
+            {/* Recent Badges */}
+            <RecentBadges 
+              achievements={displayStats.achievements || []}
+              totalAchievements={displayStats.achievements?.length || 0}
+            />
+          </>
+        )}
       </div>
-      
-      {/* Recent Badges */}
-      <RecentBadges 
-        achievements={userStats.achievements || []}
-        totalAchievements={userStats.achievements?.length || 0}
-      />
     </div>
   );
 };
