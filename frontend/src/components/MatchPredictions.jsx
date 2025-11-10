@@ -13,6 +13,7 @@ import RoundNavigation from './RoundNavigation';
 import PredictionBar from './PredictionBar';
 import CommentInput from './CommentInput';
 import CommentsModal from './CommentsModal';
+import FixtureStatsModal from './FixtureStatsModal';
 
 // Import team kit images
 import Arsenal from '../assets/Teams_Kits/Arsenal.png';
@@ -350,6 +351,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const [predictionsCache, setPredictionsCache] = useState({}); // Cache loaded predictions
   const [allFixturesCache, setAllFixturesCache] = useState(null); // Cache all fixtures for team forms
   const [commentsModal, setCommentsModal] = useState({ isOpen: false, fixtureId: null, fixtureTitle: '' });
+  const [statsModal, setStatsModal] = useState({ isOpen: false, fixtureId: null, fixtureTitle: '' });
   const [commentInputs, setCommentInputs] = useState({});
   const [submittingComment, setSubmittingComment] = useState({});
   const hasPreloadedAdjacentWeeks = React.useRef(false); // Track if we've already preloaded adjacent weeks
@@ -1099,10 +1101,10 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                     />
                   )}
 
-                  {/* Comments Button */}
-                  <div className="comments-section full-width">
+                  {/* Comments and Stats Buttons */}
+                  <div className="fixture-actions-section">
                     <button 
-                      className="comments-btn full-width"
+                      className="fixture-action-btn"
                       onClick={() => setCommentsModal({
                         isOpen: true,
                         fixtureId: fixture.id,
@@ -1111,6 +1113,17 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                     >
                       <span className="material-symbols-outlined">comment</span>
                       <span>Comments</span>
+                    </button>
+                    <button 
+                      className="fixture-action-btn"
+                      onClick={() => setStatsModal({
+                        isOpen: true,
+                        fixtureId: fixture.id,
+                        fixtureTitle: `${getCleanTeamName(fixture.home_team_name)} vs ${getCleanTeamName(fixture.away_team_name)}`
+                      })}
+                    >
+                      <span className="material-symbols-outlined">bar_chart</span>
+                      <span>Stats</span>
                     </button>
                   </div>
 
@@ -1127,6 +1140,14 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         onClose={() => setCommentsModal({ isOpen: false, fixtureId: null, fixtureTitle: '' })}
         fixtureId={commentsModal.fixtureId}
         fixtureTitle={commentsModal.fixtureTitle}
+      />
+
+      {/* Fixture Stats Modal */}
+      <FixtureStatsModal
+        isOpen={statsModal.isOpen}
+        onClose={() => setStatsModal({ isOpen: false, fixtureId: null, fixtureTitle: '' })}
+        fixtureId={statsModal.fixtureId}
+        fixtureTitle={statsModal.fixtureTitle}
       />
     </div>
   );

@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   // Fixtures
   FIXTURES_MATCHDAY: `${API_BASE_URL}/api/fixtures/matchday`,
   FIXTURES_ALL: `${API_BASE_URL}/api/fixtures`,
+  FIXTURES: `${API_BASE_URL}/api/fixtures`,
   FIXTURES_REFRESH: `${API_BASE_URL}/api/fixtures/refresh`,
   FIXTURES_REFRESH_AND_RECALCULATE: `${API_BASE_URL}/api/fixtures/refresh-and-recalculate`,
   

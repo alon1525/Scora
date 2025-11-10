@@ -9,7 +9,6 @@ import { MatchPredictions } from "../components/MatchPredictions";
 import { Leaderboard } from "../components/Leaderboard";
 import { UserScore } from "../components/UserScore";
 import UserStats from "../components/UserStats";
-import UserStatsCompact from "../components/UserStatsCompact";
 import { Button } from "../components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
@@ -17,6 +16,7 @@ import axios from "axios";
 import { API_ENDPOINTS } from "../config/api";
 import backgroundImage from "../assets/background-picture.webp";
 import signOutIcon from "../assets/sign-out.png";
+import scoraLogo from "../assets/Scora_Logo.png";
 
 // Function to clean team names to short names (same as UserProfile)
 const getCleanTeamName = (teamName) => {
@@ -423,15 +423,18 @@ const Index = () => {
       {/* Navigation Bar */}
       <nav className="nav-bar">
         <div className="nav-container">
-            <div className="nav-left">
-              <div className="nav-logo">
-                <span className="material-symbols-outlined nav-icon">emoji_events</span>
-                <span className="nav-title">SCORA</span>
-              </div>
+          <div className="nav-left">
+            <div className="nav-logo" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <img src={scoraLogo} alt="Scora" className="nav-logo-image" />
             </div>
+          </div>
           <div className="nav-right">
             <div className="nav-user">
-              <div className="nav-avatar">
+              <div 
+                className="nav-avatar clickable-avatar"
+                onClick={() => navigate(`/user/${user.id}`)}
+                title="View Profile"
+              >
                 {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'}
               </div>
               <span 
@@ -443,7 +446,7 @@ const Index = () => {
               </span>
             </div>
             <button className="nav-signout" onClick={handleSignOut} title="Sign Out">
-              <img src={signOutIcon} alt="Sign Out" width="16" height="16" />
+              <span className="material-symbols-outlined">logout</span>
             </button>
           </div>
         </div>
@@ -451,18 +454,99 @@ const Index = () => {
 
       {/* Dashboard Header */}
       <header className="dashboard-header-section">
+        <div className="dashboard-header-background"></div>
+        <div className="dashboard-header-gradient"></div>
         <div className="header-container">
           <div className="header-content">
-            <div className="header-text">
-              <h1 className="header-title">
-                Welcome back, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player'}!
-              </h1>
-              <p className="header-subtitle">
-                Make your predictions and climb the leaderboard
-              </p>
+            <div className="header-greeting">
+              <div className="header-greeting-icon">
+                <span className="material-symbols-outlined">waving_hand</span>
+              </div>
+              <div className="header-greeting-text">
+                <span className="header-greeting-label">Welcome back</span>
+                <span className="header-greeting-name">
+                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Player'}
+                </span>
+              </div>
             </div>
-            <div className="header-stats">
-              <UserStatsCompact refreshTrigger={scoreRefreshTrigger} preloadedData={preloadedData} />
+            <div className="header-quick-stats">
+              {preloadedData?.userStats && (
+                <>
+                  <div className="header-quick-stat-card">
+                    <div className="header-quick-stat-icon">
+                      <span className="material-symbols-outlined">emoji_events</span>
+                    </div>
+                    <div className="header-quick-stat-content">
+                      <span className="header-quick-stat-value">#{preloadedData.userStats.globalRank || '-'}</span>
+                      <span className="header-quick-stat-label">Global Rank</span>
+                    </div>
+                  </div>
+                  <div className="header-quick-stat-card">
+                    <div className="header-quick-stat-icon">
+                      <span className="material-symbols-outlined">check_circle</span>
+                    </div>
+                    <div className="header-quick-stat-content">
+                      <span className="header-quick-stat-value">{preloadedData.userStats.exact_predictions || 0}</span>
+                      <span className="header-quick-stat-label">Exact Predictions</span>
+                    </div>
+                  </div>
+                  <div className="header-quick-stat-card">
+                    <div className="header-quick-stat-icon">
+                      <span className="material-symbols-outlined">star</span>
+                    </div>
+                    <div className="header-quick-stat-content">
+                      <span className="header-quick-stat-value">{preloadedData.userStats.total_points || 0}</span>
+                      <span className="header-quick-stat-label">Total Points</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="header-achievements-section">
+              {preloadedData?.userStats?.achievements && preloadedData.userStats.achievements.length > 0 ? (
+                <div className="header-achievements-container">
+                  <div className="header-achievements-header">
+                    <span className="material-symbols-outlined header-achievements-icon">emoji_events</span>
+                    <div className="header-achievements-title">
+                      <span className="header-achievements-label">Achievements</span>
+                      <span className="header-achievements-count">
+                        {preloadedData.userStats.achievements.length}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="header-achievements-badges">
+                    {preloadedData.userStats.achievements.slice(0, 5).map((achievement, index) => (
+                      <div 
+                        key={index} 
+                        className="header-achievement-badge"
+                        title={achievement.name}
+                      >
+                        <span className="material-symbols-outlined">{achievement.icon || 'emoji_events'}</span>
+                      </div>
+                    ))}
+                    {preloadedData.userStats.achievements.length > 5 && (
+                      <div className="header-achievement-badge header-achievement-more" title={`${preloadedData.userStats.achievements.length - 5} more achievements`}>
+                        +{preloadedData.userStats.achievements.length - 5}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="header-achievements-container header-achievements-loading">
+                  <div className="header-achievements-header">
+                    <span className="material-symbols-outlined header-achievements-icon">emoji_events</span>
+                    <div className="header-achievements-title">
+                      <span className="header-achievements-label">Achievements</span>
+                      <span className="header-achievements-count">-</span>
+                    </div>
+                  </div>
+                  <div className="header-achievements-badges">
+                    <div className="header-achievement-badge header-achievement-placeholder"></div>
+                    <div className="header-achievement-badge header-achievement-placeholder"></div>
+                    <div className="header-achievement-badge header-achievement-placeholder"></div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -537,7 +621,7 @@ const Index = () => {
             <div className="dashboard-tabs-content">
               <div className="standings-card">
               <div className="standings-header">
-                <h3 className="standings-title">Live Premier League Standings</h3>
+                <h3 className="standings-title">Premier League</h3>
                 {lastUpdated && (
                   <p className="standings-updated">
                     Last updated: {new Date(lastUpdated).toLocaleString()}
@@ -551,12 +635,11 @@ const Index = () => {
                     <tr>
                       <th>#</th>
                       <th>Team</th>
-                      <th>P</th>
-                      <th>W</th>
-                      <th>D</th>
-                      <th>L</th>
-                      <th>GF</th>
-                      <th>GA</th>
+                      <th className="standings-mobile-show">P</th>
+                      <th className="standings-mobile-hide">W</th>
+                      <th className="standings-mobile-hide">D</th>
+                      <th className="standings-mobile-hide">L</th>
+                      <th>Goal</th>
                       <th>GD</th>
                       <th>Pts</th>
                     </tr>
@@ -584,12 +667,13 @@ const Index = () => {
                                 <span className="standings-team-name">{getCleanTeamName(team.team_name || team.name)}</span>
                               </div>
                             </td>
-                            <td className="standings-stats">{team.played || 0}</td>
-                            <td className="standings-stats">{team.wins || 0}</td>
-                            <td className="standings-stats">{team.draws || 0}</td>
-                            <td className="standings-stats">{team.losses || 0}</td>
-                            <td className="standings-stats">{team.goals_for || team.goalsFor || 0}</td>
-                            <td className="standings-stats">{team.goals_against || team.goalsAgainst || 0}</td>
+                            <td className="standings-stats standings-mobile-show">{team.played || 0}</td>
+                            <td className="standings-stats standings-mobile-hide">{team.wins || 0}</td>
+                            <td className="standings-stats standings-mobile-hide">{team.draws || 0}</td>
+                            <td className="standings-stats standings-mobile-hide">{team.losses || 0}</td>
+                            <td className="standings-stats standings-goal">
+                              {team.goals_for || team.goalsFor || 0}:{team.goals_against || team.goalsAgainst || 0}
+                            </td>
                             <td className="standings-stats">
                               <span className={`standings-goal-diff ${(team.goal_difference || team.goalDifference) > 0 ? 'positive' : (team.goal_difference || team.goalDifference) < 0 ? 'negative' : 'neutral'}`}>
                                 {(team.goal_difference || team.goalDifference) > 0 ? '+' : ''}{(team.goal_difference || team.goalDifference) || 0}

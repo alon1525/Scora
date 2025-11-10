@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import LeaguePage from "./pages/LeaguePage";
 import UserProfile from "./pages/UserProfile";
+import FixtureStats from "./pages/FixtureStats";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/league/:id" element={<LeaguePage />} />
                 <Route path="/user/:userId" element={<UserProfile />} />
+                <Route path="/fixture/:fixtureId" element={<FixtureStats />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
