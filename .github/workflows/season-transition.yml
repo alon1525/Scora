@@ -26,10 +26,12 @@ jobs:
         
     - name: Check if season transition is needed
       id: check-transition
+      continue-on-error: true
       run: |
         cd backend
         node -e "
         const https = require('https');
+        const fs = require('fs');
         const options = {
           hostname: 'scora-nine.vercel.app',
           port: 443,
@@ -41,21 +43,60 @@ jobs:
           let data = '';
           res.on('data', (chunk) => data += chunk);
           res.on('end', () => {
-            const result = JSON.parse(data);
-            console.log('Transition check result:', result);
-            if (result.success && result.needsTransition) {
-              console.log('::set-output name=needs_transition::true');
-              console.log('::set-output name=is_transition_time::' + result.isTransitionTime);
-            } else {
-              console.log('::set-output name=needs_transition::false');
-              console.log('::set-output name=is_transition_time::' + result.isTransitionTime);
+            try {
+              const result = JSON.parse(data);
+              console.log('Transition check result:', result);
+              const needsTransition = result.success && result.needsTransition;
+              const isTransitionTime = result.isTransitionTime || false;
+              
+              // Use new GitHub Actions output format
+              const outputFile = process.env.GITHUB_OUTPUT;
+              if (outputFile) {
+                fs.appendFileSync(outputFile, \`needs_transition=\${needsTransition}\\n\`);
+                fs.appendFileSync(outputFile, \`is_transition_time=\${isTransitionTime}\\n\`);
+              } else {
+                // Fallback for older format (though deprecated)
+                console.log(\`::set-output name=needs_transition::\${needsTransition}\`);
+                console.log(\`::set-output name=is_transition_time::\${isTransitionTime}\`);
+              }
+              
+              if (needsTransition) {
+                console.log('✅ Season transition is needed');
+              } else {
+                console.log('ℹ️ No season transition needed at this time');
+              }
+            } catch (parseError) {
+              console.error('Error parsing response:', parseError);
+              console.log('Response was:', data);
+              // Set outputs to false on error
+              const outputFile = process.env.GITHUB_OUTPUT;
+              if (outputFile) {
+                fs.appendFileSync(outputFile, 'needs_transition=false\n');
+                fs.appendFileSync(outputFile, 'is_transition_time=false\n');
+              }
             }
           });
         });
         
         req.on('error', (error) => {
           console.error('Error checking transition:', error);
-          console.log('::set-output name=needs_transition::false');
+          console.log('ℹ️ Assuming no transition needed due to error');
+          // Set outputs to false on error
+          const outputFile = process.env.GITHUB_OUTPUT;
+          if (outputFile) {
+            fs.appendFileSync(outputFile, 'needs_transition=false\n');
+            fs.appendFileSync(outputFile, 'is_transition_time=false\n');
+          }
+        });
+        
+        req.setTimeout(30000, () => {
+          console.error('Request timeout');
+          req.destroy();
+          const outputFile = process.env.GITHUB_OUTPUT;
+          if (outputFile) {
+            fs.appendFileSync(outputFile, 'needs_transition=false\n');
+            fs.appendFileSync(outputFile, 'is_transition_time=false\n');
+          }
         });
         
         req.end();
@@ -109,8 +150,9 @@ jobs:
         echo "New season has been activated and user data has been reset"
         
     - name: Notify on no transition needed
-      if: steps.check-transition.outputs.needs_transition == 'false'
+      if: always() && steps.check-transition.outputs.needs_transition != 'true'
       run: |
         echo "ℹ️ No season transition needed on $(date)"
         echo "Current date: $(date)"
         echo "Is transition time: ${{ steps.check-transition.outputs.is_transition_time }}"
+        echo "This is expected behavior when it's not yet time for season transition."
