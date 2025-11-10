@@ -126,10 +126,10 @@ router.get('/', async (req, res) => {
     const { matchday } = req.query;
     const season = '2025'; // Hardcoded season
     
+    // Select only columns needed by frontend to reduce payload size
     let query = supabase
       .from('fixtures')
-      .select('*')
-      .eq('season', season)
+      .select('id, external_id, home_team_id, away_team_id, home_team_name, away_team_name, home_team_logo, away_team_logo, matchday, status, scheduled_date, home_score, away_score, prediction_home_percent, prediction_draw_percent, prediction_away_percent, prediction_total_count')
       .order('scheduled_date', { ascending: true });
 
     if (matchday) {
@@ -303,10 +303,10 @@ router.get('/matchday/:matchday', async (req, res) => {
     const { matchday } = req.params;
     const season = '2025'; // Hardcoded season
     
+    // Select only columns needed by frontend to reduce payload size
     const { data: fixtures, error } = await supabase
       .from('fixtures')
-      .select('*')
-      .eq('season', season)
+      .select('id, external_id, home_team_id, away_team_id, home_team_name, away_team_name, home_team_logo, away_team_logo, matchday, status, scheduled_date, home_score, away_score, prediction_home_percent, prediction_draw_percent, prediction_away_percent, prediction_total_count')
       .eq('matchday', parseInt(matchday))
       .order('scheduled_date', { ascending: true });
 

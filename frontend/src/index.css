@@ -1981,6 +1981,7 @@ a:hover {
 .round-dates {
   font-size: 11px;
   opacity: 0.8;
+  line-height: 1.2;
 }
 
 .dashboard-tabs {
@@ -4690,6 +4691,7 @@ a:hover {
     line-height: 1.2;
     text-align: center;
     word-break: break-word;
+    margin-bottom: 2px;
   }
   
   .round-dates {
@@ -5039,10 +5041,13 @@ a:hover {
     font-size: 0.65rem;
     text-align: center;
     word-break: break-word;
+    margin-bottom: 2px;
   }
   
   .round-dates {
     font-size: 0.6rem;
+    opacity: 0.8;
+    line-height: 1.1;
   }
 }
 
@@ -5237,10 +5242,13 @@ a:hover {
     font-size: 0.55rem;
     text-align: center;
     word-break: break-word;
+    margin-bottom: 1px;
   }
   
   .round-dates {
     font-size: 0.5rem;
+    opacity: 0.8;
+    line-height: 1.1;
   }
 }
 

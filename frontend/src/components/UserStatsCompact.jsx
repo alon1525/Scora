@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
@@ -8,6 +8,7 @@ const UserStatsCompact = ({ refreshTrigger, preloadedData }) => {
   const { user } = useAuth();
   const [userStats, setUserStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const hasLoaded = useRef(false);
 
   const fetchUserStats = async () => {
     if (!user) return;
@@ -28,17 +29,29 @@ const UserStatsCompact = ({ refreshTrigger, preloadedData }) => {
   };
 
   useEffect(() => {
-    if (user) {
+    if (user && !hasLoaded.current) {
       // Use preloaded data if available
       if (preloadedData?.userStats) {
         console.log('✅ Using preloaded user stats data for compact view');
         setUserStats(preloadedData.userStats);
         setLoading(false);
-      } else {
+        hasLoaded.current = true;
+      } else if (preloadedData?.loading === false) {
+        // Only fetch if preloaded data has finished loading and userStats weren't included
+        hasLoaded.current = true;
         fetchUserStats();
       }
+      // If preloadedData.loading is true, wait for it to finish
     }
-  }, [user, refreshTrigger, preloadedData]);
+  }, [user, preloadedData]);
+
+  // Separate effect for refresh trigger - only refetch on explicit refresh
+  useEffect(() => {
+    if (user && refreshTrigger) {
+      hasLoaded.current = false; // Reset flag to allow refetch
+      fetchUserStats();
+    }
+  }, [refreshTrigger]);
 
   if (!user || loading || !userStats) {
     return (

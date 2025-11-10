@@ -1,6 +1,13 @@
 import React from 'react';
 
-const PredictionBar = ({ predictions, homeTeam, awayTeam }) => {
+const PredictionBar = ({ 
+  homeTeam, 
+  awayTeam, 
+  homePercent, 
+  drawPercent, 
+  awayPercent, 
+  totalCount 
+}) => {
   // Team colors mapping
   const TEAM_COLORS = {
     'Arsenal': '#EF0107',
@@ -44,7 +51,13 @@ const PredictionBar = ({ predictions, homeTeam, awayTeam }) => {
   const awayColor = TEAM_COLORS[cleanAwayTeam] || TEAM_COLORS[awayTeam] || '#EF4444';
   const drawColor = '#6B7280';
 
-  if (!predictions || predictions.length === 0) {
+  // Use pre-calculated percentages from database
+  const homePercentage = homePercent || 0;
+  const awayPercentage = awayPercent || 0;
+  const drawPercentage = drawPercent || 0;
+  const totalPredictions = totalCount || 0;
+
+  if (totalPredictions === 0) {
     return (
       <div className="prediction-bar-container" style={{
         backgroundColor: 'rgba(0, 0, 0, 0.02)',
@@ -58,28 +71,6 @@ const PredictionBar = ({ predictions, homeTeam, awayTeam }) => {
       </div>
     );
   }
-
-  // Calculate percentages
-  const totalPredictions = predictions.length;
-  let homeWins = 0;
-  let awayWins = 0;
-  let draws = 0;
-
-  predictions.forEach(prediction => {
-    const { home_score, away_score } = prediction;
-    
-    if (home_score > away_score) {
-      homeWins++;
-    } else if (away_score > home_score) {
-      awayWins++;
-    } else {
-      draws++;
-    }
-  });
-
-  const homePercentage = Math.round((homeWins / totalPredictions) * 100);
-  const awayPercentage = Math.round((awayWins / totalPredictions) * 100);
-  const drawPercentage = Math.round((draws / totalPredictions) * 100);
 
   return (
     <div className="prediction-bar-container" style={{

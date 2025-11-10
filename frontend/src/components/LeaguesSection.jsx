@@ -42,11 +42,53 @@ export const LeaguesSection = ({ preloadedData }) => {
       if (preloadedData?.leagues) {
         console.log('✅ Using preloaded leagues data');
         setMyLeagues(preloadedData.leagues);
-      } else {
+        // Also load positions for each league (this is lightweight)
+        loadUserPositions(preloadedData.leagues);
+      } else if (preloadedData?.loading === false) {
+        // Only load if preloaded data has finished loading and leagues weren't included
+        // This prevents duplicate loading while Index.jsx is still loading
         loadMyLeagues();
       }
+      // If preloadedData.loading is true, wait for it to finish
     }
   }, [user, preloadedData]);
+
+  // Load user positions for leagues (extracted for reuse)
+  const loadUserPositions = async (leaguesData) => {
+    if (!user || !leaguesData || leaguesData.length === 0) return;
+
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.error('Session error:', sessionError);
+        return;
+      }
+      
+      const token = session.access_token;
+      const positions = {};
+      
+      for (const membership of leaguesData) {
+        try {
+          const leagueResponse = await axios.get(`${API_ENDPOINTS.LEAGUES_DETAILS}/${membership.league.id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          const standings = leagueResponse.data.standings || [];
+          const userPosition = standings.findIndex(member => member.user_id === user.id) + 1;
+          positions[membership.league.id] = userPosition || 1;
+        } catch (error) {
+          console.error(`Error loading position for league ${membership.league.id}:`, error);
+          positions[membership.league.id] = 1;
+        }
+      }
+      setUserPositions(positions);
+    } catch (error) {
+      console.error('Error loading user positions:', error);
+    }
+  };
 
   const loadMyLeagues = async () => {
     if (!user) return;
@@ -80,26 +122,8 @@ export const LeaguesSection = ({ preloadedData }) => {
       console.log('Load my leagues response:', response.data);
       if (response.data.success) {
         setMyLeagues(response.data.data);
-        
         // Load positions for each league
-        const positions = {};
-        for (const membership of response.data.data) {
-          try {
-            const leagueResponse = await axios.get(`${API_ENDPOINTS.LEAGUES_DETAILS}/${membership.league.id}`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            const standings = leagueResponse.data.standings || [];
-            const userPosition = standings.findIndex(member => member.user_id === user.id) + 1;
-            positions[membership.league.id] = userPosition || 1;
-          } catch (error) {
-            console.error(`Error loading position for league ${membership.league.id}:`, error);
-            positions[membership.league.id] = 1;
-          }
-        }
-        setUserPositions(positions);
+        loadUserPositions(response.data.data);
       }
     } catch (error) {
       console.error('Error loading my leagues:', error);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -9,18 +9,31 @@ const UserScore = ({ refreshTrigger, preloadedData }) => {
   const { user } = useAuth();
   const [userScores, setUserScores] = useState(null);
   const [loading, setLoading] = useState(false);
+  const hasLoaded = useRef(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && !hasLoaded.current) {
       // Use preloaded data if available
       if (preloadedData?.userScores) {
         console.log('✅ Using preloaded user scores data');
         setUserScores(preloadedData.userScores);
-      } else {
+        hasLoaded.current = true;
+      } else if (preloadedData?.loading === false) {
+        // Only fetch if preloaded data has finished loading and userScores weren't included
+        hasLoaded.current = true;
         fetchUserScores();
       }
+      // If preloadedData.loading is true, wait for it to finish
     }
-  }, [user, refreshTrigger, preloadedData]);
+  }, [user, preloadedData]);
+
+  // Separate effect for refresh trigger - only refetch on explicit refresh
+  useEffect(() => {
+    if (user && refreshTrigger) {
+      hasLoaded.current = false; // Reset flag to allow refetch
+      fetchUserScores();
+    }
+  }, [refreshTrigger]);
 
   const fetchUserScores = async () => {
     if (!user) return;

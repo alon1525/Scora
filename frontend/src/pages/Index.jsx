@@ -124,6 +124,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("leaderboard");
   const standingsLoaded = useRef(false);
   const tabsListRef = useRef(null);
+  const hasLoadedAllData = useRef(false); // Track if we've already loaded all data
   
   // Preloaded data for all tabs
   const [preloadedData, setPreloadedData] = useState({
@@ -146,8 +147,9 @@ const Index = () => {
 
   // Comprehensive data loading function
   const loadAllData = async () => {
-    if (!user) return;
+    if (!user || hasLoadedAllData.current) return; // Don't load if already loaded
     
+    hasLoadedAllData.current = true; // Mark as loading
     setPreloadedData(prev => ({ ...prev, loading: true, error: null }));
     
     try {
@@ -294,12 +296,12 @@ const Index = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Load all data when user is authenticated
+  // Load all data when user is authenticated (only once)
   useEffect(() => {
-    if (!authLoading && user && preloadedData.loading) {
+    if (!authLoading && user && !hasLoadedAllData.current) {
       loadAllData();
     }
-  }, [authLoading, user, preloadedData.loading]);
+  }, [authLoading, user]);
 
   // Legacy standings loading removed - now handled in comprehensive loadAllData()
 

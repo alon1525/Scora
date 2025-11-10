@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
 import { toast } from 'sonner';
@@ -345,14 +345,15 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   const [maxMatchweek, setMaxMatchweek] = useState(38); // Premier League has 38 matchweeks
   const [predictions, setPredictions] = useState({});
   const [loading, setLoading] = useState(false);
-  const [matchPredictions, setMatchPredictions] = useState({}); // Store all user predictions for each match
   const [loadedMatchweeks, setLoadedMatchweeks] = useState(new Set()); // Track which matchweeks have been loaded
   const [fixturesCache, setFixturesCache] = useState({}); // Cache loaded fixtures
   const [predictionsCache, setPredictionsCache] = useState({}); // Cache loaded predictions
-  const [matchPredictionsCache, setMatchPredictionsCache] = useState({}); // Cache loaded match predictions
+  const [allFixturesCache, setAllFixturesCache] = useState(null); // Cache all fixtures for team forms
   const [commentsModal, setCommentsModal] = useState({ isOpen: false, fixtureId: null, fixtureTitle: '' });
   const [commentInputs, setCommentInputs] = useState({});
   const [submittingComment, setSubmittingComment] = useState({});
+  const hasPreloadedAdjacentWeeks = React.useRef(false); // Track if we've already preloaded adjacent weeks
+  const loadingMatchweeks = React.useRef(new Set()); // Track which matchweeks are currently loading to prevent duplicates
   // Hardcoded season - no need for state
 
   // Simple function to get current matchweek from preloaded data
@@ -394,23 +395,35 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
   // Fetch fixtures for current matchweek and adjacent weeks (lazy loading with preloading)
   useEffect(() => {
     if (user && currentMatchweek !== null) {
-      loadFixturesForMatchweek(currentMatchweek);
-      // Preload adjacent weeks
-      preloadAdjacentWeeks(currentMatchweek);
+      // Check if already loaded in cache
+      if (loadedMatchweeks.has(currentMatchweek) && fixturesCache[currentMatchweek]) {
+        setFixtures(fixturesCache[currentMatchweek]);
+        return;
+      }
+      
+      // Check if we already have preloaded fixtures for this matchweek
+      if (preloadedData?.fixtures?.[currentMatchweek]) {
+        // Use preloaded data - no need to fetch again
+        const preloadedFixtures = preloadedData.fixtures[currentMatchweek];
+        setFixtures(preloadedFixtures);
+        setLoadedMatchweeks(prev => new Set([...prev, currentMatchweek]));
+        setFixturesCache(prev => ({ ...prev, [currentMatchweek]: preloadedFixtures }));
+      } else if (preloadedData?.loading === false || !preloadedData) {
+        // Load if preloaded data finished loading (or doesn't exist) and this matchweek wasn't included
+        loadFixturesForMatchweek(currentMatchweek);
+      }
+      // Preload adjacent weeks - but only once and only after preloaded data is ready
+      if (!hasPreloadedAdjacentWeeks.current && (preloadedData?.loading === false || !preloadedData)) {
+        hasPreloadedAdjacentWeeks.current = true;
+        preloadAdjacentWeeks(currentMatchweek);
+      }
     }
-  }, [user, currentMatchweek]);
+  }, [user, currentMatchweek, preloadedData?.fixtures, preloadedData?.loading]);
 
   // Fetch user predictions for current matchweek
   useEffect(() => {
     if (user && fixtures.length > 0 && currentMatchweek !== null) {
       fetchPredictions(currentMatchweek, true);
-    }
-  }, [user, fixtures, currentMatchweek]);
-
-  // Load match predictions for prediction bars
-  useEffect(() => {
-    if (user && fixtures.length > 0 && currentMatchweek !== null) {
-      loadMatchPredictions(fixtures, currentMatchweek);
     }
   }, [user, fixtures, currentMatchweek]);
 
@@ -488,16 +501,24 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         teamNames.add(fixture.away_team_name);
       });
 
-      // Get all fixtures for team form calculation
-      const response = await axios.get(API_ENDPOINTS.FIXTURES_ALL);
-      const data = response.data;
-      
-      if (!data.success) {
-        console.error('Failed to fetch fixtures for team forms');
-        return;
-      }
+      // Use cached fixtures if available, otherwise fetch
+      let allFixturesData;
+      if (allFixturesCache) {
+        allFixturesData = allFixturesCache;
+      } else {
+        // Get all fixtures for team form calculation (only once)
+        const response = await axios.get(API_ENDPOINTS.FIXTURES_ALL);
+        const data = response.data;
+        
+        if (!data.success) {
+          console.error('Failed to fetch fixtures for team forms');
+          return;
+        }
 
-      const allFixturesData = data.fixtures;
+        allFixturesData = data.fixtures;
+        // Cache the data so we don't fetch again
+        setAllFixturesCache(allFixturesData);
+      }
       
       // Calculate team forms only for teams in current fixtures
       const teamForms = { ...allFixtures };
@@ -538,9 +559,12 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     if (loadedMatchweeks.has(matchweek)) {
       if (matchweek === currentMatchweek) {
         setFixtures(fixturesCache[matchweek] || []);
-        // Also load match predictions for the current week
-        await loadMatchPredictions(fixturesCache[matchweek] || [], matchweek);
       }
+      return;
+    }
+
+    // Check if currently loading to prevent duplicates
+    if (loadingMatchweeks.current.has(matchweek)) {
       return;
     }
 
@@ -549,8 +573,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       const preloadedFixtures = preloadedData.fixtures[matchweek];
       if (matchweek === currentMatchweek) {
         setFixtures(preloadedFixtures);
-        // Load match predictions for the current week
-        await loadMatchPredictions(preloadedFixtures, matchweek);
       }
       setLoadedMatchweeks(prev => new Set([...prev, matchweek]));
       setFixturesCache(prev => ({ ...prev, [matchweek]: preloadedFixtures }));
@@ -558,6 +580,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     }
 
     // Load from API
+    loadingMatchweeks.current.add(matchweek); // Mark as loading
     try {
       if (showLoading && matchweek === currentMatchweek) {
         setLoading(true);
@@ -568,8 +591,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       if (data.success) {
         if (matchweek === currentMatchweek) {
           setFixtures(data.fixtures);
-          // Load match predictions for the current week
-          await loadMatchPredictions(data.fixtures, matchweek);
         }
         setLoadedMatchweeks(prev => new Set([...prev, matchweek]));
         setFixturesCache(prev => ({ ...prev, [matchweek]: data.fixtures }));
@@ -586,6 +607,7 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         setFixtures([]);
       }
     } finally {
+      loadingMatchweeks.current.delete(matchweek); // Remove from loading set
       if (showLoading && matchweek === currentMatchweek) {
         setLoading(false);
       }
@@ -608,7 +630,8 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     
     // Preload each week in the background (without showing loading state)
     weeksToPreload.forEach(async (week) => {
-      if (!loadedMatchweeks.has(week)) {
+      // Check if already loaded OR already in preloaded data
+      if (!loadedMatchweeks.has(week) && !preloadedData?.fixtures?.[week]) {
         console.log(`🔄 Preloading matchweek ${week}...`);
         try {
           await loadFixturesForMatchweek(week, false);
@@ -619,6 +642,11 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
         } catch (error) {
           console.log(`⚠️ Failed to preload matchweek ${week}:`, error);
         }
+      } else if (preloadedData?.fixtures?.[week]) {
+        // Already preloaded, just cache it
+        const preloadedFixtures = preloadedData.fixtures[week];
+        setLoadedMatchweeks(prev => new Set([...prev, week]));
+        setFixturesCache(prev => ({ ...prev, [week]: preloadedFixtures }));
       }
     });
   };
@@ -644,15 +672,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
     try {
       // Preload user predictions
       await fetchPredictions(week, false);
-      
-      // Preload match predictions if fixtures are available
-      const weekFixtures = fixturesCache[week];
-      if (weekFixtures && weekFixtures.length > 0) {
-        await loadMatchPredictions(weekFixtures, week);
-        console.log(`✅ Preloaded match predictions for week ${week}`);
-      } else {
-        console.log(`⚠️ No fixtures available for week ${week} when preloading predictions`);
-      }
       
       console.log(`✅ Preloaded user predictions for week ${week}`);
     } catch (error) {
@@ -707,59 +726,6 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
       }
     } catch (error) {
       console.log(`Error fetching predictions for week ${week}:`, error);
-    }
-  };
-
-  const loadMatchPredictions = async (weekFixtures = fixtures, week = currentMatchweek) => {
-    // Check cache first
-    if (matchPredictionsCache[week]) {
-      if (week === currentMatchweek) {
-        setMatchPredictions(matchPredictionsCache[week]);
-      }
-      return matchPredictionsCache[week];
-    }
-
-    try {
-      // Get auth token
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
-      if (!token) {
-        return {};
-      }
-
-      // Use the new bulk predictions endpoint
-      const response = await axios.get(`${API_ENDPOINTS.STANDINGS}/bulk-predictions?week=${week}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.data.success) {
-        const predictions = {};
-        
-        // Transform the bulk data to match the existing format
-        for (const fixture of response.data.data.fixtures) {
-          predictions[fixture.id] = fixture.predictions.map(pred => ({
-            home_score: pred.home_score,
-            away_score: pred.away_score
-          }));
-        }
-
-        // Cache the match predictions
-        setMatchPredictionsCache(prev => ({ ...prev, [week]: predictions }));
-        
-        if (week === currentMatchweek) {
-          setMatchPredictions(predictions);
-        }
-
-        return predictions;
-      } else {
-        console.error('Failed to load bulk predictions:', response.data.error);
-        return {};
-      }
-    } catch (error) {
-      console.error('Error loading match predictions:', error);
-      return {};
     }
   };
 
@@ -909,13 +875,12 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
           currentMatchday={currentMatchweek}
           maxMatchday={maxMatchweek}
           onMatchdayChange={(week) => {
+            // Just set the matchweek - the useEffect will handle loading
             setCurrentMatchweek(week);
-            // Load week on demand if not already loaded
-            loadWeekOnDemand(week);
           }}
           onWeekHover={(week) => {
-            // Preload week on hover for better UX
-            if (!loadedMatchweeks.has(week)) {
+            // Preload week on hover for better UX (only if not already loaded or loading)
+            if (!loadedMatchweeks.has(week) && !loadingMatchweeks.current.has(week)) {
               loadFixturesForMatchweek(week, false); // Silent preload
             }
           }}
@@ -1125,9 +1090,12 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                   {/* Prediction Bar for all games except NOT_STARTED */}
                   {fixture.status !== 'NOT_STARTED' && (
                     <PredictionBar 
-                      predictions={matchPredictions[fixture.id] || []}
                       homeTeam={getCleanTeamName(fixture.home_team_name)}
                       awayTeam={getCleanTeamName(fixture.away_team_name)}
+                      homePercent={fixture.prediction_home_percent}
+                      drawPercent={fixture.prediction_draw_percent}
+                      awayPercent={fixture.prediction_away_percent}
+                      totalCount={fixture.prediction_total_count}
                     />
                   )}
 

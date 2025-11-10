@@ -52,16 +52,6 @@ const RoundNavigation = ({ currentMatchday, maxMatchday, onMatchdayChange, onWee
     setVisibleRounds(allRounds.slice(newStartIndex, newStartIndex + 7));
   };
 
-  const formatRoundDates = (round) => {
-    const start = round.startDate;
-    const end = round.endDate;
-    
-    if (start.getMonth() === end.getMonth()) {
-      return `${start.getDate()} - ${end.getDate()} ${start.toLocaleDateString('en-US', { month: 'short' })}`;
-    } else {
-      return `${start.getDate()} ${start.toLocaleDateString('en-US', { month: 'short' })} - ${end.getDate()} ${end.toLocaleDateString('en-US', { month: 'short' })}`;
-    }
-  };
 
   return (
     <div className="round-navigation">
@@ -85,7 +75,9 @@ const RoundNavigation = ({ currentMatchday, maxMatchday, onMatchdayChange, onWee
             disabled={!round.isAvailable}
           >
             <div className="round-number">Week {round.number}</div>
-            <div className="round-dates">{formatRoundDates(round)}</div>
+            <div className="round-dates">
+              {`Fixture ${(round.number - 1) * 10 + 1}-${round.number * 10}`}
+            </div>
           </button>
         ))}
       </div>

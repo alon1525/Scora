@@ -195,6 +195,100 @@ async function storeFixtures(fixturesData, season) {
   return storedCount;
 }
 
+// Calculate and update prediction percentages for fixtures
+async function calculatePredictionPercentages() {
+  console.log('📊 Calculating prediction percentages for fixtures...');
+  
+  try {
+    // Get only fixtures that are TIMED or SCHEDULED (upcoming matches)
+    const { data: fixtures, error: fixturesError } = await supabase
+      .from('fixtures')
+      .select('id')
+      .in('status', ['TIMED', 'SCHEDULED']);
+
+    if (fixturesError) {
+      throw new Error(`Failed to fetch fixtures: ${fixturesError.message}`);
+    }
+
+    console.log(`📊 Found ${fixtures.length} fixtures with status TIMED or SCHEDULED to process`);
+
+    // Get all user predictions
+    const { data: users, error: usersError } = await supabase
+      .from('user_profiles')
+      .select('user_id, fixture_predictions')
+      .not('fixture_predictions', 'is', null);
+
+    if (usersError) {
+      throw new Error(`Failed to fetch users: ${usersError.message}`);
+    }
+
+    let updatedCount = 0;
+
+    // Process each fixture
+    for (const fixture of fixtures) {
+      let homeWins = 0;
+      let awayWins = 0;
+      let draws = 0;
+      let totalPredictions = 0;
+
+      // Count predictions for this fixture
+      for (const user of users) {
+        const userPredictions = user.fixture_predictions || {};
+        const prediction = userPredictions[fixture.id.toString()] || userPredictions[fixture.id];
+        
+        if (prediction && 
+            prediction.home_score !== null && 
+            prediction.home_score !== undefined &&
+            prediction.away_score !== null && 
+            prediction.away_score !== undefined) {
+          
+          totalPredictions++;
+          
+          if (prediction.home_score > prediction.away_score) {
+            homeWins++;
+          } else if (prediction.away_score > prediction.home_score) {
+            awayWins++;
+          } else {
+            draws++;
+          }
+        }
+      }
+
+      // Calculate percentages
+      const homePercent = totalPredictions > 0 ? Math.round((homeWins / totalPredictions) * 100) : 0;
+      const drawPercent = totalPredictions > 0 ? Math.round((draws / totalPredictions) * 100) : 0;
+      const awayPercent = totalPredictions > 0 ? Math.round((awayWins / totalPredictions) * 100) : 0;
+
+      // Update fixture with percentages
+      const { error: updateError } = await supabase
+        .from('fixtures')
+        .update({
+          prediction_home_percent: homePercent,
+          prediction_draw_percent: drawPercent,
+          prediction_away_percent: awayPercent,
+          prediction_total_count: totalPredictions
+        })
+        .eq('id', fixture.id);
+
+      if (updateError) {
+        console.error(`❌ Error updating fixture ${fixture.id}:`, updateError);
+      } else {
+        updatedCount++;
+        if (updatedCount % 50 === 0) {
+          console.log(`✅ Updated ${updatedCount} fixtures...`);
+        }
+      }
+    }
+
+    console.log(`✅ Prediction percentages calculation completed. Updated ${updatedCount} fixtures`);
+    return { success: true, message: `Prediction percentages calculated for ${updatedCount} fixtures` };
+
+  } catch (error) {
+    console.error('❌ Error calculating prediction percentages:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 // Recalculate user scores
 async function recalculateUserScores() {
   console.log('🧮 Recalculating user scores...');
@@ -323,8 +417,13 @@ async function runCronJob() {
     const standingsStored = await storeStandings(standingsData, '2025');
     console.log(`✅ Stored ${standingsStored} standings`);
 
-    // Step 3: Recalculate user scores
-    console.log('🧮 Step 3 - Recalculating user scores...');
+    // Step 3: Calculate prediction percentages
+    console.log('📊 Step 3 - Calculating prediction percentages...');
+    const percentagesResult = await calculatePredictionPercentages();
+    console.log('✅ Prediction percentages calculation result:', percentagesResult);
+
+    // Step 4: Recalculate user scores
+    console.log('🧮 Step 4 - Recalculating user scores...');
     const scoresResult = await recalculateUserScores();
     console.log('✅ User scores recalculation result:', scoresResult);
 
@@ -339,6 +438,7 @@ async function runCronJob() {
       results: {
         fixtures: { stored: fixturesStored, total: fixturesData.length },
         standings: { stored: standingsStored, total: standingsData.length },
+        percentages: percentagesResult,
         scores: scoresResult
       }
     };

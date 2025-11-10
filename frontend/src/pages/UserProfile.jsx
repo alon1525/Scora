@@ -92,7 +92,6 @@ const UserProfile = () => {
   const { userId } = useParams();
   const [player, setPlayer] = useState(null);
   const [predictions, setPredictions] = useState([]);
-  const [fixtures, setFixtures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState('all');
   const [availableWeeks, setAvailableWeeks] = useState([]);
@@ -101,8 +100,8 @@ const UserProfile = () => {
   useEffect(() => {
     if (userId) {
       loadUserProfile();
-      loadFixtures();
       loadUserComments();
+      // Note: loadFixtures() is not needed - loadPlayerPredictions() already fetches fixtures
     }
   }, [userId]);
 
@@ -286,44 +285,8 @@ const UserProfile = () => {
     }
   };
 
-  const loadFixtures = async () => {
-    try {
-      // Get fixtures that have passed their scheduled time to match with predictions
-      const now = new Date().toISOString();
-      const { data: fixturesData, error: fixturesError } = await supabase
-        .from('fixtures')
-        .select('id, home_team_name, away_team_name, home_score, away_score, status')
-        .lt('scheduled_date', now) // Only get fixtures where scheduled_date is before current time
-        .limit(20);
-
-      if (fixturesError) {
-        console.error('Error loading fixtures:', fixturesError);
-        return;
-      }
-
-      setFixtures(fixturesData || []);
-      
-      // Update predictions with team names from fixtures
-      if (fixturesData && predictions.length > 0) {
-        const updatedPredictions = predictions.map(prediction => {
-          const fixture = fixturesData.find(f => f.id === prediction.id);
-          if (fixture) {
-            return {
-              ...prediction,
-              homeTeam: fixture.home_team_name,
-              awayTeam: fixture.away_team_name,
-              actualScore: `${fixture.home_score}-${fixture.away_score}`,
-              correct: prediction.predictedScore === `${fixture.home_score}-${fixture.away_score}`
-            };
-          }
-          return prediction;
-        });
-        setPredictions(updatedPredictions);
-      }
-    } catch (error) {
-      console.error('Error loading fixtures:', error);
-    }
-  };
+  // Removed loadFixtures() - it was duplicating the fixture fetch from loadPlayerPredictions()
+  // loadPlayerPredictions() already fetches all fixtures and creates predictions with all necessary data
 
   const loadUserComments = async () => {
     try {

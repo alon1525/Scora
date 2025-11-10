@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
@@ -13,19 +13,34 @@ const Leaderboard = ({ preloadedData }) => {
   const [leaderboard, setLeaderboard] = useState([]);
   const [userScores, setUserScores] = useState(null);
   const [loading, setLoading] = useState(false);
+  const hasLoadedLeaderboard = React.useRef(false);
+  const hasLoadedScores = React.useRef(false);
   // Hardcoded season - no need for state
 
   useEffect(() => {
     // Use preloaded data if available
-    if (preloadedData?.leaderboard) {
+    if (preloadedData?.leaderboard && !hasLoadedLeaderboard.current) {
       console.log('✅ Using preloaded leaderboard data');
       setLeaderboard(preloadedData.leaderboard);
-    } else {
+      hasLoadedLeaderboard.current = true;
+    } else if (preloadedData?.loading === false && !hasLoadedLeaderboard.current) {
+      // Only fetch if preloaded data has finished loading and leaderboard wasn't included
+      hasLoadedLeaderboard.current = true;
       fetchLeaderboard();
     }
+    // If preloadedData.loading is true, wait for it to finish
     
+    // Use preloaded scores if available, otherwise fetch
     if (user) {
-      fetchUserScores();
+      if (preloadedData?.userScores && !hasLoadedScores.current) {
+        console.log('✅ Using preloaded user scores');
+        setUserScores(preloadedData.userScores);
+        hasLoadedScores.current = true;
+      } else if (preloadedData?.loading === false && !hasLoadedScores.current) {
+        // Only fetch if preloaded data has finished loading and scores weren't included
+        hasLoadedScores.current = true;
+        fetchUserScores();
+      }
     }
   }, [user, preloadedData]);
 
