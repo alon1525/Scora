@@ -281,52 +281,49 @@ const Landing = () => {
               Master both prediction types to dominate the leaderboard
             </p>
           </div>
-          <div className="landing-features-main-grid">
-            <div className="landing-feature-large">
-              <div className="landing-feature-large-visual">
-                <div className="landing-feature-large-icon">
-                  <span className="material-symbols-outlined">sports_soccer</span>
+          <div className="landing-predictions-split">
+            <div className="landing-prediction-card landing-prediction-left">
+              <div className="landing-prediction-bg-pattern"></div>
+              <div className="landing-prediction-content">
+                <div className="landing-prediction-icon-wrapper">
+                  <div className="landing-prediction-icon-circle">
+                    <span className="material-symbols-outlined">sports_soccer</span>
+                  </div>
+                  <div className="landing-prediction-icon-ring"></div>
                 </div>
-                <div className="landing-feature-large-glow"></div>
-              </div>
-              <div className="landing-feature-large-content">
-                <h3 className="landing-feature-large-title">Predict Game Scores</h3>
-                <p className="landing-feature-large-description">
-                  Make your predictions for every match. Get 3 points for exact scores, 1 point for correct results.
-                </p>
-                <div className="landing-feature-large-stats">
-                  <div className="landing-feature-stat-badge">
-                    <span className="material-symbols-outlined">star</span>
-                    <span>3 pts for exact</span>
-                  </div>
-                  <div className="landing-feature-stat-badge">
-                    <span className="material-symbols-outlined">check_circle</span>
-                    <span>1 pt for result</span>
-                  </div>
+                <h3 className="landing-prediction-title">
+                  Predict<br />Game Scores
+                </h3>
+                <div className="landing-prediction-highlight">
+                  <span className="landing-prediction-number">3</span>
+                  <span className="landing-prediction-label">Points for Exact</span>
+                </div>
+                <div className="landing-prediction-highlight">
+                  <span className="landing-prediction-number">1</span>
+                  <span className="landing-prediction-label">Point for Result</span>
                 </div>
               </div>
             </div>
-            <div className="landing-feature-large">
-              <div className="landing-feature-large-visual">
-                <div className="landing-feature-large-icon">
-                  <span className="material-symbols-outlined">table_chart</span>
+            
+            <div className="landing-prediction-card landing-prediction-right">
+              <div className="landing-prediction-bg-pattern"></div>
+              <div className="landing-prediction-content">
+                <div className="landing-prediction-icon-wrapper">
+                  <div className="landing-prediction-icon-circle">
+                    <span className="material-symbols-outlined">table_chart</span>
+                  </div>
+                  <div className="landing-prediction-icon-ring"></div>
                 </div>
-                <div className="landing-feature-large-glow"></div>
-              </div>
-              <div className="landing-feature-large-content">
-                <h3 className="landing-feature-large-title">Predict the Final Table</h3>
-                <p className="landing-feature-large-description">
-                  Forecast where each team finishes. Earn up to 20 points per team based on accuracy.
-                </p>
-                <div className="landing-feature-large-stats">
-                  <div className="landing-feature-stat-badge">
-                    <span className="material-symbols-outlined">emoji_events</span>
-                    <span>20 pts max</span>
-                  </div>
-                  <div className="landing-feature-stat-badge">
-                    <span className="material-symbols-outlined">trending_up</span>
-                    <span>Per team</span>
-                  </div>
+                <h3 className="landing-prediction-title">
+                  Predict<br />the Final Table
+                </h3>
+                <div className="landing-prediction-highlight">
+                  <span className="landing-prediction-number">20</span>
+                  <span className="landing-prediction-label">Points Max</span>
+                </div>
+                <div className="landing-prediction-highlight">
+                  <span className="landing-prediction-number">-1</span>
+                  <span className="landing-prediction-label">Per Position Off</span>
                 </div>
               </div>
             </div>
