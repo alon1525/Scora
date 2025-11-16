@@ -389,14 +389,22 @@ async function updateTeamsTable(season = '2025') {
       }
     }
 
-    // Upsert teams
+    // Upsert teams - update only the columns we have
     if (teamsToInsert.length > 0) {
+      // First, delete existing teams for this season to avoid conflicts
+      const { error: deleteError } = await supabase
+        .from('teams')
+        .delete()
+        .eq('season', season);
+
+      if (deleteError) {
+        console.warn('Warning: Could not delete existing teams:', deleteError.message);
+      }
+
+      // Then insert all teams
       const { error } = await supabase
         .from('teams')
-        .upsert(teamsToInsert, {
-          onConflict: 'team_id,season',
-          ignoreDuplicates: false
-        });
+        .insert(teamsToInsert);
 
       if (error) {
         throw new Error(`Database error: ${error.message}`);
