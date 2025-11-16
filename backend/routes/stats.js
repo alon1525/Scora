@@ -71,8 +71,8 @@ async function getTeamIdFromAPI(teamName) {
   }
 }
 
-// Get matches for a team
-async function getTeamMatches(teamId, limit = 100) {
+// Get matches for a team (from all seasons)
+async function getTeamMatches(teamId, limit = 200) {
   const API_KEY = process.env.LEAGUE_STANDINGS_API_KEY;
   
   if (!API_KEY) {
@@ -80,6 +80,7 @@ async function getTeamMatches(teamId, limit = 100) {
   }
 
   try {
+    // Get more matches to ensure we have enough finished H2H matches across seasons
     const response = await fetch(`https://api.football-data.org/v4/teams/${teamId}/matches?limit=${limit}`, {
       headers: {
         'X-Auth-Token': API_KEY,
@@ -99,6 +100,8 @@ async function getTeamMatches(teamId, limit = 100) {
 }
 
 // Calculate H2H stats between two teams
+// team1Name/team1Id = home team of the fixture
+// team2Name/team2Id = away team of the fixture
 async function calculateH2HStats(team1Name, team2Name, team1Id, team2Id, team1ExternalId = null, team2ExternalId = null) {
   try {
     // Get external team IDs from database first, fallback to API if needed
@@ -130,117 +133,126 @@ async function calculateH2HStats(team1Name, team2Name, team1Id, team2Id, team1Ex
       return null;
     }
 
-    // Get matches for team1
-    const team1Matches = await getTeamMatches(team1ExternalId, 100);
+    // Get matches for team1 (from all seasons)
+    const team1Matches = await getTeamMatches(team1ExternalId, 200);
     
-    // Filter matches where team1 played against team2
+    // Filter matches where team1 played against team2 AND are finished with scores
     const h2hMatches = team1Matches.filter(match => {
       const homeId = match.homeTeam?.id;
       const awayId = match.awayTeam?.id;
-      return (homeId === team1ExternalId && awayId === team2ExternalId) ||
-             (homeId === team2ExternalId && awayId === team1ExternalId);
+      const isH2H = (homeId === team1ExternalId && awayId === team2ExternalId) ||
+                    (homeId === team2ExternalId && awayId === team1ExternalId);
+      const isFinished = match.status === 'FINISHED';
+      const hasScore = match.score?.fullTime?.home !== null && 
+                       match.score?.fullTime?.away !== null;
+      return isH2H && isFinished && hasScore;
     });
 
-    // Sort by date descending and take last 10
+    // Sort by date descending and take last 10 finished matches
     h2hMatches.sort((a, b) => new Date(b.utcDate) - new Date(a.utcDate));
     const last10Matches = h2hMatches.slice(0, 10);
 
     if (last10Matches.length === 0) {
       return {
-        team1: team1Name,
-        team2: team2Name,
         h2h_matches: [],
         avg_goals: {
-          team1: { for: 0, against: 0 },
-          team2: { for: 0, against: 0 }
+          home: { for: 0, against: 0 },
+          away: { for: 0, against: 0 }
         },
         record: {
-          team1: { wins: 0, draws: 0, losses: 0 },
-          team2: { wins: 0, draws: 0, losses: 0 }
+          home: { wins: 0, draws: 0, losses: 0 },
+          away: { wins: 0, draws: 0, losses: 0 }
         },
         last_match: null,
         updated_at: new Date().toISOString()
       };
     }
 
-    // Calculate stats
-    let team1GoalsFor = 0;
-    let team1GoalsAgainst = 0;
-    let team2GoalsFor = 0;
-    let team2GoalsAgainst = 0;
-    let team1Wins = 0;
-    let team1Draws = 0;
-    let team1Losses = 0;
+    // Calculate stats relative to the current fixture (team1 = home, team2 = away)
+    let homeGoalsFor = 0; // Goals scored by home team (team1) in historical matches
+    let homeGoalsAgainst = 0; // Goals conceded by home team
+    let awayGoalsFor = 0; // Goals scored by away team (team2) in historical matches
+    let awayGoalsAgainst = 0; // Goals conceded by away team
+    let homeWins = 0; // Wins by home team (team1)
+    let homeDraws = 0;
+    let homeLosses = 0;
 
     const formattedMatches = last10Matches.map(match => {
-      const homeId = match.homeTeam?.id;
-      const homeName = match.homeTeam?.name || '';
-      const awayName = match.awayTeam?.name || '';
-      const homeScore = match.score?.fullTime?.home ?? null;
-      const awayScore = match.score?.fullTime?.away ?? null;
+      const matchHomeId = match.homeTeam?.id;
+      const matchHomeName = match.homeTeam?.name || '';
+      const matchAwayName = match.awayTeam?.name || '';
+      const matchHomeScore = match.score?.fullTime?.home ?? 0;
+      const matchAwayScore = match.score?.fullTime?.away ?? 0;
 
-      let team1Score, team2Score;
-      if (homeId === team1ExternalId) {
-        team1Score = homeScore;
-        team2Score = awayScore;
-      } else {
-        team1Score = awayScore;
-        team2Score = homeScore;
-      }
+      // Determine which team in the historical match corresponds to team1 (home team of current fixture)
+      const isTeam1HomeInMatch = matchHomeId === team1ExternalId;
+      
+      if (isTeam1HomeInMatch) {
+        // In this historical match, team1 was home, team2 was away
+        homeGoalsFor += matchHomeScore;
+        homeGoalsAgainst += matchAwayScore;
+        awayGoalsFor += matchAwayScore;
+        awayGoalsAgainst += matchHomeScore;
 
-      // Only count if scores are available
-      if (team1Score !== null && team2Score !== null) {
-        team1GoalsFor += team1Score;
-        team1GoalsAgainst += team2Score;
-        team2GoalsFor += team2Score;
-        team2GoalsAgainst += team1Score;
-
-        if (team1Score > team2Score) {
-          team1Wins++;
-        } else if (team1Score < team2Score) {
-          team1Losses++;
+        if (matchHomeScore > matchAwayScore) {
+          homeWins++;
+        } else if (matchHomeScore < matchAwayScore) {
+          homeLosses++;
         } else {
-          team1Draws++;
+          homeDraws++;
+        }
+      } else {
+        // In this historical match, team2 was home, team1 was away
+        homeGoalsFor += matchAwayScore; // Team1 scored as away
+        homeGoalsAgainst += matchHomeScore;
+        awayGoalsFor += matchHomeScore; // Team2 scored as home
+        awayGoalsAgainst += matchAwayScore;
+
+        if (matchAwayScore > matchHomeScore) {
+          homeWins++; // Team1 (away) won
+        } else if (matchAwayScore < matchHomeScore) {
+          homeLosses++; // Team1 (away) lost
+        } else {
+          homeDraws++;
         }
       }
 
       return {
         date: match.utcDate ? match.utcDate.split('T')[0] : null,
-        home: homeName,
-        away: awayName,
-        score: homeScore !== null && awayScore !== null ? `${homeScore}-${awayScore}` : null,
-        home_score: homeScore,
-        away_score: awayScore
+        home: matchHomeName,
+        away: matchAwayName,
+        score: `${matchHomeScore}-${matchAwayScore}`,
+        home_score: matchHomeScore,
+        away_score: matchAwayScore
       };
     });
 
-    const matchCount = last10Matches.filter(m => 
-      m.score?.fullTime?.home !== null && m.score?.fullTime?.away !== null
-    ).length;
+    const matchCount = last10Matches.length; // All are finished with scores
 
-    const avgGoalsTeam1 = matchCount > 0 ? {
-      for: parseFloat((team1GoalsFor / matchCount).toFixed(2)),
-      against: parseFloat((team1GoalsAgainst / matchCount).toFixed(2))
+    const avgGoalsHome = matchCount > 0 ? {
+      for: parseFloat((homeGoalsFor / matchCount).toFixed(2)),
+      against: parseFloat((homeGoalsAgainst / matchCount).toFixed(2))
     } : { for: 0, against: 0 };
 
-    const avgGoalsTeam2 = matchCount > 0 ? {
-      for: parseFloat((team2GoalsFor / matchCount).toFixed(2)),
-      against: parseFloat((team2GoalsAgainst / matchCount).toFixed(2))
+    const avgGoalsAway = matchCount > 0 ? {
+      for: parseFloat((awayGoalsFor / matchCount).toFixed(2)),
+      against: parseFloat((awayGoalsAgainst / matchCount).toFixed(2))
     } : { for: 0, against: 0 };
+
+    // Get last finished match (most recent)
+    const lastFinishedMatch = formattedMatches.length > 0 ? formattedMatches[0] : null;
 
     return {
-      team1: team1Name,
-      team2: team2Name,
       h2h_matches: formattedMatches,
       avg_goals: {
-        team1: avgGoalsTeam1,
-        team2: avgGoalsTeam2
+        home: avgGoalsHome,
+        away: avgGoalsAway
       },
       record: {
-        team1: { wins: team1Wins, draws: team1Draws, losses: team1Losses },
-        team2: { wins: team1Losses, draws: team1Draws, losses: team1Wins }
+        home: { wins: homeWins, draws: homeDraws, losses: homeLosses },
+        away: { wins: homeLosses, draws: homeDraws, losses: homeWins }
       },
-      last_match: formattedMatches[0] || null,
+      last_match: lastFinishedMatch,
       updated_at: new Date().toISOString()
     };
   } catch (error) {
@@ -252,14 +264,16 @@ async function calculateH2HStats(team1Name, team2Name, team1Id, team2Id, team1Ex
 // Calculate recent form from team matches (last 5 matches)
 async function calculateRecentForm(teamExternalId, season = '2025') {
   try {
-    const matches = await getTeamMatches(teamExternalId, 100);
+    const matches = await getTeamMatches(teamExternalId, 200);
     
-    // Filter for finished matches with scores
+    // Filter for Premier League finished matches with scores
     const finishedMatches = matches.filter(match => {
+      const isPL = match.competition?.code === 'PL' || 
+                   match.competition?.name?.includes('Premier League');
       const isFinished = match.status === 'FINISHED';
       const hasScore = match.score?.fullTime?.home !== null && 
                        match.score?.fullTime?.away !== null;
-      return isFinished && hasScore;
+      return isPL && isFinished && hasScore;
     });
 
     // Sort by date descending and take last 5
@@ -367,8 +381,19 @@ async function updateTeamsTable(season = '2025') {
 
       console.log(`📈 Calculating stats for ${teamName} (${i + 1}/${standings.length})...`);
       
-      // Calculate recent form
-      const recentFormData = await calculateRecentForm(team.id, season);
+      // Calculate recent form with error handling
+      let recentFormData;
+      try {
+        recentFormData = await calculateRecentForm(team.id, season);
+      } catch (error) {
+        console.error(`  ⚠ Error calculating form for ${teamName}:`, error.message);
+        recentFormData = {
+          recent_form: [],
+          recent_goals_for: 0,
+          recent_goals_against: 0,
+          recent_clean_sheets: 0
+        };
+      }
       
       teamsToInsert.push({
         team_id: internalTeamId,
