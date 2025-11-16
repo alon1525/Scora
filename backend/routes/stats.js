@@ -99,14 +99,34 @@ async function getTeamMatches(teamId, limit = 100) {
 }
 
 // Calculate H2H stats between two teams
-async function calculateH2HStats(team1Name, team2Name, team1Id, team2Id) {
+async function calculateH2HStats(team1Name, team2Name, team1Id, team2Id, team1ExternalId = null, team2ExternalId = null) {
   try {
-    // Get external team IDs from API
-    const team1ExternalId = await getTeamIdFromAPI(team1Name);
-    const team2ExternalId = await getTeamIdFromAPI(team2Name);
+    // Get external team IDs from database first, fallback to API if needed
+    if (!team1ExternalId || !team2ExternalId) {
+      const { data: teams } = await supabase
+        .from('teams')
+        .select('external_team_id, team_name')
+        .in('team_id', [team1Id, team2Id])
+        .eq('season', '2025');
+      
+      if (teams && teams.length === 2) {
+        const team1 = teams.find(t => t.team_id === team1Id || t.team_name === team1Name);
+        const team2 = teams.find(t => t.team_id === team2Id || t.team_name === team2Name);
+        team1ExternalId = team1?.external_team_id || team1ExternalId;
+        team2ExternalId = team2?.external_team_id || team2ExternalId;
+      }
+      
+      // Fallback to API if still not found
+      if (!team1ExternalId) {
+        team1ExternalId = await getTeamIdFromAPI(team1Name);
+      }
+      if (!team2ExternalId) {
+        team2ExternalId = await getTeamIdFromAPI(team2Name);
+      }
+    }
 
     if (!team1ExternalId || !team2ExternalId) {
-      console.log(`Could not find external IDs for ${team1Name} or ${team2Name}`);
+      console.log(`Could not find external IDs for ${team1Name} (${team1ExternalId}) or ${team2Name} (${team2ExternalId})`);
       return null;
     }
 
@@ -340,36 +360,32 @@ async function updateTeamsTable(season = '2025') {
         key => TEAM_ID_TO_NAME[key] === teamName
       );
 
-      if (internalTeamId) {
-        console.log(`📈 Calculating stats for ${teamName} (${i + 1}/${standings.length})...`);
-        
-        // Calculate recent form
-        const recentFormData = await calculateRecentForm(team.id, season);
-        
-        teamsToInsert.push({
-          team_id: internalTeamId,
-          team_name: teamName,
-          external_team_id: team.id,
-          team_logo: team.crest,
-          season: season,
-          current_position: teamStanding.position,
-          points: teamStanding.points,
-          goals_for: teamStanding.goalsFor,
-          goals_against: teamStanding.goalsAgainst,
-          wins: teamStanding.won,
-          draws: teamStanding.draw,
-          losses: teamStanding.lost,
-          recent_form: recentFormData.recent_form,
-          recent_goals_for: recentFormData.recent_goals_for,
-          recent_goals_against: recentFormData.recent_goals_against,
-          recent_clean_sheets: recentFormData.recent_clean_sheets,
-          updated_at: new Date().toISOString()
-        });
+      if (!internalTeamId) {
+        console.log(`⚠️ Skipping ${teamName} - not found in team mapping`);
+        continue;
+      }
 
-        // Small delay to avoid rate limiting
-        if (i < standings.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
+      console.log(`📈 Calculating stats for ${teamName} (${i + 1}/${standings.length})...`);
+      
+      // Calculate recent form
+      const recentFormData = await calculateRecentForm(team.id, season);
+      
+      teamsToInsert.push({
+        team_id: internalTeamId,
+        team_name: teamName,
+        external_team_id: team.id,
+        season: season,
+        current_position: teamStanding.position,
+        recent_form: recentFormData.recent_form,
+        recent_goals_for: recentFormData.recent_goals_for,
+        recent_goals_against: recentFormData.recent_goals_against,
+        recent_clean_sheets: recentFormData.recent_clean_sheets,
+        updated_at: new Date().toISOString()
+      });
+
+      // Small delay to avoid rate limiting
+      if (i < standings.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
     }
 
@@ -399,6 +415,25 @@ async function updateTeamsTable(season = '2025') {
 // Update H2H stats for all fixtures
 async function updateAllFixturesH2HStats(season = '2025') {
   try {
+    // First, get all teams with their external IDs to avoid API calls
+    const { data: allTeams, error: teamsError } = await supabase
+      .from('teams')
+      .select('team_id, external_team_id, team_name')
+      .eq('season', season);
+
+    if (teamsError) {
+      console.warn('Warning: Could not fetch teams for caching:', teamsError.message);
+    }
+
+    // Create a map for quick lookup
+    const teamIdMap = {};
+    if (allTeams) {
+      allTeams.forEach(team => {
+        teamIdMap[team.team_id] = team.external_team_id;
+        teamIdMap[team.team_name] = team.external_team_id;
+      });
+    }
+
     // Get all fixtures for the season
     const { data: fixtures, error: fixturesError } = await supabase
       .from('fixtures')
@@ -421,16 +456,25 @@ async function updateAllFixturesH2HStats(season = '2025') {
 
     // Process fixtures in batches to avoid rate limiting
     const batchSize = 5;
+    const totalBatches = Math.ceil(fixtures.length / batchSize);
     for (let i = 0; i < fixtures.length; i += batchSize) {
       const batch = fixtures.slice(i, i + batchSize);
+      const currentBatch = Math.floor(i / batchSize) + 1;
+      console.log(`📦 Processing batch ${currentBatch}/${totalBatches} (${batch.length} fixtures)...`);
       
       await Promise.all(batch.map(async (fixture) => {
         try {
+          // Get external IDs from cache
+          const team1ExternalId = teamIdMap[fixture.home_team_id] || teamIdMap[fixture.home_team_name];
+          const team2ExternalId = teamIdMap[fixture.away_team_id] || teamIdMap[fixture.away_team_name];
+          
           const h2hStats = await calculateH2HStats(
             fixture.home_team_name,
             fixture.away_team_name,
             fixture.home_team_id,
-            fixture.away_team_id
+            fixture.away_team_id,
+            team1ExternalId,
+            team2ExternalId
           );
 
           if (h2hStats) {
@@ -444,8 +488,12 @@ async function updateAllFixturesH2HStats(season = '2025') {
               errorCount++;
             } else {
               updatedCount++;
+              if (updatedCount % 10 === 0) {
+                console.log(`  ✓ Updated ${updatedCount} fixtures so far...`);
+              }
             }
           } else {
+            console.log(`  ⚠ Could not calculate H2H stats for ${fixture.home_team_name} vs ${fixture.away_team_name}`);
             errorCount++;
           }
 
@@ -461,6 +509,9 @@ async function updateAllFixturesH2HStats(season = '2025') {
       if (i + batchSize < fixtures.length) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
+      
+      // Log progress
+      console.log(`✅ Batch ${currentBatch}/${totalBatches} complete. Progress: ${updatedCount + errorCount}/${fixtures.length} fixtures processed`);
     }
 
     console.log(`✅ Updated H2H stats for ${updatedCount} fixtures (${errorCount} errors)`);

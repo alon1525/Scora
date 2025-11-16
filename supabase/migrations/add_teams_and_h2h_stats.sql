@@ -8,31 +8,16 @@ CREATE TABLE IF NOT EXISTS teams (
   team_id TEXT UNIQUE NOT NULL, -- Internal team ID (e.g., 'arsenal', 'liverpool')
   team_name TEXT NOT NULL, -- Full team name (e.g., 'Arsenal FC')
   external_team_id INTEGER, -- football-data.org team ID
-  team_logo TEXT,
   season TEXT NOT NULL, -- Current season (e.g., '2025')
   
-  -- Team statistics (can be expanded)
-  current_position INTEGER, -- Current league position
-  points INTEGER DEFAULT 0,
-  goals_for INTEGER DEFAULT 0,
-  goals_against INTEGER DEFAULT 0,
-  wins INTEGER DEFAULT 0,
-  draws INTEGER DEFAULT 0,
-  losses INTEGER DEFAULT 0,
+  -- Current league position
+  current_position INTEGER,
   
   -- Recent form (last 5 matches)
   recent_form TEXT[], -- Array of results: 'W', 'D', 'L'
   recent_goals_for INTEGER DEFAULT 0,
   recent_goals_against INTEGER DEFAULT 0,
   recent_clean_sheets INTEGER DEFAULT 0,
-  
-  -- Home/Away stats
-  home_wins INTEGER DEFAULT 0,
-  home_draws INTEGER DEFAULT 0,
-  home_losses INTEGER DEFAULT 0,
-  away_wins INTEGER DEFAULT 0,
-  away_draws INTEGER DEFAULT 0,
-  away_losses INTEGER DEFAULT 0,
   
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -43,6 +28,28 @@ CREATE TABLE IF NOT EXISTS teams (
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_teams_team_id_season ON teams(team_id, season);
 CREATE INDEX IF NOT EXISTS idx_teams_external_id ON teams(external_team_id);
+
+-- Grant permissions (teams table is public read-only data, service role can write)
+ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
+
+-- Allow service role full access
+GRANT ALL ON TABLE teams TO service_role;
+
+-- Allow authenticated users to read
+GRANT SELECT ON TABLE teams TO authenticated;
+GRANT SELECT ON TABLE teams TO anon;
+
+-- Create policy to allow public read access
+CREATE POLICY "Teams are viewable by everyone" ON teams
+  FOR SELECT
+  USING (true);
+
+-- Create policy to allow service role to insert/update
+CREATE POLICY "Service role can manage teams" ON teams
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
 
 -- Add h2h_stats column to fixtures table
 ALTER TABLE fixtures 
