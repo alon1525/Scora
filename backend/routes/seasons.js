@@ -201,6 +201,20 @@ router.post('/transition', async (req, res) => {
       throw new Error(`Database error: ${resetError.message}`);
     }
     
+    // Reset teams table for new season (delete old season data)
+    console.log('🔄 Resetting teams table for new season...');
+    const { error: teamsResetError } = await supabase
+      .from('teams')
+      .delete()
+      .neq('season', seasonInfo.seasonCode); // Delete all teams not from new season
+    
+    if (teamsResetError) {
+      console.warn('⚠️ Warning: Could not reset teams table:', teamsResetError.message);
+      // Don't throw, just log warning - teams will be updated by stats update job
+    } else {
+      console.log('✅ Teams table reset for new season');
+    }
+    
     // Now fetch fresh data from API for the new season
     console.log('📥 Fetching fresh fixtures and standings from API...');
     

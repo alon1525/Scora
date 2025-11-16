@@ -1089,42 +1089,45 @@ const MatchPredictions = ({ onPredictionSaved, preloadedData }) => {
                     </div>
                   </div>
 
-                  {/* Prediction Bar for all games except NOT_STARTED */}
-                  {fixture.status !== 'NOT_STARTED' && (
-                    <PredictionBar 
-                      homeTeam={getCleanTeamName(fixture.home_team_name)}
-                      awayTeam={getCleanTeamName(fixture.away_team_name)}
-                      homePercent={fixture.prediction_home_percent}
-                      drawPercent={fixture.prediction_draw_percent}
-                      awayPercent={fixture.prediction_away_percent}
-                      totalCount={fixture.prediction_total_count}
-                    />
-                  )}
+                  {/* Prediction Bar and Actions Container */}
+                  <div className="prediction-actions-container">
+                    {/* Prediction Bar for all games except NOT_STARTED */}
+                    {fixture.status !== 'NOT_STARTED' && (
+                      <PredictionBar 
+                        homeTeam={getCleanTeamName(fixture.home_team_name)}
+                        awayTeam={getCleanTeamName(fixture.away_team_name)}
+                        homePercent={fixture.prediction_home_percent}
+                        drawPercent={fixture.prediction_draw_percent}
+                        awayPercent={fixture.prediction_away_percent}
+                        totalCount={fixture.prediction_total_count}
+                      />
+                    )}
 
-                  {/* Comments and Stats Buttons */}
-                  <div className="fixture-actions-section">
-                    <button 
-                      className="fixture-action-btn"
-                      onClick={() => setCommentsModal({
-                        isOpen: true,
-                        fixtureId: fixture.id,
-                        fixtureTitle: `${getCleanTeamName(fixture.home_team_name)} vs ${getCleanTeamName(fixture.away_team_name)}`
-                      })}
-                    >
-                      <span className="material-symbols-outlined">comment</span>
-                      <span>Comments</span>
-                    </button>
-                    <button 
-                      className="fixture-action-btn"
-                      onClick={() => setStatsModal({
-                        isOpen: true,
-                        fixtureId: fixture.id,
-                        fixtureTitle: `${getCleanTeamName(fixture.home_team_name)} vs ${getCleanTeamName(fixture.away_team_name)}`
-                      })}
-                    >
-                      <span className="material-symbols-outlined">bar_chart</span>
-                      <span>Stats</span>
-                    </button>
+                    {/* Comments and Stats Buttons */}
+                    <div className="fixture-actions-section">
+                      <button 
+                        className="fixture-action-btn"
+                        onClick={() => setCommentsModal({
+                          isOpen: true,
+                          fixtureId: fixture.id,
+                          fixtureTitle: `${getCleanTeamName(fixture.home_team_name)} vs ${getCleanTeamName(fixture.away_team_name)}`
+                        })}
+                      >
+                        <span className="material-symbols-outlined">comment</span>
+                        <span>Comments</span>
+                      </button>
+                      <button 
+                        className="fixture-action-btn"
+                        onClick={() => setStatsModal({
+                          isOpen: true,
+                          fixtureId: fixture.id,
+                          fixtureTitle: `${getCleanTeamName(fixture.home_team_name)} vs ${getCleanTeamName(fixture.away_team_name)}`
+                        })}
+                      >
+                        <span className="material-symbols-outlined">bar_chart</span>
+                        <span>Stats</span>
+                      </button>
+                    </div>
                   </div>
 
                 </Card>

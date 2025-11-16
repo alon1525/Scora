@@ -62,10 +62,25 @@ const PredictionBar = ({
       <div className="prediction-bar-container" style={{
         backgroundColor: 'rgba(0, 0, 0, 0.02)',
         borderTop: '1px solid rgba(0, 0, 0, 0.05)',
-        padding: '12px 16px',
-        marginTop: '12px'
+        padding: '16px',
+        marginTop: '12px',
+        marginBottom: '16px',
+        borderRadius: '8px',
+        width: '100%',
+        boxSizing: 'border-box',
+        minHeight: '60px'
       }}>
-        <p style={{ color: '#64748b', fontSize: '14px', textAlign: 'center', margin: 0 }}>
+        <p style={{ 
+          color: '#64748b', 
+          fontSize: '14px', 
+          textAlign: 'center', 
+          margin: 0,
+          padding: 0,
+          wordWrap: 'break-word', 
+          overflowWrap: 'break-word',
+          lineHeight: '1.5',
+          overflow: 'visible'
+        }}>
           No predictions yet
         </p>
       </div>
@@ -76,14 +91,30 @@ const PredictionBar = ({
     <div className="prediction-bar-container" style={{
       backgroundColor: 'rgba(0, 0, 0, 0.02)',
       borderTop: '1px solid rgba(0, 0, 0, 0.05)',
-      padding: '12px 16px',
-      marginTop: '12px'
+      padding: '16px',
+      marginTop: '12px',
+      marginBottom: '16px',
+      borderRadius: '8px',
+      width: '100%',
+      boxSizing: 'border-box',
+      minHeight: '80px'
     }}>
-      <p style={{ color: '#64748b', fontSize: '14px', margin: '0 0 8px 0', fontWeight: '500' }}>
+      <p style={{ 
+        color: '#64748b', 
+        fontSize: '14px', 
+        margin: '0 0 12px 0', 
+        padding: '0',
+        fontWeight: '500', 
+        wordWrap: 'break-word', 
+        overflowWrap: 'break-word', 
+        whiteSpace: 'normal',
+        lineHeight: '1.5',
+        overflow: 'visible'
+      }}>
         Community Predictions ({totalPredictions} votes)
       </p>
       
-      <div className="prediction-bars" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <div className="prediction-bars" style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '100%', boxSizing: 'border-box' }}>
         {/* Home Team Bar */}
         <div 
           className="prediction-bar home-bar"
@@ -188,9 +219,10 @@ const PredictionBar = ({
       <div className="prediction-legend" style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
-        marginTop: '8px',
+        marginTop: '12px',
         fontSize: '12px',
-        color: '#64748b'
+        color: '#64748b',
+        paddingBottom: '0'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <div style={{ 

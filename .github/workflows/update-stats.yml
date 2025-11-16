@@ -1,0 +1,79 @@
+name: Update Team Stats and H2H Data
+
+on:
+  schedule:
+    # Run every 2 days at 2 AM UTC (4 AM in Israel)
+    - cron: '0 2 */2 * *'
+  workflow_dispatch: # Allow manual trigger - Use this to test!
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Debug Environment
+      run: |
+        echo "🔍 Checking environment..."
+        echo "VERCEL_APP_URL: ${{ secrets.VERCEL_APP_URL }}"
+        if [ -z "${{ secrets.VERCEL_APP_URL }}" ]; then
+          echo "❌ VERCEL_APP_URL secret is not set!"
+          exit 1
+        fi
+        
+    - name: Test API Connection
+      run: |
+        echo "🔄 Testing API connection..."
+        curl -v -X GET "${{ secrets.VERCEL_APP_URL }}/health" || echo "Health check failed"
+        
+    - name: Update Stats
+      run: |
+        echo "🔄 Calling stats update endpoint..."
+        response=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
+          "${{ secrets.VERCEL_APP_URL }}/api/stats/update?season=2025" \
+          -H "x-stats-secret: ${{ secrets.STATS_UPDATE_SECRET }}" \
+          -H "Content-Type: application/json")
+        
+        echo "📊 Full response:"
+        echo "$response"
+        
+        # Extract HTTP code
+        http_code=$(echo "$response" | grep "HTTP_CODE:" | cut -d: -f2)
+        response_body=$(echo "$response" | sed '/HTTP_CODE:/d')
+        
+        echo "🌐 HTTP Status Code: $http_code"
+        echo "📄 Response Body: $response_body"
+        
+        # Check if the response contains success
+        if echo "$response_body" | grep -q '"success":true'; then
+          echo "✅ Stats update completed successfully"
+          
+          # Extract and display update counts
+          teams_updated=$(echo "$response_body" | grep -o '"teams_updated":[0-9]*' | cut -d: -f2)
+          fixtures_updated=$(echo "$response_body" | grep -o '"fixtures_updated":[0-9]*' | cut -d: -f2)
+          
+          if [ ! -z "$teams_updated" ]; then
+            echo "📋 Teams updated: $teams_updated"
+          fi
+          if [ ! -z "$fixtures_updated" ]; then
+            echo "⚽ Fixtures updated: $fixtures_updated"
+          fi
+        else
+          echo "❌ Stats update failed or returned error"
+          exit 1
+        fi
+        
+    - name: Notify on success
+      if: success()
+      run: |
+        echo "✅ Stats update completed successfully on $(date)"
+        echo "Team statistics and H2H data have been updated"
+        
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ Stats update failed on $(date)"
+        echo "Please check the logs for details"
+

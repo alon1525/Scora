@@ -2433,6 +2433,7 @@ a:hover {
   margin-bottom: 24px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
+  overflow: visible;
 }
 
 .modern-match-card:hover {
@@ -5546,7 +5547,7 @@ a:hover {
   .modern-match-card {
     margin-bottom: 16px;
     border-radius: 12px;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
     width: 100%;
     max-width: 100%;
@@ -5679,6 +5680,15 @@ a:hover {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+  }
+  
+  .prediction-actions-container {
+    padding: 0 16px 16px 16px;
+    box-sizing: border-box;
+  }
+  
+  .fixture-actions-section {
+    margin-top: 16px;
   }
   
   .team-section {
@@ -6315,6 +6325,15 @@ a:hover {
     overflow-x: hidden;
   }
   
+  .prediction-actions-container {
+    padding: 0 12px 12px 12px;
+    box-sizing: border-box;
+  }
+  
+  .fixture-actions-section {
+    margin-top: 16px;
+  }
+  
   .team-section {
     gap: 8px;
     min-width: 0; /* Allow flex items to shrink */
@@ -6496,6 +6515,15 @@ a:hover {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+  }
+  
+  .prediction-actions-container {
+    padding: 0 10px 10px 10px;
+    box-sizing: border-box;
+  }
+  
+  .fixture-actions-section {
+    margin-top: 16px;
   }
   
   .team-section {
@@ -9834,9 +9862,16 @@ a:hover {
   width: 100%;
 }
 
+/* Prediction Actions Container */
+.prediction-actions-container {
+  padding: 0 20px 20px 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* Fixture Actions Section */
 .fixture-actions-section {
-  margin-top: 0.75rem;
+  margin-top: 16px;
   display: flex;
   gap: 0.5rem;
   width: 100%;
