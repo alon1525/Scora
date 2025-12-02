@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: scora-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - SUPABASE_API_URL=${SUPABASE_API_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY}
+      - LEAGUE_STANDINGS_API_KEY=${LEAGUE_STANDINGS_API_KEY}
+      - STATS_UPDATE_SECRET=${STATS_UPDATE_SECRET}
+      - API_BASE_URL=http://localhost:3001
+      - STANDINGS_REFRESH_INTERVAL=${STANDINGS_REFRESH_INTERVAL:-3600000}
+    volumes:
+      # Mount code for hot-reload
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - scora-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: scora-scheduler
+    environment:
+      - NODE_ENV=development
+      - SUPABASE_API_URL=${SUPABASE_API_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_PUBLISHABLE_KEY=${SUPABASE_PUBLISHABLE_KEY}
+      - LEAGUE_STANDINGS_API_KEY=${LEAGUE_STANDINGS_API_KEY}
+      - API_BASE_URL=http://backend:3001
+      - STANDINGS_REFRESH_INTERVAL=${STANDINGS_REFRESH_INTERVAL:-3600000}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - scora-network
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    command: node scheduler.js
+
+  # Optional: Redis service (uncomment if you want to add Redis later)
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: scora-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   networks:
+  #     - scora-network
+  #   restart: unless-stopped
+  #   command: redis-server --appendonly yes
+
+networks:
+  scora-network:
+    driver: bridge
+
+volumes:
+  # redis-data:
+  #   driver: local
+

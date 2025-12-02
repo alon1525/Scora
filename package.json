@@ -1,0 +1,26 @@
+{
+  "name": "scora",
+  "version": "1.0.0",
+  "description": "Scora - Premier League Prediction Platform",
+  "scripts": {
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:build": "docker-compose build",
+    "docker:logs": "docker-compose logs -f",
+    "docker:logs:backend": "docker-compose logs -f backend",
+    "docker:logs:scheduler": "docker-compose logs -f scheduler",
+    "docker:restart": "docker-compose restart",
+    "docker:clean": "docker-compose down -v",
+    "docker:rebuild": "docker-compose up -d --build",
+    "docker:stop": "docker-compose stop",
+    "docker:start": "docker-compose start"
+  },
+  "keywords": [
+    "docker",
+    "premier-league",
+    "predictions"
+  ],
+  "author": "",
+  "license": "ISC"
+}
+

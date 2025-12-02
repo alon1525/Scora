@@ -136,6 +136,11 @@ async function calculateH2HStats(team1Name, team2Name, team1Id, team2Id, team1Ex
     // Get matches for team1 (from all seasons)
     const team1Matches = await getTeamMatches(team1ExternalId, 200);
     
+    if (!team1Matches || team1Matches.length === 0) {
+      console.log(`  ⚠ No matches found for team ${team1Name} (ID: ${team1ExternalId})`);
+      return null;
+    }
+    
     // Filter matches where team1 played against team2 AND are finished with scores
     const h2hMatches = team1Matches.filter(match => {
       const homeId = match.homeTeam?.id;
@@ -147,6 +152,8 @@ async function calculateH2HStats(team1Name, team2Name, team1Id, team2Id, team1Ex
                        match.score?.fullTime?.away !== null;
       return isH2H && isFinished && hasScore;
     });
+
+    console.log(`  📊 Found ${h2hMatches.length} finished H2H matches between ${team1Name} and ${team2Name}`);
 
     // Sort by date descending and take last 10 finished matches
     h2hMatches.sort((a, b) => new Date(b.utcDate) - new Date(a.utcDate));
@@ -385,6 +392,11 @@ async function updateTeamsTable(season = '2025') {
       let recentFormData;
       try {
         recentFormData = await calculateRecentForm(team.id, season);
+        if (recentFormData.recent_form.length === 0) {
+          console.log(`  ⚠ No recent form data for ${teamName} (might be new team or no finished matches)`);
+        } else {
+          console.log(`  ✓ Form calculated: ${recentFormData.recent_form.join(', ')}`);
+        }
       } catch (error) {
         console.error(`  ⚠ Error calculating form for ${teamName}:`, error.message);
         recentFormData = {
@@ -455,16 +467,21 @@ async function updateAllFixturesH2HStats(season = '2025') {
       .eq('season', season);
 
     if (teamsError) {
-      console.warn('Warning: Could not fetch teams for caching:', teamsError.message);
+      console.warn('⚠ Warning: Could not fetch teams for caching:', teamsError.message);
     }
 
     // Create a map for quick lookup
     const teamIdMap = {};
-    if (allTeams) {
+    if (allTeams && allTeams.length > 0) {
       allTeams.forEach(team => {
-        teamIdMap[team.team_id] = team.external_team_id;
-        teamIdMap[team.team_name] = team.external_team_id;
+        if (team.external_team_id) {
+          teamIdMap[team.team_id] = team.external_team_id;
+          teamIdMap[team.team_name] = team.external_team_id;
+        }
       });
+      console.log(`📋 Loaded ${Object.keys(teamIdMap).length / 2} team external IDs for caching`);
+    } else {
+      console.warn('⚠️ No teams found in database - H2H calculation will be slower (using API)');
     }
 
     // Get all fixtures for the season
@@ -501,6 +518,12 @@ async function updateAllFixturesH2HStats(season = '2025') {
           const team1ExternalId = teamIdMap[fixture.home_team_id] || teamIdMap[fixture.home_team_name];
           const team2ExternalId = teamIdMap[fixture.away_team_id] || teamIdMap[fixture.away_team_name];
           
+          if (!team1ExternalId || !team2ExternalId) {
+            console.log(`  ⚠ Missing external IDs for ${fixture.home_team_name} (${team1ExternalId}) vs ${fixture.away_team_name} (${team2ExternalId})`);
+            errorCount++;
+            return; // Use return instead of continue in callback functions
+          }
+          
           const h2hStats = await calculateH2HStats(
             fixture.home_team_name,
             fixture.away_team_name,
@@ -510,20 +533,33 @@ async function updateAllFixturesH2HStats(season = '2025') {
             team2ExternalId
           );
 
-          if (h2hStats) {
+          if (h2hStats && h2hStats.h2h_matches.length > 0) {
             const { error: updateError } = await supabase
               .from('fixtures')
               .update({ h2h_stats: h2hStats })
               .eq('id', fixture.id);
 
             if (updateError) {
-              console.error(`Error updating fixture ${fixture.id}:`, updateError);
+              console.error(`  ❌ Error updating fixture ${fixture.id}:`, updateError.message);
               errorCount++;
             } else {
               updatedCount++;
               if (updatedCount % 10 === 0) {
                 console.log(`  ✓ Updated ${updatedCount} fixtures so far...`);
               }
+            }
+          } else if (h2hStats && h2hStats.h2h_matches.length === 0) {
+            // Still save even if no matches found (so we know it was checked)
+            const { error: updateError } = await supabase
+              .from('fixtures')
+              .update({ h2h_stats: h2hStats })
+              .eq('id', fixture.id);
+            
+            if (!updateError) {
+              updatedCount++;
+              console.log(`  ℹ No H2H history for ${fixture.home_team_name} vs ${fixture.away_team_name}`);
+            } else {
+              errorCount++;
             }
           } else {
             console.log(`  ⚠ Could not calculate H2H stats for ${fixture.home_team_name} vs ${fixture.away_team_name}`);
@@ -571,10 +607,17 @@ router.post('/update', async (req, res) => {
 
     console.log('🔄 Starting stats update...');
 
-    // Step 1: Update teams table
+    // Step 1: Update teams table (MUST be done first so external IDs are available)
     console.log('📋 Step 1: Updating teams table...');
     const teamsCount = await updateTeamsTable(season);
     console.log(`✅ Updated ${teamsCount} teams`);
+    
+    if (teamsCount === 0) {
+      console.warn('⚠️ No teams were updated! H2H stats calculation may fail.');
+    }
+
+    // Small delay to ensure teams are committed to database
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Step 2: Update H2H stats for all fixtures
     console.log('⚽ Step 2: Updating H2H stats for fixtures...');

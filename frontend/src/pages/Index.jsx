@@ -145,7 +145,7 @@ const Index = () => {
     document.title = "Scora";
   }, []);
 
-  // Comprehensive data loading function
+  // Comprehensive data loading function - loads leaderboard first, then rest
   const loadAllData = async () => {
     if (!user || hasLoadedAllData.current) return; // Don't load if already loaded
     
@@ -159,113 +159,144 @@ const Index = () => {
         'Content-Type': 'application/json'
       };
 
-      // Load leaderboard first (priority)
-      const leaderboardResponse = await axios.get(`${API_ENDPOINTS.LEADERBOARD}?limit=50`);
-
-      // Load standings to get current matchweek
-      const standingsResponse = await axios.get(API_ENDPOINTS.STANDINGS);
-      
-      let currentMatchday = 1;
-      if (standingsResponse.data?.success) {
-        currentMatchday = standingsResponse.data.currentMatchday || 1;
-      }
-      const fixturesPromises = [];
-      const startMatchday = Math.max(1, currentMatchday - 1);
-      const endMatchday = Math.min(38, currentMatchday + 1);
-      
-      for (let matchday = startMatchday; matchday <= endMatchday; matchday++) {
-        fixturesPromises.push(
-          axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${matchday}`)
-            .then(response => ({ matchday, data: response.data }))
-            .catch(error => ({ matchday, error }))
-        );
-      }
-      
-      const fixturesResults = await Promise.allSettled(fixturesPromises);
-      const fixtures = {};
-      fixturesResults.forEach(result => {
-        if (result.status === 'fulfilled' && result.value.data?.success) {
-          fixtures[result.value.matchday] = result.value.data.fixtures;
+      // STEP 1: Load leaderboard first (priority - shown first)
+      console.log('📊 Loading leaderboard...');
+      try {
+        const leaderboardResponse = await axios.get(`${API_ENDPOINTS.LEADERBOARD}?limit=50`);
+        if (leaderboardResponse.data?.success) {
+          const leaderboard = leaderboardResponse.data.leaderboard;
+          // Update state immediately so leaderboard shows
+          setPreloadedData(prev => ({
+            ...prev,
+            leaderboard,
+            loading: false // Allow leaderboard to show even if other data is loading
+          }));
+          console.log('✅ Leaderboard loaded');
         }
-      });
-
-      // Load other data in parallel
-      const [
-        userScoresResponse,
-        userStatsResponse,
-        leaguesResponse,
-        tablePredictionsResponse,
-        deadlineStatusResponse
-      ] = await Promise.allSettled([
-        axios.get(API_ENDPOINTS.USER_SCORES, { headers }),
-        axios.get(`${API_ENDPOINTS.USER_STATS}/${user.id}`, { headers }),
-        axios.get(API_ENDPOINTS.LEAGUES_MY_LEAGUES, { headers }),
-        axios.get(API_ENDPOINTS.TABLE_PREDICTIONS, { headers }),
-        axios.get(`${API_ENDPOINTS.PREDICTIONS}/deadline-status`, { headers })
-      ]);
-
-      // Process standings (already loaded above)
-      let standings = null;
-      if (standingsResponse.data?.success) {
-        standings = standingsResponse.data.standingsData;
-        setStandingsData(standings);
-        setLastUpdated(standingsResponse.data?.lastUpdated || "");
+      } catch (error) {
+        console.error('❌ Error loading leaderboard:', error);
       }
 
-      // Process leaderboard (already loaded above)
-      let leaderboard = null;
-      if (leaderboardResponse.data?.success) {
-        leaderboard = leaderboardResponse.data.leaderboard;
+      // STEP 2: Load user stats and user scores (needed for header)
+      console.log('👤 Loading user stats and scores...');
+      try {
+        const [userScoresResponse, userStatsResponse] = await Promise.allSettled([
+          axios.get(API_ENDPOINTS.USER_SCORES, { headers }),
+          axios.get(`${API_ENDPOINTS.USER_STATS}/${user.id}`, { headers })
+        ]);
+
+        let userScores = null;
+        if (userScoresResponse.status === 'fulfilled' && userScoresResponse.value.data?.success) {
+          userScores = userScoresResponse.value.data.scores;
+        }
+
+        let userStats = null;
+        if (userStatsResponse.status === 'fulfilled' && userStatsResponse.value.data?.success) {
+          userStats = userStatsResponse.value.data.data;
+        }
+
+        // Update state with user data
+        setPreloadedData(prev => ({
+          ...prev,
+          userStats,
+          userScores
+        }));
+        console.log('✅ User stats and scores loaded');
+      } catch (error) {
+        console.error('❌ Error loading user data:', error);
       }
 
-      // Process user scores
-      let userScores = null;
-      if (userScoresResponse.status === 'fulfilled' && userScoresResponse.value.data?.success) {
-        userScores = userScoresResponse.value.data.scores;
-      }
+      // STEP 3: Load remaining data in background (standings, fixtures, leagues, etc.)
+      console.log('📈 Loading remaining data...');
+      try {
+        // Load standings to get current matchweek
+        const standingsResponse = await axios.get(API_ENDPOINTS.STANDINGS);
+        
+        let currentMatchday = 1;
+        let standings = null;
+        if (standingsResponse.data?.success) {
+          standings = standingsResponse.data.standingsData;
+          currentMatchday = standingsResponse.data.currentMatchday || 1;
+          setStandingsData(standings);
+          setLastUpdated(standingsResponse.data?.lastUpdated || "");
+        }
 
-      // Process user stats
-      let userStats = null;
-      if (userStatsResponse.status === 'fulfilled' && userStatsResponse.value.data?.success) {
-        userStats = userStatsResponse.value.data.data;
-      }
+        // Load fixtures
+        const fixturesPromises = [];
+        const startMatchday = Math.max(1, currentMatchday - 1);
+        const endMatchday = Math.min(38, currentMatchday + 1);
+        
+        for (let matchday = startMatchday; matchday <= endMatchday; matchday++) {
+          fixturesPromises.push(
+            axios.get(`${API_ENDPOINTS.FIXTURES_MATCHDAY}/${matchday}`)
+              .then(response => ({ matchday, data: response.data }))
+              .catch(error => ({ matchday, error }))
+          );
+        }
+        
+        const fixturesResults = await Promise.allSettled(fixturesPromises);
+        const fixtures = {};
+        fixturesResults.forEach(result => {
+          if (result.status === 'fulfilled' && result.value.data?.success) {
+            fixtures[result.value.matchday] = result.value.data.fixtures;
+          }
+        });
 
-      // Process leagues
-      let leagues = null;
-      if (leaguesResponse.status === 'fulfilled' && leaguesResponse.value.data?.success) {
-        leagues = leaguesResponse.value.data.leagues;
-      }
+        // Load other data in parallel
+        const [
+          leaguesResponse,
+          tablePredictionsResponse,
+          deadlineStatusResponse
+        ] = await Promise.allSettled([
+          axios.get(API_ENDPOINTS.LEAGUES_MY_LEAGUES, { headers }),
+          axios.get(API_ENDPOINTS.TABLE_PREDICTIONS, { headers }),
+          axios.get(`${API_ENDPOINTS.PREDICTIONS}/deadline-status`, { headers })
+        ]);
 
-      // Process table predictions
-      let tablePredictions = null;
-      if (tablePredictionsResponse.status === 'fulfilled' && tablePredictionsResponse.value.data?.success) {
-        tablePredictions = tablePredictionsResponse.value.data.prediction;
-      }
+        // Process leagues
+        let leagues = null;
+        if (leaguesResponse.status === 'fulfilled' && leaguesResponse.value.data?.success) {
+          leagues = leaguesResponse.value.data.leagues;
+        }
 
-      // Process deadline status
-      let deadlineStatus = null;
-      if (deadlineStatusResponse.status === 'fulfilled' && deadlineStatusResponse.value.data?.success) {
-        deadlineStatus = {
-          canUpdate: deadlineStatusResponse.value.data.canUpdate,
-          reason: deadlineStatusResponse.value.data.reason,
-          deadline: deadlineStatusResponse.value.data.deadline ? new Date(deadlineStatusResponse.value.data.deadline) : null
-        };
-      }
+        // Process table predictions
+        let tablePredictions = null;
+        if (tablePredictionsResponse.status === 'fulfilled' && tablePredictionsResponse.value.data?.success) {
+          tablePredictions = tablePredictionsResponse.value.data.prediction;
+        }
 
-      setPreloadedData({
-        standings,
-        leaderboard,
-        userStats,
-        userScores,
-        leagues,
-        fixtures,
-        currentMatchday,
-        tablePredictions,
-        deadlineStatus,
-        predictions: {},
-        loading: false,
-        error: null
-      });
+        // Process deadline status
+        let deadlineStatus = null;
+        if (deadlineStatusResponse.status === 'fulfilled' && deadlineStatusResponse.value.data?.success) {
+          deadlineStatus = {
+            canUpdate: deadlineStatusResponse.value.data.canUpdate,
+            reason: deadlineStatusResponse.value.data.reason,
+            deadline: deadlineStatusResponse.value.data.deadline ? new Date(deadlineStatusResponse.value.data.deadline) : null
+          };
+        }
+
+        // Update state with all remaining data
+        setPreloadedData(prev => ({
+          ...prev,
+          standings,
+          leagues,
+          fixtures,
+          currentMatchday,
+          tablePredictions,
+          deadlineStatus,
+          predictions: {},
+          loading: false,
+          error: null
+        }));
+        console.log('✅ All remaining data loaded');
+      } catch (error) {
+        console.error('❌ Error loading remaining data:', error);
+        setPreloadedData(prev => ({
+          ...prev,
+          loading: false,
+          error: error.message
+        }));
+      }
 
     } catch (error) {
       console.error('❌ Error loading data:', error);
